@@ -43,7 +43,7 @@ export function setupAuth(app: Express) {
 
   // Use email instead of username for authentication
   passport.use(
-    new LocalStrategy({ usernameField: 'username' }, async (email, password, done) => {
+    new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
       try {
         const user = await storage.getUserByEmail(email);
         if (!user || !(await comparePasswords(password, user.password))) {
