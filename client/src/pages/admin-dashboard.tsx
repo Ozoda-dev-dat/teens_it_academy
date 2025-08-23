@@ -101,6 +101,11 @@ export default function AdminDashboard() {
   const [selectedGroupForAttendance, setSelectedGroupForAttendance] = useState<string>("");
   const [attendanceDate, setAttendanceDate] = useState("");
   const [selectedStudentsForAttendance, setSelectedStudentsForAttendance] = useState<string[]>([]);
+  
+  // Group assignment states
+  const [selectedGroupForAssignment, setSelectedGroupForAssignment] = useState<string>("");
+  const [isAddStudentToGroupOpen, setIsAddStudentToGroupOpen] = useState(false);
+  const [studentToAssign, setStudentToAssign] = useState<string>("");
 
   // Queries
   const { data: stats } = useQuery<{
@@ -141,6 +146,11 @@ export default function AdminDashboard() {
   const { data: attendance = [] } = useQuery<Attendance[]>({
     queryKey: ["/api/groups", selectedGroupForAttendance, "attendance"],
     enabled: !!user && !!selectedGroupForAttendance,
+  });
+  
+  const { data: assignmentGroupStudents = [] } = useQuery<any[]>({
+    queryKey: ["/api/groups", selectedGroupForAssignment, "students"],
+    enabled: !!user && !!selectedGroupForAssignment,
   });
 
   // Student Mutations
@@ -316,6 +326,38 @@ export default function AdminDashboard() {
       toast({ title: "Xatolik", description: error.message || "Davomat saqlashda xatolik", variant: "destructive" });
     },
   });
+  
+  // Group Assignment Mutations
+  const addStudentToGroupMutation = useMutation({
+    mutationFn: async ({ groupId, studentId }: { groupId: string; studentId: string }) => {
+      const res = await apiRequest("POST", `/api/groups/${groupId}/students`, { studentId });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", selectedGroupForAssignment, "students"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", selectedGroupForAttendance, "students"] });
+      setIsAddStudentToGroupOpen(false);
+      setStudentToAssign("");
+      toast({ title: "Muvaffaqiyat", description: "O'quvchi guruhga qo'shildi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Xatolik", description: error.message || "O'quvchini guruhga qo'shishda xatolik", variant: "destructive" });
+    },
+  });
+  
+  const removeStudentFromGroupMutation = useMutation({
+    mutationFn: async ({ groupId, studentId }: { groupId: string; studentId: string }) => {
+      await apiRequest("DELETE", `/api/groups/${groupId}/students/${studentId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", selectedGroupForAssignment, "students"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", selectedGroupForAttendance, "students"] });
+      toast({ title: "Muvaffaqiyat", description: "O'quvchi guruhdan chiqarildi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Xatolik", description: error.message || "O'quvchini guruhdan chiqarishda xatolik", variant: "destructive" });
+    },
+  });
 
   // Helper Functions
   const handleLogout = () => {
@@ -442,6 +484,25 @@ export default function AdminDashboard() {
         groupId: selectedGroupForAttendance,
         date: new Date(attendanceDate),
         participants: selectedStudentsForAttendance
+      });
+    }
+  };
+
+  const handleAddStudentToGroup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedGroupForAssignment && studentToAssign) {
+      addStudentToGroupMutation.mutate({
+        groupId: selectedGroupForAssignment,
+        studentId: studentToAssign
+      });
+    }
+  };
+
+  const handleRemoveStudentFromGroup = (studentId: string) => {
+    if (selectedGroupForAssignment && confirm("O'quvchini guruhdan chiqarishni tasdiqlaysizmi?")) {
+      removeStudentFromGroupMutation.mutate({
+        groupId: selectedGroupForAssignment,
+        studentId: studentId
       });
     }
   };
@@ -1116,6 +1177,146 @@ export default function AdminDashboard() {
                             <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                             <p className="text-gray-500">Hali guruhlar yo'q</p>
                             <p className="text-gray-400 text-sm">Birinchi guruhni yaratish uchun yuqoridagi tugmani bosing</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                    
+                    {/* Student Assignment Section */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>O'quvchilarni guruhlarga tayinlash</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        <div className="space-y-2">
+                          <Label>Guruh tanlang</Label>
+                          <Select value={selectedGroupForAssignment} onValueChange={setSelectedGroupForAssignment}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Guruhni tanlang" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {groups.map((group) => (
+                                <SelectItem key={group.id} value={group.id}>
+                                  {group.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {selectedGroupForAssignment && (
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Current Students */}
+                            <div>
+                              <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-medium">Guruhdagi o'quvchilar</h3>
+                                <Badge variant="secondary">
+                                  {assignmentGroupStudents.length} ta
+                                </Badge>
+                              </div>
+                              <div className="space-y-2 max-h-60 overflow-y-auto">
+                                {assignmentGroupStudents.length > 0 ? (
+                                  assignmentGroupStudents.map((groupStudent: any) => (
+                                    <div key={groupStudent.studentId} className="flex items-center justify-between p-3 border rounded-lg">
+                                      <div>
+                                        <p className="font-medium">{groupStudent.student?.firstName} {groupStudent.student?.lastName}</p>
+                                        <p className="text-sm text-gray-500">{groupStudent.student?.email}</p>
+                                      </div>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleRemoveStudentFromGroup(groupStudent.studentId)}
+                                        className="text-red-600 hover:text-red-700"
+                                        disabled={removeStudentFromGroupMutation.isPending}
+                                        data-testid={`button-remove-student-${groupStudent.studentId}`}
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="text-center py-6">
+                                    <Users className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                                    <p className="text-gray-500 text-sm">Bu guruhda hali o'quvchilar yo'q</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Add Student */}
+                            <div>
+                              <h3 className="text-lg font-medium mb-4">O'quvchi qo'shish</h3>
+                              <Dialog open={isAddStudentToGroupOpen} onOpenChange={setIsAddStudentToGroupOpen}>
+                                <DialogTrigger asChild>
+                                  <Button className="w-full mb-4" data-testid="button-add-student-to-group">
+                                    <UserPlus className="w-4 h-4 mr-2" />
+                                    O'quvchi qo'shish
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Guruhga o'quvchi qo'shish</DialogTitle>
+                                  </DialogHeader>
+                                  <form onSubmit={handleAddStudentToGroup} className="space-y-4">
+                                    <div className="space-y-2">
+                                      <Label>O'quvchi tanlang</Label>
+                                      <Select value={studentToAssign} onValueChange={setStudentToAssign}>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="O'quvchini tanlang" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {students
+                                            .filter(student => !assignmentGroupStudents.some((gs: any) => gs.studentId === student.id))
+                                            .map((student) => (
+                                              <SelectItem key={student.id} value={student.id}>
+                                                {student.firstName} {student.lastName}
+                                              </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="flex justify-end space-x-3">
+                                      <Button type="button" variant="outline" onClick={() => setIsAddStudentToGroupOpen(false)}>
+                                        Bekor qilish
+                                      </Button>
+                                      <Button 
+                                        type="submit" 
+                                        className="bg-teens-green hover:bg-green-600"
+                                        disabled={!studentToAssign || addStudentToGroupMutation.isPending}
+                                        data-testid="button-confirm-add-student"
+                                      >
+                                        {addStudentToGroupMutation.isPending ? (
+                                          <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            Qo'shilmoqda...
+                                          </>
+                                        ) : (
+                                          "Qo'shish"
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </form>
+                                </DialogContent>
+                              </Dialog>
+                              
+                              {/* Available Students Preview */}
+                              <div className="space-y-2">
+                                <Label className="text-sm text-gray-600">Mavjud o'quvchilar:</Label>
+                                <div className="max-h-40 overflow-y-auto space-y-1">
+                                  {students
+                                    .filter(student => !assignmentGroupStudents.some((gs: any) => gs.studentId === student.id))
+                                    .map((student) => (
+                                      <div key={student.id} className="p-2 border rounded text-sm">
+                                        <p className="font-medium">{student.firstName} {student.lastName}</p>
+                                        <p className="text-gray-500 text-xs">{student.email}</p>
+                                      </div>
+                                    ))}
+                                </div>
+                                {students.filter(student => !assignmentGroupStudents.some((gs: any) => gs.studentId === student.id)).length === 0 && (
+                                  <p className="text-sm text-gray-500">Barcha o'quvchilar bu guruhga tayinlangan</p>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         )}
                       </CardContent>

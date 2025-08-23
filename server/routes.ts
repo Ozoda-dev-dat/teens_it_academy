@@ -178,6 +178,19 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.delete("/api/groups/:groupId/students/:studentId", requireAdmin, async (req, res) => {
+    try {
+      const removed = await storage.removeStudentFromGroup(req.params.groupId, req.params.studentId);
+      if (!removed) {
+        return res.status(404).json({ message: "O'quvchi bu guruhda topilmadi" });
+      }
+      res.status(200).json({ message: "O'quvchi guruhdan chiqarildi" });
+    } catch (error) {
+      console.error("Talabani guruhdan chiqarishda xatolik:", error);
+      res.status(400).json({ message: "Talabani guruhdan chiqarishda xatolik" });
+    }
+  });
+
   // Attendance routes
   app.post("/api/attendance", requireAdmin, async (req, res) => {
     try {

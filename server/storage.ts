@@ -160,10 +160,23 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  async getGroupStudents(groupId: string): Promise<GroupStudent[]> {
+  async getGroupStudents(groupId: string): Promise<any[]> {
     return await db
-      .select()
+      .select({
+        id: groupStudents.id,
+        groupId: groupStudents.groupId,
+        studentId: groupStudents.studentId,
+        joinedAt: groupStudents.joinedAt,
+        student: {
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          email: users.email,
+          role: users.role,
+        }
+      })
       .from(groupStudents)
+      .innerJoin(users, eq(groupStudents.studentId, users.id))
       .where(eq(groupStudents.groupId, groupId));
   }
 
