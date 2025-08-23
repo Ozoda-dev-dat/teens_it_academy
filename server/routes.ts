@@ -1,0 +1,348 @@
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { setupAuth } from "./auth";
+import { storage } from "./storage";
+import { insertUserSchema, insertGroupSchema, insertAttendanceSchema, insertPaymentSchema, insertProductSchema, insertPurchaseSchema, insertGroupStudentSchema } from "@shared/schema";
+import { z } from "zod";
+
+export function registerRoutes(app: Express): Server {
+  // Setup authentication routes
+  setupAuth(app);
+
+  // Middleware to check admin role
+  const requireAdmin = (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated() || req.user.role !== "admin") {
+      return res.status(403).json({ message: "Faqat administratorlar uchun" });
+    }
+    next();
+  };
+
+  // Middleware to check student role or own data access
+  const requireStudentOrOwn = (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Autentifikatsiya talab qilinadi" });
+    }
+    if (req.user.role === "admin") {
+      return next(); // Admin can access everything
+    }
+    if (req.user.role === "student") {
+      // Students can only access their own data
+      const studentId = req.params.studentId || req.body.studentId;
+      if (studentId && studentId !== req.user.id) {
+        return res.status(403).json({ message: "Faqat o'z ma'lumotlaringizga kirish mumkin" });
+      }
+      return next();
+    }
+    return res.status(403).json({ message: "Kirish rad etildi" });
+  };
+
+  // Student management routes (Admin only)
+  app.post("/api/students", requireAdmin, async (req, res) => {
+    try {
+      const studentData = insertUserSchema.parse({
+        ...req.body,
+        role: "student",
+        medals: { gold: 0, silver: 0, bronze: 0 }
+      });
+      
+      const student = await storage.createUser(studentData);
+      res.status(201).json(student);
+    } catch (error) {
+      console.error("Talaba yaratishda xatolik:", error);
+      res.status(400).json({ message: "Talaba yaratishda xatolik yuz berdi" });
+    }
+  });
+
+  app.get("/api/students", requireAdmin, async (req, res) => {
+    try {
+      const students = await storage.getAllStudents();
+      res.json(students);
+    } catch (error) {
+      console.error("Talabalarni olishda xatolik:", error);
+      res.status(500).json({ message: "Talabalarni yuklashda xatolik" });
+    }
+  });
+
+  app.get("/api/students/:id", requireStudentOrOwn, async (req, res) => {
+    try {
+      const student = await storage.getUser(req.params.id);
+      if (!student) {
+        return res.status(404).json({ message: "Talaba topilmadi" });
+      }
+      res.json(student);
+    } catch (error) {
+      console.error("Talaba ma'lumotlarini olishda xatolik:", error);
+      res.status(500).json({ message: "Talaba ma'lumotlarini yuklashda xatolik" });
+    }
+  });
+
+  app.put("/api/students/:id", requireStudentOrOwn, async (req, res) => {
+    try {
+      const updates = insertUserSchema.partial().parse(req.body);
+      const student = await storage.updateUser(req.params.id, updates);
+      if (!student) {
+        return res.status(404).json({ message: "Talaba topilmadi" });
+      }
+      res.json(student);
+    } catch (error) {
+      console.error("Talaba ma'lumotlarini yangilashda xatolik:", error);
+      res.status(400).json({ message: "Ma'lumotlarni yangilashda xatolik" });
+    }
+  });
+
+  app.delete("/api/students/:id", requireAdmin, async (req, res) => {
+    try {
+      const deleted = await storage.deleteUser(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Talaba topilmadi" });
+      }
+      res.json({ message: "Talaba muvaffaqiyatli o'chirildi" });
+    } catch (error) {
+      console.error("Talabani o'chirishda xatolik:", error);
+      res.status(500).json({ message: "Talabani o'chirishda xatolik" });
+    }
+  });
+
+  // Group management routes (Admin only)
+  app.post("/api/groups", requireAdmin, async (req, res) => {
+    try {
+      const groupData = insertGroupSchema.parse(req.body);
+      const group = await storage.createGroup(groupData);
+      res.status(201).json(group);
+    } catch (error) {
+      console.error("Guruh yaratishda xatolik:", error);
+      res.status(400).json({ message: "Guruh yaratishda xatolik" });
+    }
+  });
+
+  app.get("/api/groups", async (req, res) => {
+    try {
+      const groups = await storage.getAllGroups();
+      res.json(groups);
+    } catch (error) {
+      console.error("Guruhlarni olishda xatolik:", error);
+      res.status(500).json({ message: "Guruhlarni yuklashda xatolik" });
+    }
+  });
+
+  app.put("/api/groups/:id", requireAdmin, async (req, res) => {
+    try {
+      const updates = insertGroupSchema.partial().parse(req.body);
+      const group = await storage.updateGroup(req.params.id, updates);
+      if (!group) {
+        return res.status(404).json({ message: "Guruh topilmadi" });
+      }
+      res.json(group);
+    } catch (error) {
+      console.error("Guruh yangilashda xatolik:", error);
+      res.status(400).json({ message: "Guruh yangilashda xatolik" });
+    }
+  });
+
+  // Group-Student association routes
+  app.post("/api/groups/:groupId/students", requireAdmin, async (req, res) => {
+    try {
+      const groupStudent = await storage.addStudentToGroup({
+        groupId: req.params.groupId,
+        studentId: req.body.studentId
+      });
+      res.status(201).json(groupStudent);
+    } catch (error) {
+      console.error("Talabani guruhga qo'shishda xatolik:", error);
+      res.status(400).json({ message: "Talabani guruhga qo'shishda xatolik" });
+    }
+  });
+
+  app.get("/api/groups/:groupId/students", requireAdmin, async (req, res) => {
+    try {
+      const groupStudents = await storage.getGroupStudents(req.params.groupId);
+      res.json(groupStudents);
+    } catch (error) {
+      console.error("Guruh talabalarini olishda xatolik:", error);
+      res.status(500).json({ message: "Guruh talabalarini yuklashda xatolik" });
+    }
+  });
+
+  // Attendance routes
+  app.post("/api/attendance", requireAdmin, async (req, res) => {
+    try {
+      const attendanceData = insertAttendanceSchema.parse(req.body);
+      const attendance = await storage.createAttendance(attendanceData);
+      res.status(201).json(attendance);
+    } catch (error) {
+      console.error("Davomat yaratishda xatolik:", error);
+      res.status(400).json({ message: "Davomat yaratishda xatolik" });
+    }
+  });
+
+  app.get("/api/groups/:groupId/attendance", requireAdmin, async (req, res) => {
+    try {
+      const attendance = await storage.getGroupAttendance(req.params.groupId);
+      res.json(attendance);
+    } catch (error) {
+      console.error("Davomat ma'lumotlarini olishda xatolik:", error);
+      res.status(500).json({ message: "Davomat ma'lumotlarini yuklashda xatolik" });
+    }
+  });
+
+  // Payment routes
+  app.post("/api/payments", requireAdmin, async (req, res) => {
+    try {
+      const paymentData = insertPaymentSchema.parse(req.body);
+      const payment = await storage.createPayment(paymentData);
+      res.status(201).json(payment);
+    } catch (error) {
+      console.error("To'lov yaratishda xatolik:", error);
+      res.status(400).json({ message: "To'lov yaratishda xatolik" });
+    }
+  });
+
+  app.get("/api/students/:studentId/payments", requireStudentOrOwn, async (req, res) => {
+    try {
+      const payments = await storage.getStudentPayments(req.params.studentId);
+      res.json(payments);
+    } catch (error) {
+      console.error("To'lov ma'lumotlarini olishda xatolik:", error);
+      res.status(500).json({ message: "To'lov ma'lumotlarini yuklashda xatolik" });
+    }
+  });
+
+  // Medal routes
+  app.put("/api/students/:id/medals", requireAdmin, async (req, res) => {
+    try {
+      const medalSchema = z.object({
+        gold: z.number().min(0),
+        silver: z.number().min(0),
+        bronze: z.number().min(0)
+      });
+      
+      const medals = medalSchema.parse(req.body);
+      const student = await storage.updateUser(req.params.id, { medals });
+      
+      if (!student) {
+        return res.status(404).json({ message: "Talaba topilmadi" });
+      }
+      
+      res.json(student);
+    } catch (error) {
+      console.error("Medallarni yangilashda xatolik:", error);
+      res.status(400).json({ message: "Medallarni yangilashda xatolik" });
+    }
+  });
+
+  // Product routes
+  app.post("/api/products", requireAdmin, async (req, res) => {
+    try {
+      const productData = insertProductSchema.parse(req.body);
+      const product = await storage.createProduct(productData);
+      res.status(201).json(product);
+    } catch (error) {
+      console.error("Mahsulot yaratishda xatolik:", error);
+      res.status(400).json({ message: "Mahsulot yaratishda xatolik" });
+    }
+  });
+
+  app.get("/api/products", async (req, res) => {
+    try {
+      const products = await storage.getAllProducts();
+      res.json(products);
+    } catch (error) {
+      console.error("Mahsulotlarni olishda xatolik:", error);
+      res.status(500).json({ message: "Mahsulotlarni yuklashda xatolik" });
+    }
+  });
+
+  app.put("/api/products/:id", requireAdmin, async (req, res) => {
+    try {
+      const updates = insertProductSchema.partial().parse(req.body);
+      const product = await storage.updateProduct(req.params.id, updates);
+      if (!product) {
+        return res.status(404).json({ message: "Mahsulot topilmadi" });
+      }
+      res.json(product);
+    } catch (error) {
+      console.error("Mahsulot yangilashda xatolik:", error);
+      res.status(400).json({ message: "Mahsulot yangilashda xatolik" });
+    }
+  });
+
+  // Purchase routes
+  app.post("/api/purchases", requireStudentOrOwn, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Autentifikatsiya talab qilinadi" });
+      }
+      
+      const purchaseData = insertPurchaseSchema.parse({
+        ...req.body,
+        studentId: req.user.id // Ensure student can only purchase for themselves
+      });
+      
+      // Get student's current medals
+      const student = await storage.getUser(req.user.id);
+      if (!student) {
+        return res.status(404).json({ message: "Talaba topilmadi" });
+      }
+      
+      // Get product details
+      const product = await storage.getProduct(purchaseData.productId);
+      if (!product) {
+        return res.status(404).json({ message: "Mahsulot topilmadi" });
+      }
+      
+      const studentMedals = student.medals as { gold: number; silver: number; bronze: number };
+      const productCost = product.medalCost as { gold: number; silver: number; bronze: number };
+      
+      // Check if student has enough medals
+      if (studentMedals.gold < productCost.gold || 
+          studentMedals.silver < productCost.silver || 
+          studentMedals.bronze < productCost.bronze) {
+        return res.status(400).json({ message: "Yetarli medallaringiz yo'q" });
+      }
+      
+      // Calculate new medal counts
+      const newMedals = {
+        gold: studentMedals.gold - productCost.gold,
+        silver: studentMedals.silver - productCost.silver,
+        bronze: studentMedals.bronze - productCost.bronze
+      };
+      
+      // Create purchase and update student medals
+      const purchase = await storage.createPurchase({
+        ...purchaseData,
+        medalsPaid: productCost
+      });
+      
+      await storage.updateUser(req.user.id, { medals: newMedals });
+      
+      res.status(201).json(purchase);
+    } catch (error) {
+      console.error("Xarid qilishda xatolik:", error);
+      res.status(400).json({ message: "Xarid qilishda xatolik" });
+    }
+  });
+
+  app.get("/api/students/:studentId/purchases", requireStudentOrOwn, async (req, res) => {
+    try {
+      const purchases = await storage.getStudentPurchases(req.params.studentId);
+      res.json(purchases);
+    } catch (error) {
+      console.error("Xaridlar tarixini olishda xatolik:", error);
+      res.status(500).json({ message: "Xaridlar tarixini yuklashda xatolik" });
+    }
+  });
+
+  // Statistics route
+  app.get("/api/stats", requireAdmin, async (req, res) => {
+    try {
+      const stats = await storage.getStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Statistika olishda xatolik:", error);
+      res.status(500).json({ message: "Statistika ma'lumotlarini yuklashda xatolik" });
+    }
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}

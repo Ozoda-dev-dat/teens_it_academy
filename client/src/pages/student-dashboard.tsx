@@ -1,0 +1,364 @@
+import { useAuth } from "@/hooks/use-auth";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { LogOut, Edit, Star, ShoppingBag, Loader2 } from "lucide-react";
+import type { Product, Purchase } from "@shared/schema";
+
+export default function StudentDashboard() {
+  const { user, logoutMutation } = useAuth();
+  const { toast } = useToast();
+
+  // Queries
+  const { data: products = [] } = useQuery<Product[]>({
+    queryKey: ["/api/products"],
+    enabled: !!user,
+  });
+
+  const { data: purchases = [] } = useQuery<Purchase[]>({
+    queryKey: ["/api/students", user?.id, "purchases"],
+    enabled: !!user,
+  });
+
+  // Mutations
+  const purchaseMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      const res = await apiRequest("POST", "/api/purchases", { productId });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/students", user?.id, "purchases"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({
+        title: "Muvaffaqiyat! 🎉",
+        description: "Mahsulot muvaffaqiyatli sotib olindi",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Xatolik",
+        description: error.message || "Xarid qilishda xatolik yuz berdi",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
+
+  const handlePurchase = (productId: string) => {
+    purchaseMutation.mutate(productId);
+  };
+
+  const userMedals = user?.medals as { gold: number; silver: number; bronze: number } || { gold: 0, silver: 0, bronze: 0 };
+  const totalMedals = userMedals.gold + userMedals.silver + userMedals.bronze;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+      {/* Navigation */}
+      <nav className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <div className="flex-shrink-0 flex items-center">
+                <div className="w-8 h-8 bg-teens-navy rounded-lg flex items-center justify-center mr-3">
+                  <div className="relative">
+                    <div className="w-4 h-4 bg-white rounded-sm"></div>
+                    <div className="absolute -top-0.5 -right-0.5 w-0 h-0 border-l-2 border-l-teens-red border-b-2 border-b-transparent border-t-2 border-t-transparent"></div>
+                  </div>
+                </div>
+                <span className="text-xl font-bold text-teens-navy">Teens IT School</span>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-teens-green to-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-medium">
+                    {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                  </span>
+                </div>
+                <span className="text-sm font-medium text-gray-700">
+                  {user?.firstName}
+                </span>
+              </div>
+              <Button
+                onClick={handleLogout}
+                variant="ghost"
+                size="sm"
+                className="text-gray-400 hover:text-gray-600"
+                data-testid="button-logout"
+              >
+                <LogOut className="w-5 h-5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Section */}
+        <div className="bg-gradient-to-r from-teens-blue to-teens-navy rounded-2xl p-8 text-white mb-8 relative overflow-hidden">
+          <div className="absolute top-4 right-4 text-6xl opacity-20">🚀</div>
+          <div className="relative z-10">
+            <h1 className="text-3xl font-bold mb-2">
+              Salom, <span data-testid="text-student-name">{user?.firstName}!</span>
+            </h1>
+            <p className="text-blue-100 text-lg">Bugun yangi texnologiyalarni o'rganishga tayyormisiz?</p>
+            <div className="mt-4 flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <span className="text-teens-yellow text-2xl">🥇</span>
+                <span data-testid="text-gold-medals">{userMedals.gold}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-300 text-2xl">🥈</span>
+                <span data-testid="text-silver-medals">{userMedals.silver}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-orange-300 text-2xl">🥉</span>
+                <span data-testid="text-bronze-medals">{userMedals.bronze}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Profile Card */}
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle>Mening profilim</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center">
+                  <div className="w-24 h-24 bg-gradient-to-r from-teens-blue to-teens-navy rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
+                    {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900" data-testid="text-student-fullname">
+                    {user?.firstName} {user?.lastName}
+                  </h3>
+                  <p className="text-gray-500 mb-4" data-testid="text-student-email">{user?.email}</p>
+                  <Button className="bg-teens-blue hover:bg-blue-600 w-full" data-testid="button-edit-profile">
+                    <Edit className="w-4 h-4 mr-2" />
+                    Profilni tahrirlash
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Medal Stats */}
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Medallar statistikasi</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center mb-4">
+                  <div className="text-3xl font-bold text-teens-blue" data-testid="text-total-medals">{totalMedals}</div>
+                  <p className="text-gray-500 text-sm">Jami medal</p>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="flex items-center space-x-2">
+                      <span className="text-xl">🥇</span>
+                      <span className="text-sm font-medium">Oltin</span>
+                    </span>
+                    <span className="font-bold text-yellow-600">{userMedals.gold}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="flex items-center space-x-2">
+                      <span className="text-xl">🥈</span>
+                      <span className="text-sm font-medium">Kumush</span>
+                    </span>
+                    <span className="font-bold text-gray-600">{userMedals.silver}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="flex items-center space-x-2">
+                      <span className="text-xl">🥉</span>
+                      <span className="text-sm font-medium">Bronza</span>
+                    </span>
+                    <span className="font-bold text-orange-600">{userMedals.bronze}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Content Area */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Medals Section */}
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Mening medallarim</CardTitle>
+                  <div className="text-sm text-gray-500">
+                    Jami: <span className="font-medium">{totalMedals}</span> ta medal
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-6">
+                  <div className="text-center group cursor-pointer" data-testid="medal-gold">
+                    <div className="w-20 h-20 mx-auto bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-3xl transform group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                      🥇
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mt-3">Oltin medal</h3>
+                    <p className="text-2xl font-bold text-yellow-600">{userMedals.gold}</p>
+                    <p className="text-xs text-gray-500">Mukammal natijalar</p>
+                  </div>
+                  
+                  <div className="text-center group cursor-pointer" data-testid="medal-silver">
+                    <div className="w-20 h-20 mx-auto bg-gradient-to-br from-gray-300 to-gray-500 rounded-full flex items-center justify-center text-3xl transform group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                      🥈
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mt-3">Kumush medal</h3>
+                    <p className="text-2xl font-bold text-gray-600">{userMedals.silver}</p>
+                    <p className="text-xs text-gray-500">Yaxshi natijalar</p>
+                  </div>
+                  
+                  <div className="text-center group cursor-pointer" data-testid="medal-bronze">
+                    <div className="w-20 h-20 mx-auto bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-3xl transform group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                      🥉
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mt-3">Bronza medal</h3>
+                    <p className="text-2xl font-bold text-orange-600">{userMedals.bronze}</p>
+                    <p className="text-xs text-gray-500">Qoniqarli natijalar</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Marketplace Section */}
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Medal do'koni</CardTitle>
+                  <ShoppingBag className="w-6 h-6 text-teens-blue" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {products.map((product) => {
+                    const medalCost = product.medalCost as { gold: number; silver: number; bronze: number };
+                    const canAfford = userMedals.gold >= medalCost.gold && 
+                                     userMedals.silver >= medalCost.silver && 
+                                     userMedals.bronze >= medalCost.bronze;
+                    
+                    return (
+                      <div
+                        key={product.id}
+                        className="border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-shadow duration-200"
+                        data-testid={`product-${product.id}`}
+                      >
+                        {product.image && (
+                          <img 
+                            src={product.image} 
+                            alt={product.name} 
+                            className="w-full h-32 object-cover rounded-lg mb-3"
+                          />
+                        )}
+                        <h3 className="font-semibold text-gray-900" data-testid={`product-name-${product.id}`}>
+                          {product.name}
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-3" data-testid={`product-description-${product.id}`}>
+                          {product.description}
+                        </p>
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center space-x-2">
+                            {medalCost.gold > 0 && (
+                              <div className="flex items-center space-x-1">
+                                <span className="text-yellow-500">🥇</span>
+                                <span className="font-medium">{medalCost.gold}</span>
+                              </div>
+                            )}
+                            {medalCost.silver > 0 && (
+                              <div className="flex items-center space-x-1">
+                                <span className="text-gray-500">🥈</span>
+                                <span className="font-medium">{medalCost.silver}</span>
+                              </div>
+                            )}
+                            {medalCost.bronze > 0 && (
+                              <div className="flex items-center space-x-1">
+                                <span className="text-orange-500">🥉</span>
+                                <span className="font-medium">{medalCost.bronze}</span>
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            onClick={() => handlePurchase(product.id)}
+                            disabled={!canAfford || purchaseMutation.isPending}
+                            className={`text-sm font-medium ${
+                              canAfford 
+                                ? "bg-teens-green hover:bg-green-600 text-white" 
+                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            }`}
+                            data-testid={`button-purchase-${product.id}`}
+                          >
+                            {purchaseMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : canAfford ? (
+                              "Sotib olish"
+                            ) : (
+                              "Yetarli emas"
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  {products.length === 0 && (
+                    <div className="col-span-full text-center py-8">
+                      <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500">Hali mahsulotlar yo'q</p>
+                      <p className="text-gray-400 text-sm">Tez orada yangi mahsulotlar qo'shiladi</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Purchase History */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Xaridlar tarixi</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {purchases.map((purchase) => (
+                    <div
+                      key={purchase.id}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                      data-testid={`purchase-${purchase.id}`}
+                    >
+                      <div>
+                        <h4 className="font-medium text-gray-900">Mahsulot xarid qilindi</h4>
+                        <p className="text-sm text-gray-500">
+                          {new Date(purchase.purchaseDate!).toLocaleDateString('uz-UZ')}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Star className="w-4 h-4 text-teens-yellow" />
+                        <span className="text-sm font-medium">Medal bilan to'landi</span>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {purchases.length === 0 && (
+                    <div className="text-center py-8">
+                      <Star className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500">Hali xaridlar yo'q</p>
+                      <p className="text-gray-400 text-sm">Birinchi xaridingizni qiling!</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

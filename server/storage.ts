@@ -1,0 +1,335 @@
+import { users, groups, groupStudents, attendance, payments, products, purchases } from "@shared/schema";
+import type { User, InsertUser, Group, InsertGroup, GroupStudent, InsertGroupStudent, Attendance, InsertAttendance, Payment, InsertPayment, Product, InsertProduct, Purchase, InsertPurchase } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, sql, desc } from "drizzle-orm";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
+
+const PostgresSessionStore = connectPg(session);
+
+export interface IStorage {
+  // User methods
+  getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser(id: string): Promise<boolean>;
+  getAllStudents(): Promise<User[]>;
+
+  // Group methods
+  createGroup(group: InsertGroup): Promise<Group>;
+  getAllGroups(): Promise<Group[]>;
+  getGroup(id: string): Promise<Group | undefined>;
+  updateGroup(id: string, updates: Partial<InsertGroup>): Promise<Group | undefined>;
+  deleteGroup(id: string): Promise<boolean>;
+
+  // Group Student methods
+  addStudentToGroup(groupStudent: InsertGroupStudent): Promise<GroupStudent>;
+  removeStudentFromGroup(groupId: string, studentId: string): Promise<boolean>;
+  getGroupStudents(groupId: string): Promise<GroupStudent[]>;
+  getStudentGroups(studentId: string): Promise<GroupStudent[]>;
+
+  // Attendance methods
+  createAttendance(attendance: InsertAttendance): Promise<Attendance>;
+  getGroupAttendance(groupId: string): Promise<Attendance[]>;
+  getAttendanceByDate(groupId: string, date: Date): Promise<Attendance | undefined>;
+
+  // Payment methods
+  createPayment(payment: InsertPayment): Promise<Payment>;
+  getStudentPayments(studentId: string): Promise<Payment[]>;
+  updatePayment(id: string, updates: Partial<InsertPayment>): Promise<Payment | undefined>;
+
+  // Product methods
+  createProduct(product: InsertProduct): Promise<Product>;
+  getAllProducts(): Promise<Product[]>;
+  getProduct(id: string): Promise<Product | undefined>;
+  updateProduct(id: string, updates: Partial<InsertProduct>): Promise<Product | undefined>;
+  deleteProduct(id: string): Promise<boolean>;
+
+  // Purchase methods
+  createPurchase(purchase: InsertPurchase): Promise<Purchase>;
+  getStudentPurchases(studentId: string): Promise<Purchase[]>;
+
+  // Stats methods
+  getStats(): Promise<{
+    totalStudents: number;
+    activeGroups: number;
+    totalMedals: { gold: number; silver: number; bronze: number };
+    unpaidAmount: number;
+  }>;
+
+  sessionStore: any;
+}
+
+export class DatabaseStorage implements IStorage {
+  sessionStore: any;
+
+  constructor() {
+    this.sessionStore = new PostgresSessionStore({ 
+      pool, 
+      createTableIfMissing: true 
+    });
+  }
+
+  // User methods
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return user;
+  }
+
+  async updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    const result = await db.delete(users).where(eq(users.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getAllStudents(): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.role, "student"));
+  }
+
+  // Group methods
+  async createGroup(group: InsertGroup): Promise<Group> {
+    const [newGroup] = await db
+      .insert(groups)
+      .values(group)
+      .returning();
+    return newGroup;
+  }
+
+  async getAllGroups(): Promise<Group[]> {
+    return await db.select().from(groups);
+  }
+
+  async getGroup(id: string): Promise<Group | undefined> {
+    const [group] = await db.select().from(groups).where(eq(groups.id, id));
+    return group || undefined;
+  }
+
+  async updateGroup(id: string, updates: Partial<InsertGroup>): Promise<Group | undefined> {
+    const [group] = await db
+      .update(groups)
+      .set(updates)
+      .where(eq(groups.id, id))
+      .returning();
+    return group || undefined;
+  }
+
+  async deleteGroup(id: string): Promise<boolean> {
+    const result = await db.delete(groups).where(eq(groups.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Group Student methods
+  async addStudentToGroup(groupStudent: InsertGroupStudent): Promise<GroupStudent> {
+    const [newGroupStudent] = await db
+      .insert(groupStudents)
+      .values(groupStudent)
+      .returning();
+    return newGroupStudent;
+  }
+
+  async removeStudentFromGroup(groupId: string, studentId: string): Promise<boolean> {
+    const result = await db
+      .delete(groupStudents)
+      .where(and(
+        eq(groupStudents.groupId, groupId),
+        eq(groupStudents.studentId, studentId)
+      ));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getGroupStudents(groupId: string): Promise<GroupStudent[]> {
+    return await db
+      .select()
+      .from(groupStudents)
+      .where(eq(groupStudents.groupId, groupId));
+  }
+
+  async getStudentGroups(studentId: string): Promise<GroupStudent[]> {
+    return await db
+      .select()
+      .from(groupStudents)
+      .where(eq(groupStudents.studentId, studentId));
+  }
+
+  // Attendance methods
+  async createAttendance(attendanceData: InsertAttendance): Promise<Attendance> {
+    const [newAttendance] = await db
+      .insert(attendance)
+      .values(attendanceData)
+      .returning();
+    return newAttendance;
+  }
+
+  async getGroupAttendance(groupId: string): Promise<Attendance[]> {
+    return await db
+      .select()
+      .from(attendance)
+      .where(eq(attendance.groupId, groupId))
+      .orderBy(desc(attendance.date));
+  }
+
+  async getAttendanceByDate(groupId: string, date: Date): Promise<Attendance | undefined> {
+    const [attendanceRecord] = await db
+      .select()
+      .from(attendance)
+      .where(and(
+        eq(attendance.groupId, groupId),
+        eq(attendance.date, date)
+      ));
+    return attendanceRecord || undefined;
+  }
+
+  // Payment methods
+  async createPayment(payment: InsertPayment): Promise<Payment> {
+    const [newPayment] = await db
+      .insert(payments)
+      .values(payment)
+      .returning();
+    return newPayment;
+  }
+
+  async getStudentPayments(studentId: string): Promise<Payment[]> {
+    return await db
+      .select()
+      .from(payments)
+      .where(eq(payments.studentId, studentId))
+      .orderBy(desc(payments.paymentDate));
+  }
+
+  async updatePayment(id: string, updates: Partial<InsertPayment>): Promise<Payment | undefined> {
+    const [payment] = await db
+      .update(payments)
+      .set(updates)
+      .where(eq(payments.id, id))
+      .returning();
+    return payment || undefined;
+  }
+
+  // Product methods
+  async createProduct(product: InsertProduct): Promise<Product> {
+    const [newProduct] = await db
+      .insert(products)
+      .values(product)
+      .returning();
+    return newProduct;
+  }
+
+  async getAllProducts(): Promise<Product[]> {
+    return await db
+      .select()
+      .from(products)
+      .where(eq(products.isActive, true));
+  }
+
+  async getProduct(id: string): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.id, id));
+    return product || undefined;
+  }
+
+  async updateProduct(id: string, updates: Partial<InsertProduct>): Promise<Product | undefined> {
+    const [product] = await db
+      .update(products)
+      .set(updates)
+      .where(eq(products.id, id))
+      .returning();
+    return product || undefined;
+  }
+
+  async deleteProduct(id: string): Promise<boolean> {
+    const result = await db.delete(products).where(eq(products.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Purchase methods
+  async createPurchase(purchase: InsertPurchase): Promise<Purchase> {
+    const [newPurchase] = await db
+      .insert(purchases)
+      .values(purchase)
+      .returning();
+    return newPurchase;
+  }
+
+  async getStudentPurchases(studentId: string): Promise<Purchase[]> {
+    return await db
+      .select()
+      .from(purchases)
+      .where(eq(purchases.studentId, studentId))
+      .orderBy(desc(purchases.purchaseDate));
+  }
+
+  // Stats methods
+  async getStats(): Promise<{
+    totalStudents: number;
+    activeGroups: number;
+    totalMedals: { gold: number; silver: number; bronze: number };
+    unpaidAmount: number;
+  }> {
+    // Get total students
+    const [{ count: totalStudents }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(eq(users.role, "student"));
+
+    // Get active groups
+    const [{ count: activeGroups }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(groups);
+
+    // Get total medals
+    const medalResults = await db
+      .select({ medals: users.medals })
+      .from(users)
+      .where(eq(users.role, "student"));
+
+    const totalMedals = medalResults.reduce(
+      (acc, user) => {
+        const medals = user.medals as { gold: number; silver: number; bronze: number };
+        acc.gold += medals?.gold || 0;
+        acc.silver += medals?.silver || 0;
+        acc.bronze += medals?.bronze || 0;
+        return acc;
+      },
+      { gold: 0, silver: 0, bronze: 0 }
+    );
+
+    // Get unpaid amount
+    const unpaidPayments = await db
+      .select({ amount: payments.amount })
+      .from(payments)
+      .where(eq(payments.status, "unpaid"));
+
+    const unpaidAmount = unpaidPayments.reduce((total, payment) => total + (payment.amount || 0), 0);
+
+    return {
+      totalStudents: Number(totalStudents),
+      activeGroups: Number(activeGroups),
+      totalMedals,
+      unpaidAmount: Number(unpaidAmount) / 100, // Convert from cents to dollars
+    };
+  }
+}
+
+export const storage = new DatabaseStorage();
