@@ -1,0 +1,1332 @@
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teens IT School CRM - O'quvchilar Boshqaruv Tizimi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                        'poppins': ['Poppins', 'sans-serif']
+                    },
+                    colors: {
+                        'primary': '#1e3a8a',
+                        'secondary': '#3b82f6',
+                        'accent-yellow': '#fbbf24',
+                        'accent-green': '#10b981',
+                        'accent-red': '#dc2626'
+                    },
+                    animation: {
+                        'bounce-slow': 'bounce 2s infinite',
+                        'pulse-slow': 'pulse 3s infinite',
+                        'float': 'float 6s ease-in-out infinite'
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);
+        }
+        .space-pattern {
+            background-image: radial-gradient(circle at 25% 25%, #fbbf24 2px, transparent 2px),
+                            radial-gradient(circle at 75% 75%, #10b981 2px, transparent 2px);
+            background-size: 50px 50px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-inter">
+    <!-- Navigation Tabs -->
+    <div class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4">
+            <nav class="flex space-x-8">
+                <button onclick="showPage('login')" id="tab-login" class="py-4 px-2 border-b-2 border-primary text-primary font-medium">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Kirish
+                </button>
+                <button onclick="showPage('admin-dashboard')" id="tab-admin-dashboard" class="py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium">
+                    <i class="fas fa-chart-line mr-2"></i>Admin Panel
+                </button>
+                <button onclick="showPage('admin-students')" id="tab-admin-students" class="py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium">
+                    <i class="fas fa-users mr-2"></i>O'quvchilar
+                </button>
+                <button onclick="showPage('student-dashboard')" id="tab-student-dashboard" class="py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium">
+                    <i class="fas fa-user-graduate mr-2"></i>O'quvchi Panel
+                </button>
+                <button onclick="showPage('marketplace')" id="tab-marketplace" class="py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium">
+                    <i class="fas fa-store mr-2"></i>Do'kon
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Login Page -->
+    <!-- @COMPONENT: LoginPage -->
+    <div id="page-login" class="page min-h-screen bg-gradient-to-br from-blue-900 via-primary to-blue-800 space-pattern">
+        <div class="min-h-screen flex items-center justify-center px-4">
+            <div class="max-w-md w-full">
+                <!-- Logo Section -->
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-20 h-20 bg-white rounded-full shadow-lg mb-4 animate-float">
+                        <i class="fas fa-robot text-3xl text-primary"></i>
+                    </div>
+                    <h1 class="text-3xl font-poppins font-bold text-white mb-2">Teens IT School</h1>
+                    <p class="text-blue-200">O'quvchilar Boshqaruv Tizimi</p>
+                </div>
+
+                <!-- Login Form Card -->
+                <div class="bg-white rounded-2xl shadow-2xl p-8 card-hover">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-poppins font-semibold text-gray-800 text-center mb-2">Tizimga Kirish</h2>
+                        <p class="text-gray-600 text-center">Email va parolni kiriting</p>
+                    </div>
+
+                    <!-- Role Selection -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Rol tanlang</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="relative">
+                                <input type="radio" name="role" value="admin" class="sr-only" checked data-bind="selectedRole">
+                                <div class="flex items-center justify-center p-3 border-2 border-primary bg-blue-50 text-primary rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                                    <i class="fas fa-user-shield mr-2"></i>
+                                    <span class="font-medium">Admin</span>
+                                </div>
+                            </label>
+                            <label class="relative">
+                                <input type="radio" name="role" value="student" class="sr-only" data-bind="selectedRole">
+                                <div class="flex items-center justify-center p-3 border-2 border-gray-300 text-gray-600 rounded-lg cursor-pointer hover:border-primary hover:text-primary transition-colors">
+                                    <i class="fas fa-user-graduate mr-2"></i>
+                                    <span class="font-medium">O'quvchi</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <form data-event="submit:handleLogin">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-envelope text-gray-400"></i>
+                                </div>
+                                <input type="email" 
+                                       placeholder="admin@mail.com" 
+                                       data-bind="email"
+                                       class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors" 
+                                       data-mock="true">
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Parol</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-lock text-gray-400"></i>
+                                </div>
+                                <input type="password" 
+                                       placeholder="admin2233" 
+                                       data-bind="password"
+                                       class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors" 
+                                       data-mock="true">
+                            </div>
+                        </div>
+
+                        <button type="submit" 
+                                class="w-full btn-primary text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center"
+                                data-implementation="Should validate credentials and redirect based on role">
+                            <i class="fas fa-rocket mr-2"></i>
+                            Kirish
+                        </button>
+                    </form>
+
+                    <!-- Demo Credentials -->
+                    <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <h4 class="font-medium text-yellow-800 mb-2">Demo ma'lumotlari:</h4>
+                        <div class="text-sm text-yellow-700 space-y-1">
+                            <p><strong>Admin:</strong> admin@mail.com / admin2233</p>
+                            <p><strong>O'quvchi:</strong> admin tomonidan yaratiladi</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Decorative Elements -->
+                <div class="text-center mt-8 space-x-4">
+                    <i class="fas fa-star text-accent-yellow text-2xl animate-pulse-slow"></i>
+                    <i class="fas fa-rocket text-white text-3xl animate-bounce-slow"></i>
+                    <i class="fas fa-star text-accent-green text-2xl animate-pulse-slow"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: LoginPage -->
+
+    <!-- Admin Dashboard -->
+    <!-- @COMPONENT: AdminDashboard -->
+    <div id="page-admin-dashboard" class="page hidden">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-3xl font-poppins font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-rocket text-primary mr-3"></i>
+                        Admin Paneli
+                    </h1>
+                    <p class="text-gray-600 mt-2">Teens IT School boshqaruv tizimi</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2 bg-green-100 text-green-800 px-3 py-2 rounded-lg">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-sm font-medium">Onlayn</span>
+                    </div>
+                    <button class="flex items-center space-x-2 bg-white border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50">
+                        <i class="fas fa-user-shield text-primary"></i>
+                        <span data-mock="true">Admin</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <!-- @STATE: stats: {totalStudents: number, totalGroups: number, upcomingClasses: number, unpaidFees: number} -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-blue-100">Jami O'quvchilar</p>
+                            <p class="text-3xl font-bold" data-bind="stats.totalStudents" data-mock="true">124</p>
+                        </div>
+                        <div class="bg-white bg-opacity-20 p-3 rounded-lg">
+                            <i class="fas fa-users text-2xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center">
+                        <i class="fas fa-arrow-up text-green-300 mr-1"></i>
+                        <span class="text-sm text-blue-100">+12% bu oyda</span>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-green-100">Guruhlar</p>
+                            <p class="text-3xl font-bold" data-bind="stats.totalGroups" data-mock="true">8</p>
+                        </div>
+                        <div class="bg-white bg-opacity-20 p-3 rounded-lg">
+                            <i class="fas fa-layer-group text-2xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center">
+                        <i class="fas fa-arrow-up text-green-300 mr-1"></i>
+                        <span class="text-sm text-green-100">+2 yangi guruh</span>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl p-6 text-white card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-yellow-100">Kelgusi Darslar</p>
+                            <p class="text-3xl font-bold" data-bind="stats.upcomingClasses" data-mock="true">16</p>
+                        </div>
+                        <div class="bg-white bg-opacity-20 p-3 rounded-lg">
+                            <i class="fas fa-calendar-alt text-2xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center">
+                        <i class="fas fa-clock text-yellow-300 mr-1"></i>
+                        <span class="text-sm text-yellow-100">Bugun 4 ta dars</span>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-6 text-white card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-red-100">To'lanmagan To'lovlar</p>
+                            <p class="text-3xl font-bold" data-bind="stats.unpaidFees" data-mock="true">$340</p>
+                        </div>
+                        <div class="bg-white bg-opacity-20 p-3 rounded-lg">
+                            <i class="fas fa-exclamation-triangle text-2xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center">
+                        <i class="fas fa-user text-red-300 mr-1"></i>
+                        <span class="text-sm text-red-100">7 o'quvchi</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Attendance Chart -->
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <h3 class="text-xl font-poppins font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-chart-line text-primary mr-2"></i>
+                        Davomat Statistikasi
+                    </h3>
+                    <div class="h-64 flex items-center justify-center">
+                        <canvas id="attendanceChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+
+                <!-- Medal Distribution -->
+                <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <h3 class="text-xl font-poppins font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-medal text-accent-yellow mr-2"></i>
+                        Medallar Taqsimoti
+                    </h3>
+                    <div class="h-64 flex items-center justify-center">
+                        <canvas id="medalChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                <h3 class="text-xl font-poppins font-semibold text-gray-800 mb-6 flex items-center">
+                    <i class="fas fa-history text-primary mr-2"></i>
+                    So'nggi Faoliyat
+                </h3>
+                <!-- @MAP: recentActivities.map(activity => ( -->
+                <div class="space-y-4">
+                    <div class="flex items-center p-4 bg-blue-50 rounded-lg">
+                        <div class="bg-blue-500 p-2 rounded-lg mr-4">
+                            <i class="fas fa-user-plus text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-800" data-mock="true">Yangi o'quvchi qo'shildi: Alisher Karimov</p>
+                            <p class="text-sm text-gray-600" data-mock="true">5 daqiqa oldin</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center p-4 bg-green-50 rounded-lg">
+                        <div class="bg-green-500 p-2 rounded-lg mr-4">
+                            <i class="fas fa-medal text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-800" data-mock="true">Oltin medal berildi: Madina Toshmatova</p>
+                            <p class="text-sm text-gray-600" data-mock="true">15 daqiqa oldin</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center p-4 bg-yellow-50 rounded-lg">
+                        <div class="bg-yellow-500 p-2 rounded-lg mr-4">
+                            <i class="fas fa-shopping-cart text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-800" data-mock="true">Do'kondan xarid: Sardor Abdullayev - Robot toy</p>
+                            <p class="text-sm text-gray-600" data-mock="true">1 soat oldin</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_MAP )) -->
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: AdminDashboard -->
+
+    <!-- Admin Students Management -->
+    <!-- @COMPONENT: AdminStudentsManagement -->
+    <div id="page-admin-students" class="page hidden">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-3xl font-poppins font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-users text-primary mr-3"></i>
+                        O'quvchilar Boshqaruvi
+                    </h1>
+                    <p class="text-gray-600 mt-2">O'quvchilarni qo'shish, tahrirlash va boshqarish</p>
+                </div>
+                <button onclick="openAddStudentModal()" class="btn-primary text-white px-6 py-3 rounded-lg font-medium flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    Yangi O'quvchi
+                </button>
+            </div>
+
+            <!-- Filters and Search -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Qidiruv</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </div>
+                            <input type="text" 
+                                   placeholder="Ism yoki email kiriting..." 
+                                   data-bind="searchQuery"
+                                   class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Guruh</label>
+                        <select data-bind="selectedGroup" class="block w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="" data-mock="true">Barcha guruhlar</option>
+                            <option value="python-beginners" data-mock="true">Python Boshlang'ich</option>
+                            <option value="web-development" data-mock="true">Web Dasturlash</option>
+                            <option value="mobile-apps" data-mock="true">Mobil Ilovalar</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">To'lov holati</label>
+                        <select data-bind="paymentStatus" class="block w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="" data-mock="true">Barchasi</option>
+                            <option value="paid" data-mock="true">To'langan</option>
+                            <option value="unpaid" data-mock="true">To'lanmagan</option>
+                            <option value="partial" data-mock="true">Qisman</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-filter mr-2"></i>
+                            Filtrlarni tozalash
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Students Table -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">O'quvchi</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guruh</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medallar</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">To'lov</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">So'nggi faoliyat</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <!-- @MAP: students.map(student => ( -->
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <!-- Robot avatar with student's profile -->
+                                        <div class="flex-shrink-0 h-12 w-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
+                                            <i class="fas fa-robot text-white text-lg"></i>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900" data-bind="student.firstName + ' ' + student.lastName" data-mock="true">Alisher Karimov</div>
+                                            <div class="text-sm text-gray-500" data-bind="student.email" data-mock="true">alisher.k@example.com</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800" data-bind="student.group" data-mock="true">
+                                        Python Boshlang'ich
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex space-x-2">
+                                        <div class="flex items-center space-x-1">
+                                            <i class="fas fa-medal text-yellow-500"></i>
+                                            <span class="text-sm font-medium" data-bind="student.medals.gold" data-mock="true">3</span>
+                                        </div>
+                                        <div class="flex items-center space-x-1">
+                                            <i class="fas fa-medal text-gray-400"></i>
+                                            <span class="text-sm font-medium" data-bind="student.medals.silver" data-mock="true">5</span>
+                                        </div>
+                                        <div class="flex items-center space-x-1">
+                                            <i class="fas fa-medal text-amber-600"></i>
+                                            <span class="text-sm font-medium" data-bind="student.medals.bronze" data-mock="true">2</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800" data-mock="true">
+                                        To'langan
+                                    </span>
+                                    <div class="text-xs text-gray-500 mt-1" data-mock="true">$120 / $150</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" data-bind="student.lastActivity" data-mock="true">
+                                    2 soat oldin
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                    <button class="text-primary hover:text-blue-700" data-implementation="Should open edit modal">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="text-accent-yellow hover:text-yellow-700" data-implementation="Should open medal modal">
+                                        <i class="fas fa-medal"></i>
+                                    </button>
+                                    <button class="text-green-600 hover:text-green-700" data-implementation="Should open payment modal">
+                                        <i class="fas fa-dollar-sign"></i>
+                                    </button>
+                                    <button class="text-red-600 hover:text-red-700" data-implementation="Should confirm deletion">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-12 w-12 bg-gradient-to-r from-pink-400 to-red-500 rounded-full flex items-center justify-center">
+                                            <i class="fas fa-robot text-white text-lg"></i>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900" data-mock="true">Madina Toshmatova</div>
+                                            <div class="text-sm text-gray-500" data-mock="true">madina.t@example.com</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800" data-mock="true">
+                                        Web Dasturlash
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex space-x-2">
+                                        <div class="flex items-center space-x-1">
+                                            <i class="fas fa-medal text-yellow-500"></i>
+                                            <span class="text-sm font-medium" data-mock="true">5</span>
+                                        </div>
+                                        <div class="flex items-center space-x-1">
+                                            <i class="fas fa-medal text-gray-400"></i>
+                                            <span class="text-sm font-medium" data-mock="true">3</span>
+                                        </div>
+                                        <div class="flex items-center space-x-1">
+                                            <i class="fas fa-medal text-amber-600"></i>
+                                            <span class="text-sm font-medium" data-mock="true">1</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800" data-mock="true">
+                                        To'lanmagan
+                                    </span>
+                                    <div class="text-xs text-gray-500 mt-1" data-mock="true">$80 / $150</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" data-mock="true">
+                                    1 kun oldin
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                    <button class="text-primary hover:text-blue-700">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="text-accent-yellow hover:text-yellow-700">
+                                        <i class="fas fa-medal"></i>
+                                    </button>
+                                    <button class="text-green-600 hover:text-green-700">
+                                        <i class="fas fa-dollar-sign"></i>
+                                    </button>
+                                    <button class="text-red-600 hover:text-red-700">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <!-- @END_MAP )) -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                    <div class="flex-1 flex justify-between sm:hidden">
+                        <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            Oldingi
+                        </button>
+                        <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            Keyingi
+                        </button>
+                    </div>
+                    <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                        <div>
+                            <p class="text-sm text-gray-700">
+                                Ko'rsatilmoqda <span class="font-medium" data-mock="true">1</span> dan <span class="font-medium" data-mock="true">10</span> gacha, jami <span class="font-medium" data-mock="true">124</span> ta natija
+                            </p>
+                        </div>
+                        <div>
+                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <button class="bg-primary border-primary text-white relative inline-flex items-center px-4 py-2 border text-sm font-medium">1</button>
+                                <button class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">2</button>
+                                <button class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">3</button>
+                                <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: AdminStudentsManagement -->
+
+    <!-- Student Dashboard -->
+    <!-- @COMPONENT: StudentDashboard -->
+    <div id="page-student-dashboard" class="page hidden">
+        <div class="max-w-6xl mx-auto px-4 py-8">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-3xl font-poppins font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-user-astronaut text-primary mr-3"></i>
+                        Mening Profilim
+                    </h1>
+                    <p class="text-gray-600 mt-2" data-bind="currentStudent.email" data-mock="true">alisher.k@example.com</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-right">
+                        <p class="text-sm text-gray-600">Jami medallar</p>
+                        <p class="text-2xl font-bold text-primary" data-bind="currentStudent.totalMedals" data-mock="true">10</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-blue-400 to-purple-500 p-4 rounded-full">
+                        <i class="fas fa-robot text-white text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Card -->
+            <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-8 text-white mb-8 card-hover">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-6">
+                        <!-- Animated Robot Avatar -->
+                        <div class="relative">
+                            <div class="w-24 h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center animate-float">
+                                <i class="fas fa-robot text-4xl"></i>
+                            </div>
+                            <div class="absolute -top-2 -right-2 bg-accent-yellow text-yellow-900 px-2 py-1 rounded-full text-xs font-bold">
+                                LVL 5
+                            </div>
+                        </div>
+                        <div>
+                            <h2 class="text-3xl font-poppins font-bold" data-bind="currentStudent.fullName" data-mock="true">Alisher Karimov</h2>
+                            <p class="text-blue-100 text-lg" data-bind="currentStudent.group" data-mock="true">Python Boshlang'ich Guruhi</p>
+                            <div class="flex items-center mt-2 space-x-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-calendar-check mr-2"></i>
+                                    <span data-bind="currentStudent.attendanceRate" data-mock="true">92% davomat</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-chart-line mr-2"></i>
+                                    <span data-bind="currentStudent.progress" data-mock="true">78% progress</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-6 py-3 rounded-lg transition-colors">
+                        <i class="fas fa-edit mr-2"></i>
+                        Profilni tahrirlash
+                    </button>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="mt-6">
+                    <div class="flex justify-between text-sm mb-2">
+                        <span>Kurs davomiyligi</span>
+                        <span data-mock="true">78%</span>
+                    </div>
+                    <div class="w-full bg-white bg-opacity-20 rounded-full h-3">
+                        <div class="bg-accent-yellow h-3 rounded-full transition-all duration-500 ease-out" style="width: 78%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats and Medals Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <!-- Medal Collection -->
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-lg p-6 card-hover">
+                    <h3 class="text-xl font-poppins font-semibold text-gray-800 mb-6 flex items-center">
+                        <i class="fas fa-trophy text-accent-yellow mr-2"></i>
+                        Mening Medallarim
+                    </h3>
+
+                    <div class="grid grid-cols-3 gap-6">
+                        <!-- Gold Medals -->
+                        <div class="text-center">
+                            <div class="relative inline-block mb-3">
+                                <div class="w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center shadow-lg animate-pulse-slow">
+                                    <i class="fas fa-medal text-3xl text-white"></i>
+                                </div>
+                                <div class="absolute -top-2 -right-2 bg-yellow-500 text-white text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center" data-bind="currentStudent.medals.gold" data-mock="true">
+                                    3
+                                </div>
+                            </div>
+                            <h4 class="font-semibold text-gray-800">Oltin</h4>
+                            <p class="text-sm text-gray-600">Mukammal natija</p>
+                        </div>
+
+                        <!-- Silver Medals -->
+                        <div class="text-center">
+                            <div class="relative inline-block mb-3">
+                                <div class="w-20 h-20 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-medal text-3xl text-white"></i>
+                                </div>
+                                <div class="absolute -top-2 -right-2 bg-gray-500 text-white text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center" data-bind="currentStudent.medals.silver" data-mock="true">
+                                    5
+                                </div>
+                            </div>
+                            <h4 class="font-semibold text-gray-800">Kumush</h4>
+                            <p class="text-sm text-gray-600">Yaxshi natija</p>
+                        </div>
+
+                        <!-- Bronze Medals -->
+                        <div class="text-center">
+                            <div class="relative inline-block mb-3">
+                                <div class="w-20 h-20 bg-gradient-to-br from-amber-600 to-amber-800 rounded-full flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-medal text-3xl text-white"></i>
+                                </div>
+                                <div class="absolute -top-2 -right-2 bg-amber-600 text-white text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center" data-bind="currentStudent.medals.bronze" data-mock="true">
+                                    2
+                                </div>
+                            </div>
+                            <h4 class="font-semibold text-gray-800">Bronza</h4>
+                            <p class="text-sm text-gray-600">Yaxshi harakat</p>
+                        </div>
+                    </div>
+
+                    <!-- Recent Achievements -->
+                    <div class="mt-8">
+                        <h4 class="font-semibold text-gray-800 mb-4">So'nggi yutuqlar</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center p-3 bg-yellow-50 rounded-lg">
+                                <i class="fas fa-star text-yellow-500 mr-3"></i>
+                                <div>
+                                    <p class="font-medium text-gray-800" data-mock="true">Python loyihasini tugatdi</p>
+                                    <p class="text-sm text-gray-600" data-mock="true">1 kun oldin</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center p-3 bg-green-50 rounded-lg">
+                                <i class="fas fa-code text-green-500 mr-3"></i>
+                                <div>
+                                    <p class="font-medium text-gray-800" data-mock="true">100% davomat medal</p>
+                                    <p class="text-sm text-gray-600" data-mock="true">3 kun oldin</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Summary -->
+                <div class="space-y-6">
+                    <!-- Next Class -->
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                        <h3 class="text-lg font-poppins font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-clock text-primary mr-2"></i>
+                            Keyingi Dars
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600">Vaqt:</span>
+                                <span class="font-medium" data-mock="true">Ertaga 14:00</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600">Mavzu:</span>
+                                <span class="font-medium" data-mock="true">Tsikllar</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600">Xona:</span>
+                                <span class="font-medium" data-mock="true">A-101</span>
+                            </div>
+                        </div>
+                        <button class="w-full mt-4 bg-primary text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-bell mr-2"></i>
+                            Eslatma o'rnatish
+                        </button>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                        <h3 class="text-lg font-poppins font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-chart-bar text-accent-green mr-2"></i>
+                            Statistika
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600">Darslar soni:</span>
+                                <span class="font-bold text-primary" data-mock="true">24</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600">Loyihalar:</span>
+                                <span class="font-bold text-accent-green" data-mock="true">8</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600">Coding vaqti:</span>
+                                <span class="font-bold text-accent-yellow" data-mock="true">156 soat</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                <h3 class="text-xl font-poppins font-semibold text-gray-800 mb-6 flex items-center">
+                    <i class="fas fa-history text-primary mr-2"></i>
+                    So'nggi Faoliyat
+                </h3>
+                <div class="space-y-4">
+                    <div class="flex items-center p-4 bg-blue-50 rounded-lg">
+                        <div class="bg-blue-500 p-2 rounded-lg mr-4">
+                            <i class="fas fa-code text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-800" data-mock="true">Calculator loyihasini topshirdi</p>
+                            <p class="text-sm text-gray-600" data-mock="true">Bugun 15:30</p>
+                        </div>
+                        <div class="text-green-600 font-semibold" data-mock="true">95%</div>
+                    </div>
+
+                    <div class="flex items-center p-4 bg-green-50 rounded-lg">
+                        <div class="bg-green-500 p-2 rounded-lg mr-4">
+                            <i class="fas fa-check text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-800" data-mock="true">Darsda qatnashdi</p>
+                            <p class="text-sm text-gray-600" data-mock="true">Kecha 14:00</p>
+                        </div>
+                        <div class="text-blue-600">
+                            <i class="fas fa-medal"></i>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center p-4 bg-yellow-50 rounded-lg">
+                        <div class="bg-yellow-500 p-2 rounded-lg mr-4">
+                            <i class="fas fa-shopping-bag text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-800" data-mock="true">Robot toy sotib oldi</p>
+                            <p class="text-sm text-gray-600" data-mock="true">2 kun oldin</p>
+                        </div>
+                        <div class="text-yellow-600 font-semibold" data-mock="true">-3 oltin</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: StudentDashboard -->
+
+    <!-- Marketplace -->
+    <!-- @COMPONENT: Marketplace -->
+    <div id="page-marketplace" class="page hidden">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <!-- Header -->
+            <div class="text-center mb-12">
+                <h1 class="text-4xl font-poppins font-bold text-gray-800 mb-4 flex items-center justify-center">
+                    <i class="fas fa-rocket text-primary mr-4 animate-bounce-slow"></i>
+                    Space Tech Do'koni
+                    <i class="fas fa-star text-accent-yellow ml-4 animate-pulse-slow"></i>
+                </h1>
+                <p class="text-xl text-gray-600 mb-6">Medallaringiz bilan ajoyib texnologik mahsulotlar sotib oling!</p>
+                
+                <!-- Student Medal Balance -->
+                <div class="inline-flex items-center space-x-6 bg-white rounded-2xl shadow-lg p-6">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-medal text-yellow-500 text-2xl"></i>
+                        <div>
+                            <p class="text-sm text-gray-600">Oltin</p>
+                            <p class="text-2xl font-bold text-gray-800" data-bind="studentMedals.gold" data-mock="true">3</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-medal text-gray-400 text-2xl"></i>
+                        <div>
+                            <p class="text-sm text-gray-600">Kumush</p>
+                            <p class="text-2xl font-bold text-gray-800" data-bind="studentMedals.silver" data-mock="true">5</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-medal text-amber-600 text-2xl"></i>
+                        <div>
+                            <p class="text-sm text-gray-600">Bronza</p>
+                            <p class="text-2xl font-bold text-gray-800" data-bind="studentMedals.bronze" data-mock="true">2</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories Filter -->
+            <div class="flex justify-center mb-8">
+                <div class="inline-flex bg-white rounded-xl shadow-lg p-2">
+                    <button class="px-6 py-3 bg-primary text-white rounded-lg font-medium transition-colors">
+                        <i class="fas fa-robot mr-2"></i>Barchasi
+                    </button>
+                    <button class="px-6 py-3 text-gray-600 hover:text-primary hover:bg-blue-50 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-gamepad mr-2"></i>O'yinlar
+                    </button>
+                    <button class="px-6 py-3 text-gray-600 hover:text-primary hover:bg-blue-50 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-book mr-2"></i>Kitoblar
+                    </button>
+                    <button class="px-6 py-3 text-gray-600 hover:text-primary hover:bg-blue-50 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-tshirt mr-2"></i>Kiyimlar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Products Grid -->
+            <!-- @MAP: products.map(product => ( -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <!-- Product Card 1 -->
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden card-hover">
+                    <!-- Cute robot coding toy image -->
+                    <img src="https://images.unsplash.com/photo-1485827404703-89b55fcc595e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" alt="Robot coding toy" class="w-full h-48 object-cover" data-mock-image="true">
+                    <div class="p-6">
+                        <h3 class="text-lg font-poppins font-semibold text-gray-800 mb-2" data-bind="product.name" data-mock="true">Robot Codey</h3>
+                        <p class="text-gray-600 text-sm mb-4" data-bind="product.description" data-mock="true">Dasturlashni o'rgatadigan interaktiv robot o'yinchoq</p>
+                        
+                        <!-- Price in medals -->
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-medal text-yellow-500"></i>
+                                <span class="font-bold text-gray-800" data-bind="product.medalCost.gold" data-mock="true">2</span>
+                                <span class="text-gray-500">oltin</span>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <i class="fas fa-star text-accent-yellow"></i>
+                                <span class="text-sm text-gray-600" data-mock="true">4.9</span>
+                            </div>
+                        </div>
+
+                        <button onclick="purchaseProduct(this)" 
+                                class="w-full btn-primary text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center"
+                                data-implementation="Should check medal balance and process purchase">
+                            <i class="fas fa-shopping-cart mr-2"></i>
+                            Sotib olish
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product Card 2 -->
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden card-hover">
+                    <!-- Programming books for kids -->
+                    <img src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" alt="Programming books for kids" class="w-full h-48 object-cover" data-mock-image="true">
+                    <div class="p-6">
+                        <h3 class="text-lg font-poppins font-semibold text-gray-800 mb-2" data-mock="true">Python Bolalar Uchun</h3>
+                        <p class="text-gray-600 text-sm mb-4" data-mock="true">Bolalar uchun Python dasturlash kitobi</p>
+                        
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-medal text-gray-400"></i>
+                                <span class="font-bold text-gray-800" data-mock="true">3</span>
+                                <span class="text-gray-500">kumush</span>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <i class="fas fa-star text-accent-yellow"></i>
+                                <span class="text-sm text-gray-600" data-mock="true">4.7</span>
+                            </div>
+                        </div>
+
+                        <button onclick="purchaseProduct(this)" 
+                                class="w-full btn-primary text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center">
+                            <i class="fas fa-shopping-cart mr-2"></i>
+                            Sotib olish
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product Card 3 -->
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden card-hover">
+                    <!-- Gaming setup for kids -->
+                    <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" alt="Gaming headset for kids" class="w-full h-48 object-cover" data-mock-image="true">
+                    <div class="p-6">
+                        <h3 class="text-lg font-poppins font-semibold text-gray-800 mb-2" data-mock="true">Gaming Headset</h3>
+                        <p class="text-gray-600 text-sm mb-4" data-mock="true">Bolalar uchun maxsus gaming quloqchin</p>
+                        
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-medal text-yellow-500"></i>
+                                <span class="font-bold text-gray-800" data-mock="true">1</span>
+                                <span class="text-gray-500">oltin</span>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <i class="fas fa-star text-accent-yellow"></i>
+                                <span class="text-sm text-gray-600" data-mock="true">4.8</span>
+                            </div>
+                        </div>
+
+                        <button onclick="purchaseProduct(this)" 
+                                class="w-full btn-primary text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center">
+                            <i class="fas fa-shopping-cart mr-2"></i>
+                            Sotib olish
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product Card 4 -->
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden card-hover">
+                    <!-- Cool tech gadget -->
+                    <img src="https://pixabay.com/get/gab3aafb16a8daa3c8cd3694fb12e63abf63711e0f7005319978691f16637b21e51fb6a65b69bfa3a33dbde5f91665175cd8743bfe4ceee1dfd9306e19701a8b9_1280.jpg" alt="Smart watch for kids" class="w-full h-48 object-cover" data-mock-image="true">
+                    <div class="p-6">
+                        <h3 class="text-lg font-poppins font-semibold text-gray-800 mb-2" data-mock="true">Smart Watch Kids</h3>
+                        <p class="text-gray-600 text-sm mb-4" data-mock="true">Bolalar uchun aqlli soat</p>
+                        
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-4">
+                                <div class="flex items-center space-x-1">
+                                    <i class="fas fa-medal text-yellow-500"></i>
+                                    <span class="font-bold text-gray-800" data-mock="true">1</span>
+                                </div>
+                                <div class="flex items-center space-x-1">
+                                    <i class="fas fa-medal text-gray-400"></i>
+                                    <span class="font-bold text-gray-800" data-mock="true">2</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <i class="fas fa-star text-accent-yellow"></i>
+                                <span class="text-sm text-gray-600" data-mock="true">4.6</span>
+                            </div>
+                        </div>
+
+                        <button onclick="purchaseProduct(this)" 
+                                class="w-full bg-gray-300 text-gray-500 py-3 px-4 rounded-lg font-medium flex items-center justify-center cursor-not-allowed"
+                                disabled>
+                            <i class="fas fa-times mr-2"></i>
+                            Yetarli medal yo'q
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product Card 5 -->
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden card-hover">
+                    <!-- Coding T-shirt -->
+                    <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" alt="Coding themed t-shirt" class="w-full h-48 object-cover" data-mock-image="true">
+                    <div class="p-6">
+                        <h3 class="text-lg font-poppins font-semibold text-gray-800 mb-2" data-mock="true">Coding Hero T-shirt</h3>
+                        <p class="text-gray-600 text-sm mb-4" data-mock="true">Dasturchilar uchun maxsus futbolka</p>
+                        
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-medal text-amber-600"></i>
+                                <span class="font-bold text-gray-800" data-mock="true">2</span>
+                                <span class="text-gray-500">bronza</span>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <i class="fas fa-star text-accent-yellow"></i>
+                                <span class="text-sm text-gray-600" data-mock="true">4.5</span>
+                            </div>
+                        </div>
+
+                        <button onclick="purchaseProduct(this)" 
+                                class="w-full btn-primary text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center">
+                            <i class="fas fa-shopping-cart mr-2"></i>
+                            Sotib olish
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product Card 6 -->
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden card-hover">
+                    <!-- Educational game -->
+                    <img src="https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" alt="Educational coding board game" class="w-full h-48 object-cover" data-mock-image="true">
+                    <div class="p-6">
+                        <h3 class="text-lg font-poppins font-semibold text-gray-800 mb-2" data-mock="true">Code & Go O'yini</h3>
+                        <p class="text-gray-600 text-sm mb-4" data-mock="true">Dasturlashni o'rgatadigan stol o'yini</p>
+                        
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-medal text-gray-400"></i>
+                                <span class="font-bold text-gray-800" data-mock="true">1</span>
+                                <span class="text-gray-500">kumush</span>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <i class="fas fa-star text-accent-yellow"></i>
+                                <span class="text-sm text-gray-600" data-mock="true">4.9</span>
+                            </div>
+                        </div>
+
+                        <button onclick="purchaseProduct(this)" 
+                                class="w-full btn-primary text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center">
+                            <i class="fas fa-shopping-cart mr-2"></i>
+                            Sotib olish
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_MAP )) -->
+
+            <!-- Floating Elements -->
+            <div class="fixed top-1/2 left-10 animate-float hidden lg:block">
+                <i class="fas fa-rocket text-6xl text-blue-200"></i>
+            </div>
+            <div class="fixed top-1/3 right-10 animate-float hidden lg:block" style="animation-delay: -2s;">
+                <i class="fas fa-star text-4xl text-yellow-200"></i>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: Marketplace -->
+
+    <!-- Add Student Modal -->
+    <!-- @COMPONENT: AddStudentModal -->
+    <div id="addStudentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 max-h-screen overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-poppins font-bold text-gray-800">Yangi O'quvchi Qo'shish</h2>
+                <button onclick="closeAddStudentModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form data-event="submit:handleAddStudent">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Ism</label>
+                        <input type="text" 
+                               data-bind="newStudent.firstName"
+                               class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" 
+                               required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Familiya</label>
+                        <input type="text" 
+                               data-bind="newStudent.lastName"
+                               class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" 
+                               required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" 
+                               data-bind="newStudent.email"
+                               class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" 
+                               required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Guruh</label>
+                        <select data-bind="newStudent.group" 
+                                class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" 
+                                required>
+                            <option value="">Guruh tanlang</option>
+                            <option value="python-beginners">Python Boshlang'ich</option>
+                            <option value="web-development">Web Dasturlash</option>
+                            <option value="mobile-apps">Mobil Ilovalar</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p class="text-sm text-blue-800">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Parol avtomatik yaratiladi va o'quvchiga emailga yuboriladi
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex space-x-4 mt-8">
+                    <button type="button" 
+                            onclick="closeAddStudentModal()" 
+                            class="flex-1 bg-gray-200 text-gray-800 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors">
+                        Bekor qilish
+                    </button>
+                    <button type="submit" 
+                            class="flex-1 btn-primary text-white py-3 px-4 rounded-lg font-medium"
+                            data-implementation="Should create student account and save to database">
+                        <i class="fas fa-plus mr-2"></i>
+                        Qo'shish
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: AddStudentModal -->
+
+    <!-- Purchase Success Modal -->
+    <!-- @COMPONENT: PurchaseSuccessModal -->
+    <div id="purchaseSuccessModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center">
+            <div class="mb-6">
+                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                    <i class="fas fa-check text-3xl text-green-500"></i>
+                </div>
+                <h2 class="text-2xl font-poppins font-bold text-gray-800 mb-2">Tabriklaymiz!</h2>
+                <p class="text-gray-600">Xaridingiz muvaffaqiyatli amalga oshirildi</p>
+            </div>
+
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <p class="text-sm text-yellow-800" id="purchaseDetails" data-mock="true">
+                    Robot Codey sotib olindi<br>
+                    -2 oltin medal
+                </p>
+            </div>
+
+            <button onclick="closePurchaseModal()" 
+                    class="w-full btn-primary text-white py-3 px-4 rounded-lg font-medium">
+                Ajoyib!
+            </button>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: PurchaseSuccessModal -->
+
+    <!-- JavaScript for Demo Functionality -->
+    <script>
+        // TODO: Implement full business logic, API calls, and state management
+        
+        (function() {
+            // Page navigation
+            window.showPage = function(pageId) {
+                // Hide all pages
+                document.querySelectorAll('.page').forEach(page => {
+                    page.classList.add('hidden');
+                });
+                
+                // Show selected page
+                document.getElementById('page-' + pageId).classList.remove('hidden');
+                
+                // Update tab styles
+                document.querySelectorAll('[id^="tab-"]').forEach(tab => {
+                    tab.classList.remove('border-primary', 'text-primary');
+                    tab.classList.add('border-transparent', 'text-gray-500');
+                });
+                
+                document.getElementById('tab-' + pageId).classList.remove('border-transparent', 'text-gray-500');
+                document.getElementById('tab-' + pageId).classList.add('border-primary', 'text-primary');
+            };
+
+            // Modal functions
+            window.openAddStudentModal = function() {
+                document.getElementById('addStudentModal').classList.remove('hidden');
+                document.getElementById('addStudentModal').classList.add('flex');
+            };
+
+            window.closeAddStudentModal = function() {
+                document.getElementById('addStudentModal').classList.add('hidden');
+                document.getElementById('addStudentModal').classList.remove('flex');
+            };
+
+            window.closePurchaseModal = function() {
+                document.getElementById('purchaseSuccessModal').classList.add('hidden');
+                document.getElementById('purchaseSuccessModal').classList.remove('flex');
+            };
+
+            // Purchase product demo
+            window.purchaseProduct = function(button) {
+                if (button.disabled) return;
+                
+                // Show success modal with confetti animation
+                document.getElementById('purchaseSuccessModal').classList.remove('hidden');
+                document.getElementById('purchaseSuccessModal').classList.add('flex');
+                
+                // TODO: Implement actual purchase logic with medal deduction
+            };
+
+            // Initialize charts when dashboard is shown
+            function initCharts() {
+                // Attendance Chart
+                const attendanceCtx = document.getElementById('attendanceChart');
+                if (attendanceCtx) {
+                    new Chart(attendanceCtx, {
+                        type: 'line',
+                        data: {
+                            labels: ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun'],
+                            datasets: [{
+                                label: 'Davomat %',
+                                data: [85, 88, 92, 89, 94, 96],
+                                borderColor: '#3b82f6',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: 100
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // Medal Chart
+                const medalCtx = document.getElementById('medalChart');
+                if (medalCtx) {
+                    new Chart(medalCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Oltin', 'Kumush', 'Bronza'],
+                            datasets: [{
+                                data: [45, 78, 32],
+                                backgroundColor: ['#fbbf24', '#9ca3af', '#d97706'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Initialize charts after a short delay
+            setTimeout(initCharts, 500);
+
+            // Role selection interaction
+            document.addEventListener('change', function(e) {
+                if (e.target.name === 'role') {
+                    // Update UI based on selected role
+                    document.querySelectorAll('input[name="role"]').forEach(radio => {
+                        const container = radio.parentElement.querySelector('div');
+                        if (radio.checked) {
+                            container.classList.remove('border-gray-300', 'text-gray-600');
+                            container.classList.add('border-primary', 'bg-blue-50', 'text-primary');
+                        } else {
+                            container.classList.add('border-gray-300', 'text-gray-600');
+                            container.classList.remove('border-primary', 'bg-blue-50', 'text-primary');
+                        }
+                    });
+                }
+            });
+
+            // Form submission demos
+            document.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                if (e.target.dataset.event === 'submit:handleLogin') {
+                    // Demo login - show appropriate dashboard
+                    const selectedRole = document.querySelector('input[name="role"]:checked').value;
+                    if (selectedRole === 'admin') {
+                        showPage('admin-dashboard');
+                    } else {
+                        showPage('student-dashboard');
+                    }
+                } else if (e.target.dataset.event === 'submit:handleAddStudent') {
+                    // Demo add student
+                    closeAddStudentModal();
+                    // TODO: Add student to database and refresh table
+                }
+            });
+
+        })();
+    </script>
+</body>
+</html>

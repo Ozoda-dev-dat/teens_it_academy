@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teens IT School - CRM Tizimi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/index.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'navy': '#1E3A8A',
+                        'bright-blue': '#3B82F6',
+                        'bright-yellow': '#FCD34D',
+                        'bright-green': '#10B981',
+                        'logo-red': '#DC2626',
+                    },
+                    animation: {
+                        'bounce-gentle': 'bounce 2s infinite',
+                        'pulse-slow': 'pulse 3s infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                        'medal-glow': 'medal-glow 2s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        'medal-glow': {
+                            '0%, 100%': { boxShadow: '0 0 20px rgba(251, 191, 36, 0.5)' },
+                            '50%': { boxShadow: '0 0 30px rgba(251, 191, 36, 0.8)' },
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 50%, #10B981 100%);
+        }
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .hover-lift {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .hover-lift:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="font-inter bg-gray-50">
+    <!-- @COMPONENT: AppContainer [Main application wrapper with routing logic] -->
+    <div id="app" class="min-h-screen">
+        
+        <!-- Login Screen -->
+        <div id="loginScreen" class="min-h-screen gradient-bg flex items-center justify-center p-4">
+            <div class="max-w-md w-full">
+                <!-- Logo Section -->
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-20 h-20 bg-white rounded-2xl shadow-lg mb-4 animate-float">
+                        <span class="text-2xl">🚀</span>
+                    </div>
+                    <h1 class="text-3xl font-bold text-white mb-2">Teens IT School</h1>
+                    <p class="text-blue-100">CRM Boshqaruv Tizimi</p>
+                </div>
+
+                <!-- Login Form -->
+                <div class="bg-white rounded-3xl shadow-2xl p-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Tizimga kirish</h2>
+                    
+                    <!-- Role Selection -->
+                    <div class="mb-6">
+                        <div class="flex space-x-4">
+                            <button id="adminRoleBtn" class="flex-1 py-3 px-4 bg-navy text-white rounded-xl font-medium hover:bg-blue-800 transition-colors">
+                                👨‍💼 Administrator
+                            </button>
+                            <button id="studentRoleBtn" class="flex-1 py-3 px-4 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors">
+                                👨‍🎓 O'quvchi
+                            </button>
+                        </div>
+                    </div>
+
+                    <form data-event="submit:handleLogin">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email manzil</label>
+                            <input type="email" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-bright-blue focus:border-transparent" placeholder="admin@mail.com" data-bind="loginForm.email">
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Parol</label>
+                            <input type="password" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-bright-blue focus:border-transparent" placeholder="••••••••" data-bind="loginForm.password">
+                        </div>
+
+                        <button type="submit" class="w-full bg-bright-blue text-white py-3 rounded-xl font-medium hover:bg-blue-600 transition-colors">
+                            Kirish
+                        </button>
+                    </form>
+
+                    <div class="mt-6 text-center text-sm text-gray-600">
+                        <p>Demo hisoblar:</p>
+                        <p>Admin: admin@mail.com / admin2233</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div id="adminDashboard" class="hidden">
+            <!-- Navigation -->
+            <nav class="bg-white shadow-lg border-b-4 border-bright-blue">
+                <div class="max-w-7xl mx-auto px-4">
+                    <div class="flex justify-between items-center h-16">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-10 h-10 bg-navy rounded-xl flex items-center justify-center">
+                                <span class="text-white text-lg">🚀</span>
+                            </div>
+                            <h1 class="text-xl font-bold text-gray-800">Teens IT School</h1>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <span class="text-gray-600">Administrator</span>
+                            <button class="bg-logo-red text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors" data-event="click:handleLogout">
+                                Chiqish
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="flex">
+                <!-- Sidebar -->
+                <aside class="w-64 bg-navy min-h-screen">
+                    <div class="p-6">
+                        <nav class="space-y-2">
+                            <a href="#" class="flex items-center space-x-3 text-white bg-bright-blue rounded-xl px-4 py-3 hover:bg-blue-600 transition-colors" data-page="dashboard">
+                                <span class="text-xl">📊</span>
+                                <span class="font-medium">Bosh sahifa</span>
+                            </a>
+                            <a href="#" class="flex items-center space-x-3 text-blue-200 hover:text-white hover:bg-blue-800 rounded-xl px-4 py-3 transition-colors" data-page="students">
+                                <span class="text-xl">👨‍🎓</span>
+                                <span class="font-medium">O'quvchilar</span>
+                            </a>
+                            <a href="#" class="flex items-center space-x-3 text-blue-200 hover:text-white hover:bg-blue-800 rounded-xl px-4 py-3 transition-colors" data-page="groups">
+                                <span class="text-xl">👥</span>
+                                <span class="font-medium">Guruhlar</span>
+                            </a>
+                            <a href="#" class="flex items-center space-x-3 text-blue-200 hover:text-white hover:bg-blue-800 rounded-xl px-4 py-3 transition-colors" data-page="attendance">
+                                <span class="text-xl">✅</span>
+                                <span class="font-medium">Davomat</span>
+                            </a>
+                            <a href="#" class="flex items-center space-x-3 text-blue-200 hover:text-white hover:bg-blue-800 rounded-xl px-4 py-3 transition-colors" data-page="fees">
+                                <span class="text-xl">💰</span>
+                                <span class="font-medium">To'lovlar</span>
+                            </a>
+                            <a href="#" class="flex items-center space-x-3 text-blue-200 hover:text-white hover:bg-blue-800 rounded-xl px-4 py-3 transition-colors" data-page="medals">
+                                <span class="text-xl">🏅</span>
+                                <span class="font-medium">Medallar</span>
+                            </a>
+                            <a href="#" class="flex items-center space-x-3 text-blue-200 hover:text-white hover:bg-blue-800 rounded-xl px-4 py-3 transition-colors" data-page="marketplace">
+                                <span class="text-xl">🛒</span>
+                                <span class="font-medium">Do'kon</span>
+                            </a>
+                        </nav>
+                    </div>
+                </aside>
+
+                <!-- Main Content -->
+                <main class="flex-1 p-6">
+                    <!-- Dashboard Page -->
+                    <div id="dashboardPage" class="admin-page">
+                        <div class="mb-6">
+                            <h2 class="text-3xl font-bold text-gray-800 mb-2">Bosh sahifa</h2>
+                            <p class="text-gray-600">Tizim statistikasi va umumiy ma'lumotlar</p>
+                        </div>
+
+                        <!-- Stats Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <div class="bg-white rounded-2xl p-6 shadow-lg hover-lift">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-gray-600 text-sm">Jami o'quvchilar</p>
+                                        <p class="text-3xl font-bold text-navy" data-bind="stats.totalStudents">127</p>
+                                    </div>
+                                    <div class="w-12 h-12 bg-bright-blue rounded-xl flex items-center justify-center">
+                                        <span class="text-white text-xl">👨‍🎓</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex items-center text-bright-green text-sm">
+                                    <span>↗️ +12% so'nggi oyda</span>
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-2xl p-6 shadow-lg hover-lift">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-gray-600 text-sm">Faol guruhlar</p>
+                                        <p class="text-3xl font-bold text-navy" data-bind="stats.activeGroups">8</p>
+                                    </div>
+                                    <div class="w-12 h-12 bg-bright-green rounded-xl flex items-center justify-center">
+                                        <span class="text-white text-xl">👥</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex items-center text-bright-green text-sm">
+                                    <span>✅ Barcha guruhlar faol</span>
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-2xl p-6 shadow-lg hover-lift">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-gray-600 text-sm">Bugungi darslar</p>
+                                        <p class="text-3xl font-bold text-navy" data-bind="stats.todayClasses">5</p>
+                                    </div>
+                                    <div class="w-12 h-12 bg-bright-yellow rounded-xl flex items-center justify-center">
+                                        <span class="text-navy text-xl">📚</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex items-center text-gray-500 text-sm">
+                                    <span>⏰ 14:00 - 18:00</span>
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-2xl p-6 shadow-lg hover-lift">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-gray-600 text-sm">To'lanmagan to'lovlar</p>
+                                        <p class="text-3xl font-bold text-logo-red" data-bind="stats.unpaidFees">$340</p>
+                                    </div>
+                                    <div class="w-12 h-12 bg-logo-red rounded-xl flex items-center justify-center">
+                                        <span class="text-white text-xl">💰</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex items-center text-logo-red text-sm">
+                                    <span>⚠️ 12 ta o'quvchi</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Charts Section -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                            <div class="bg-white rounded-2xl p-6 shadow-lg">
+                                <h3 class="text-xl font-bold text-gray-800 mb-4">Oylik davomat</h3>
+                                <canvas id="attendanceChart" width="400" height="200"></canvas>
+                                <!-- @FUNCTIONALITY: Chart.js implementation for monthly attendance visualization -->
+                            </div>
+
+                            <div class="bg-white rounded-2xl p-6 shadow-lg">
+                                <h3 class="text-xl font-bold text-gray-800 mb-4">Medal statistikasi</h3>
+                                <canvas id="medalChart" width="400" height="200"></canvas>
+                                <!-- @FUNCTIONALITY: Chart.js pie chart for medal distribution -->
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity -->
+                        <div class="bg-white rounded-2xl p-6 shadow-lg">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4">So'nggi faoliyatlar</h3>
+                            <div class="space-y-4">
+                                <!-- @MAP: recentActivities.map(activity => ( -->
+                                <div class="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl" data-mock="true">
+                                    <div class="w-10 h-10 bg-bright-blue rounded-full flex items-center justify-center">
+                                        <span class="text-white text-sm">👨‍🎓</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="font-medium text-gray-800" data-bind="activity.description">Yangi o'quvchi qo'shildi: Alisher Karimov</p>
+                                        <p class="text-sm text-gray-500" data-bind="activity.timestamp">2 daqiqa oldin</p>
+                                    </div>
+                                </div>
+                                <!-- @END_MAP )) -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Students Page -->
+                    <div id="studentsPage" class="admin-page hidden">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h2 class="text-3xl font-bold text-gray-800 mb-2">O'quvchilar</h2>
+                                <p class="text-gray-600">O'quvchilarni boshqarish va qo'shish</p>
+                            </div>
+                            <button class="bg-bright-blue text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-600 transition-colors" data-event="click:openAddStudentModal">
+                                <span class="mr-2">➕</span>
+                                Yangi o'quvchi
+                            </button>
+                        </div>
+
+                        <!-- Search and Filter -->
+                        <div class="bg-white rounded-2xl p-6 shadow-lg mb-6">
+                            <div class="flex flex-col md:flex-row gap-4">
+                                <div class="flex-1">
+                                    <input type="text" placeholder="O'quvchi qidirish..." class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-bright-blue focus:border-transparent" data-bind="studentSearch.query">
+                                </div>
+                                <select class="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-bright-blue focus:border-transparent" data-bind="studentSearch.group">
+                                    <option value="">Barcha guruhlar</option>
+                                    <option value="python-beginners">Python Boshlang'ich</option>
+                                    <option value="web-development">Web Dasturlash</option>
+                                    <option value="game-development">O'yin Yaratish</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Students Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- @MAP: students.map(student => ( -->
+                            <div class="bg-white rounded-2xl p-6 shadow-lg hover-lift" data-mock="true">
+                                <div class="text-center mb-4">
+                                    <!-- Student profile image placeholder -->
+                                    <div class="w-20 h-20 bg-gradient-to-br from-bright-blue to-bright-green rounded-full mx-auto mb-3 flex items-center justify-center">
+                                        <span class="text-white text-2xl" data-bind="student.avatar">👨‍🎓</span>
+                                    </div>
+                                    <h3 class="text-lg font-bold text-gray-800" data-bind="student.name">Alisher Karimov</h3>
+                                    <p class="text-gray-600 text-sm" data-bind="student.email">alisher.k@email.com</p>
+                                </div>
+
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-gray-600">Guruh:</span>
+                                        <span class="text-navy font-medium" data-bind="student.group">Python Boshlang'ich</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-gray-600">Medallar:</span>
+                                        <div class="flex space-x-1">
+                                            <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs" data-bind="student.medals.gold">🥇 3</span>
+                                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs" data-bind="student.medals.silver">🥈 5</span>
+                                            <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs" data-bind="student.medals.bronze">🥉 2</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-gray-600">To'lov holati:</span>
+                                        <span class="bg-bright-green text-white px-2 py-1 rounded-full text-xs" data-bind="student.paymentStatus">✅ To'langan</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex space-x-2 mt-4">
+                                    <button class="flex-1 bg-bright-blue text-white py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors" data-event="click:editStudent" data-implementation="Should open edit student modal">
+                                        Tahrirlash
+                                    </button>
+                                    <button class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-300 transition-colors" data-event="click:viewStudent" data-implementation="Should show detailed student profile">
+                                        Ko'rish
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                    </div>
+
+                    <!-- Groups Page -->
+                    <div id="groupsPage" class="admin-page hidden">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h2 class="text-3xl font-bold text-gray-800 mb-2">Guruhlar</h2>
+                                <p class="text-gray-600">Guruhlarni boshqarish va jadval tuzish</p>
+                            </div>
+                            <button class="bg-bright-green text-white px-6 py-3 rounded-xl font-medium hover:bg-green-600 transition-colors" data-event="click:openAddGroupModal">
+                                <span class="mr-2">➕</span>
+                                Yangi guruh
+                            </button>
+                        </div>
+
+                        <!-- Groups Grid -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- @MAP: groups.map(group => ( -->
+                            <div class="bg-white rounded-2xl p-6 shadow-lg hover-lift" data-mock="true">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-xl font-bold text-gray-800" data-bind="group.name">Python Boshlang'ich</h3>
+                                    <div class="w-12 h-12 bg-bright-blue rounded-xl flex items-center justify-center">
+                                        <span class="text-white text-xl">🐍</span>
+                                    </div>
+                                </div>
+
+                                <p class="text-gray-600 mb-4" data-bind="group.description">
+                                    Python dasturlash tilining asoslari va dasturlashga kirish kursi
+                                </p>
+
+                                <div class="space-y-3 mb-4">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-gray-600">O'quvchilar soni:</span>
+                                        <span class="font-medium text-navy" data-bind="group.studentCount">15</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-gray-600">Dars vaqti:</span>
+                                        <span class="font-medium text-navy" data-bind="group.schedule">Dush/Chor/Juma 16:00</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-gray-600">Holati:</span>
+                                        <span class="bg-bright-green text-white px-2 py-1 rounded-full text-xs" data-bind="group.status">🟢 Faol</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex space-x-2">
+                                    <button class="flex-1 bg-bright-blue text-white py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors" data-event="click:editGroup">
+                                        Tahrirlash
+                                    </button>
+                                    <button class="flex-1 bg-bright-yellow text-navy py-2 rounded-lg text-sm hover:bg-yellow-400 transition-colors" data-event="click:manageSchedule">
+                                        Jadval
+                                    </button>
+                                    <button class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-300 transition-colors" data-event="click:viewGroup">
+                                        Ko'rish
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                    </div>
+
+                    <!-- Add Student Modal -->
+                    <div id="addStudentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+                        <div class="bg-white rounded-2xl p-6 max-w-md w-full">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4">Yangi o'quvchi qo'shish</h3>
+                            
+                            <form data-event="submit:addStudent">
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Ism</label>
+                                        <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-bright-blue focus:border-transparent" data-bind="newStudent.firstName">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Familiya</label>
+                                        <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-bright-blue focus:border-transparent" data-bind="newStudent.lastName">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                        <input type="email" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-bright-blue focus:border-transparent" data-bind="newStudent.email">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Guruh</label>
+                                        <select class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-bright-blue focus:border-transparent" data-bind="newStudent.groupId">
+                                            <option value="">Guruhni tanlang</option>
+                                            <option value="python-beginners">Python Boshlang'ich</option>
+                                            <option value="web-development">Web Dasturlash</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="flex space-x-4 mt-6">
+                                    <button type="button" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-300 transition-colors" data-event="click:closeAddStudentModal">
+                                        Bekor qilish
+                                    </button>
+                                    <button type="submit" class="flex-1 bg-bright-blue text-white py-3 rounded-xl font-medium hover:bg-blue-600 transition-colors">
+                                        Qo'shish
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- Student Dashboard -->
+        <div id="studentDashboard" class="hidden">
+            <!-- Student Navigation -->
+            <nav class="bg-white shadow-lg border-b-4 border-bright-blue">
+                <div class="max-w-7xl mx-auto px-4">
+                    <div class="flex justify-between items-center h-16">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-10 h-10 bg-navy rounded-xl flex items-center justify-center animate-pulse-slow">
+                                <span class="text-white text-lg">🚀</span>
+                            </div>
+                            <h1 class="text-xl font-bold text-gray-800">Mening profilim</h1>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <div class="flex space-x-2">
+                                <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium" data-bind="student.medals.gold">🥇 5</span>
+                                <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium" data-bind="student.medals.silver">🥈 3</span>
+                                <span class="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium" data-bind="student.medals.bronze">🥉 7</span>
+                            </div>
+                            <button class="bg-logo-red text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors" data-event="click:handleLogout">
+                                Chiqish
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="max-w-6xl mx-auto p-6">
+                <!-- Student Profile Card -->
+                <div class="bg-gradient-to-br from-bright-blue to-bright-green rounded-3xl p-8 text-white mb-8 shadow-2xl">
+                    <div class="flex items-center space-x-6">
+                        <!-- Profile picture placeholder -->
+                        <div class="w-24 h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-4xl backdrop-blur">
+                            <span data-bind="student.avatar">👨‍🎓</span>
+                        </div>
+                        <div class="flex-1">
+                            <h2 class="text-3xl font-bold mb-2" data-bind="student.name">Alisher Karimov</h2>
+                            <p class="text-blue-100 text-lg mb-1" data-bind="student.group">Python Boshlang'ich guruh a'zosi</p>
+                            <p class="text-blue-100" data-bind="student.email">alisher.k@email.com</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-blue-100 mb-1">Jami medallar</p>
+                            <p class="text-4xl font-bold" data-bind="student.totalMedals">15</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Tabs -->
+                <div class="bg-white rounded-2xl shadow-lg mb-8">
+                    <div class="border-b border-gray-200">
+                        <nav class="flex space-x-8 px-6">
+                            <button class="py-4 px-2 border-b-2 border-bright-blue text-bright-blue font-medium student-tab active" data-tab="profile">
+                                👤 Profil
+                            </button>
+                            <button class="py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium student-tab" data-tab="medals">
+                                🏅 Medallarim
+                            </button>
+                            <button class="py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium student-tab" data-tab="marketplace">
+                                🛒 Do'kon
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- Profile Tab -->
+                    <div id="profileTab" class="student-tab-content p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-6">Profil ma'lumotlari</h3>
+                        
+                        <form data-event="submit:updateProfile">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Ism</label>
+                                    <input type="text" value="Alisher" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-bright-blue focus:border-transparent" data-bind="profile.firstName">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Familiya</label>
+                                    <input type="text" value="Karimov" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-bright-blue focus:border-transparent" data-bind="profile.lastName">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Profil rasmi</label>
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-16 h-16 bg-gradient-to-br from-bright-blue to-bright-green rounded-full flex items-center justify-center text-2xl text-white">
+                                            👨‍🎓
+                                        </div>
+                                        <button type="button" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors" data-event="click:changeProfilePicture">
+                                            Rasmni o'zgartirish
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-6">
+                                <button type="submit" class="bg-bright-blue text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-600 transition-colors">
+                                    Saqlash
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Medals Tab -->
+                    <div id="medalsTab" class="student-tab-content p-6 hidden">
+                        <h3 class="text-xl font-bold text-gray-800 mb-6">Mening medallarim</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div class="text-center">
+                                <div class="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-3xl animate-medal-glow">
+                                    🥇
+                                </div>
+                                <h4 class="text-lg font-bold text-gray-800">Oltin medallar</h4>
+                                <p class="text-3xl font-bold text-yellow-600" data-bind="medals.gold">5</p>
+                                <p class="text-gray-600 text-sm">Ajoyib ishlar uchun</p>
+                            </div>
+
+                            <div class="text-center">
+                                <div class="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-3xl animate-pulse">
+                                    🥈
+                                </div>
+                                <h4 class="text-lg font-bold text-gray-800">Kumush medallar</h4>
+                                <p class="text-3xl font-bold text-gray-600" data-bind="medals.silver">3</p>
+                                <p class="text-gray-600 text-sm">Yaxshi ishlar uchun</p>
+                            </div>
+
+                            <div class="text-center">
+                                <div class="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-3xl animate-bounce-gentle">
+                                    🥉
+                                </div>
+                                <h4 class="text-lg font-bold text-gray-800">Bronza medallar</h4>
+                                <p class="text-3xl font-bold text-orange-600" data-bind="medals.bronze">7</p>
+                                <p class="text-gray-600 text-sm">Harakat uchun</p>
+                            </div>
+                        </div>
+
+                        <!-- Recent Achievements -->
+                        <div class="bg-gray-50 rounded-2xl p-6">
+                            <h4 class="text-lg font-bold text-gray-800 mb-4">So'nggi yutuqlar</h4>
+                            <div class="space-y-3">
+                                <!-- @MAP: recentAchievements.map(achievement => ( -->
+                                <div class="flex items-center space-x-4 bg-white p-4 rounded-xl" data-mock="true">
+                                    <div class="w-12 h-12 bg-bright-blue rounded-full flex items-center justify-center">
+                                        <span class="text-white text-xl" data-bind="achievement.medalType">🥇</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="font-medium text-gray-800" data-bind="achievement.title">Python asoslarini yakunladi</p>
+                                        <p class="text-sm text-gray-500" data-bind="achievement.date">3 kun oldin</p>
+                                    </div>
+                                </div>
+                                <!-- @END_MAP )) -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Marketplace Tab -->
+                    <div id="marketplaceTab" class="student-tab-content p-6 hidden">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-800">Do'kon</h3>
+                            <div class="text-right">
+                                <p class="text-gray-600">Jami medallarim</p>
+                                <p class="text-2xl font-bold text-navy" data-bind="student.totalMedals">15</p>
+                            </div>
+                        </div>
+
+                        <!-- Products Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- @MAP: marketplaceProducts.map(product => ( -->
+                            <div class="bg-white border-2 border-gray-200 rounded-2xl p-6 hover-lift" data-mock="true">
+                                <!-- Product image placeholder -->
+                                <div class="w-full h-32 bg-gradient-to-br from-bright-blue to-bright-green rounded-xl mb-4 flex items-center justify-center text-4xl">
+                                    <span data-bind="product.icon">🎮</span>
+                                </div>
+                                
+                                <h4 class="text-lg font-bold text-gray-800 mb-2" data-bind="product.name">Coding Stickers</h4>
+                                <p class="text-gray-600 text-sm mb-4" data-bind="product.description">Laptop uchun dasturlash stikerlar to'plami</p>
+                                
+                                <div class="flex justify-between items-center mb-4">
+                                    <span class="text-gray-600">Narx:</span>
+                                    <div class="flex items-center space-x-1">
+                                        <span class="text-xl" data-bind="product.medalType">🥈</span>
+                                        <span class="font-bold text-navy" data-bind="product.price">3</span>
+                                    </div>
+                                </div>
+
+                                <button class="w-full bg-bright-green text-white py-3 rounded-xl font-medium hover:bg-green-600 transition-colors" data-event="click:purchaseProduct" data-implementation="Should validate if student has enough medals">
+                                    Sotib olish
+                                </button>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: AppContainer -->
+
+    <script>
+        (function() {
+            // App state management
+            let currentUser = null;
+            let currentView = 'login';
+            let currentAdminPage = 'dashboard';
+            let currentStudentTab = 'profile';
+
+            // DOM elements
+            const loginScreen = document.getElementById('loginScreen');
+            const adminDashboard = document.getElementById('adminDashboard');
+            const studentDashboard = document.getElementById('studentDashboard');
+
+            // Initialize app
+            function init() {
+                setupEventListeners();
+                showScreen('login');
+                initializeCharts();
+            }
+
+            function setupEventListeners() {
+                // Role selection
+                document.getElementById('adminRoleBtn').addEventListener('click', () => selectRole('admin'));
+                document.getElementById('studentRoleBtn').addEventListener('click', () => selectRole('student'));
+
+                // Navigation
+                document.querySelectorAll('[data-page]').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        showAdminPage(e.target.closest('[data-page]').dataset.page);
+                    });
+                });
+
+                // Student tabs
+                document.querySelectorAll('.student-tab').forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        showStudentTab(e.target.dataset.tab);
+                    });
+                });
+
+                // Modal handlers
+                const addStudentBtn = document.querySelector('[data-event="click:openAddStudentModal"]');
+                if (addStudentBtn) {
+                    addStudentBtn.addEventListener('click', () => {
+                        document.getElementById('addStudentModal').classList.remove('hidden');
+                    });
+                }
+
+                const closeModalBtn = document.querySelector('[data-event="click:closeAddStudentModal"]');
+                if (closeModalBtn) {
+                    closeModalBtn.addEventListener('click', () => {
+                        document.getElementById('addStudentModal').classList.add('hidden');
+                    });
+                }
+
+                // TODO: Add more event listeners for forms, buttons, etc.
+            }
+
+            function selectRole(role) {
+                const adminBtn = document.getElementById('adminRoleBtn');
+                const studentBtn = document.getElementById('studentRoleBtn');
+                
+                if (role === 'admin') {
+                    adminBtn.className = 'flex-1 py-3 px-4 bg-navy text-white rounded-xl font-medium hover:bg-blue-800 transition-colors';
+                    studentBtn.className = 'flex-1 py-3 px-4 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors';
+                } else {
+                    studentBtn.className = 'flex-1 py-3 px-4 bg-navy text-white rounded-xl font-medium hover:bg-blue-800 transition-colors';
+                    adminBtn.className = 'flex-1 py-3 px-4 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors';
+                }
+            }
+
+            function showScreen(screen) {
+                loginScreen.classList.add('hidden');
+                adminDashboard.classList.add('hidden');
+                studentDashboard.classList.add('hidden');
+
+                if (screen === 'login') {
+                    loginScreen.classList.remove('hidden');
+                } else if (screen === 'admin') {
+                    adminDashboard.classList.remove('hidden');
+                } else if (screen === 'student') {
+                    studentDashboard.classList.remove('hidden');
+                }
+            }
+
+            function showAdminPage(page) {
+                document.querySelectorAll('.admin-page').forEach(p => p.classList.add('hidden'));
+                document.getElementById(page + 'Page').classList.remove('hidden');
+
+                // Update active navigation
+                document.querySelectorAll('[data-page]').forEach(link => {
+                    link.className = link.className.replace('bg-bright-blue text-white', 'text-blue-200');
+                    link.className = link.className.replace('hover:bg-blue-600', 'hover:bg-blue-800');
+                });
+
+                const activeLink = document.querySelector(`[data-page="${page}"]`);
+                if (activeLink) {
+                    activeLink.className = activeLink.className.replace('text-blue-200', 'bg-bright-blue text-white');
+                    activeLink.className = activeLink.className.replace('hover:bg-blue-800', 'hover:bg-blue-600');
+                }
+            }
+
+            function showStudentTab(tab) {
+                document.querySelectorAll('.student-tab-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                document.getElementById(tab + 'Tab').classList.remove('hidden');
+
+                // Update active tab
+                document.querySelectorAll('.student-tab').forEach(t => {
+                    t.className = t.className.replace('border-bright-blue text-bright-blue', 'border-transparent text-gray-500');
+                });
+                document.querySelector(`[data-tab="${tab}"]`).className = 
+                    document.querySelector(`[data-tab="${tab}"]`).className
+                        .replace('border-transparent text-gray-500', 'border-bright-blue text-bright-blue');
+            }
+
+            function initializeCharts() {
+                // TODO: Initialize Chart.js charts when charts are visible
+                // Attendance chart
+                // Medal distribution chart
+            }
+
+            // Demo login function
+            window.demoLogin = function(role) {
+                if (role === 'admin') {
+                    showScreen('admin');
+                } else {
+                    showScreen('student');
+                }
+            }
+
+            // Initialize when DOM is loaded
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+        })();
+
+        // Demo functions for testing
+        function showAdminDemo() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.remove('hidden');
+        }
+
+        function showStudentDemo() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('studentDashboard').classList.remove('hidden');
+        }
+    </script>
+
+    <!-- Demo buttons for easy testing -->
+    <div class="fixed bottom-4 right-4 space-y-2 z-50">
+        <button onclick="showAdminDemo()" class="block bg-navy text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-800 transition-colors">
+            👨‍💼 Admin Demo
+        </button>
+        <button onclick="showStudentDemo()" class="block bg-bright-blue text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-600 transition-colors">
+            👨‍🎓 Student Demo
+        </button>
+    </div>
+</body>
+</html>

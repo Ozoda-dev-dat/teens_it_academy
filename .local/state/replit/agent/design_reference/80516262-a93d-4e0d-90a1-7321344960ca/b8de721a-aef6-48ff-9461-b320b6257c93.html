@@ -1,0 +1,908 @@
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teens IT School - CRM Tizimi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/heroicons@2.0.18/24/outline/index.js" type="module"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'teens-navy': '#1E3A8A',
+                        'teens-blue': '#3B82F6',
+                        'teens-yellow': '#FCD34D',
+                        'teens-green': '#10B981',
+                        'teens-red': '#DC2626',
+                    },
+                    animation: {
+                        'bounce-slow': 'bounce 2s infinite',
+                        'pulse-slow': 'pulse 3s infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        .star {
+            position: absolute;
+            background: #FCD34D;
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+        }
+        .floating-elements {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+        .robot-icon::before {
+            content: "🤖";
+            font-size: 1.5rem;
+        }
+        .rocket-icon::before {
+            content: "🚀";
+            font-size: 1.5rem;
+        }
+        .planet-icon::before {
+            content: "🪐";
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+<body class="font-inter bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen relative">
+    
+    <!-- Floating Background Elements -->
+    <div class="floating-elements">
+        <div class="star w-4 h-4 top-20 left-10 animate-pulse-slow"></div>
+        <div class="star w-3 h-3 top-40 right-20 animate-bounce-slow"></div>
+        <div class="star w-2 h-2 top-60 left-1/4 animate-pulse-slow"></div>
+        <div class="star w-3 h-3 bottom-40 right-10 animate-bounce-slow"></div>
+        <div class="star w-2 h-2 bottom-20 left-1/3 animate-pulse-slow"></div>
+        
+        <!-- Floating Icons -->
+        <div class="robot-icon absolute top-32 right-32 animate-float opacity-20"></div>
+        <div class="rocket-icon absolute bottom-32 left-20 animate-float opacity-20" style="animation-delay: 1s;"></div>
+        <div class="planet-icon absolute top-1/2 right-20 animate-float opacity-20" style="animation-delay: 2s;"></div>
+    </div>
+
+    <!-- @COMPONENT: LoginPage -->
+    <div id="loginPage" class="min-h-screen flex items-center justify-center px-4 relative z-10">
+        <div class="max-w-md w-full">
+            <!-- Logo Section -->
+            <div class="text-center mb-8">
+                <div class="mx-auto w-24 h-24 bg-white rounded-2xl shadow-lg flex items-center justify-center mb-4 transform hover:scale-105 transition-transform duration-300">
+                    <!-- Logo representation matching the provided image -->
+                    <div class="flex items-center">
+                        <div class="relative">
+                            <div class="w-8 h-8 bg-teens-navy rounded-l-lg"></div>
+                            <div class="absolute -top-1 -right-1 w-0 h-0 border-l-4 border-l-teens-red border-b-4 border-b-transparent border-t-4 border-t-transparent"></div>
+                        </div>
+                    </div>
+                </div>
+                <h1 class="text-3xl font-bold text-teens-navy mb-2">Teens IT School</h1>
+                <p class="text-gray-600 font-medium">CRM Tizimiga xush kelibsiz</p>
+            </div>
+
+            <!-- Login Form -->
+            <div class="bg-white rounded-2xl shadow-xl p-8 border border-blue-100">
+                <div class="mb-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-2">Tizimga kirish</h2>
+                    <p class="text-gray-500 text-sm">Hisobingizga kirish uchun ma'lumotlarni kiriting</p>
+                </div>
+
+                <form data-event="submit:handleLogin" data-implementation="Should validate credentials and redirect based on role">
+                    <!-- Role Selection -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Rol tanlang</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button type="button" data-bind="selectedRole" class="role-btn admin-role p-3 border-2 border-teens-blue bg-teens-blue text-white rounded-xl font-medium transition-all duration-200 hover:shadow-lg transform hover:scale-105">
+                                <div class="flex items-center justify-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                    </svg>
+                                    <span>Administrator</span>
+                                </div>
+                            </button>
+                            <button type="button" class="role-btn student-role p-3 border-2 border-gray-300 text-gray-600 rounded-xl font-medium transition-all duration-200 hover:border-teens-green hover:text-teens-green hover:shadow-lg transform hover:scale-105">
+                                <div class="flex items-center justify-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                    </svg>
+                                    <span>O'quvchi</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Email Field -->
+                    <div class="mb-4">
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email manzil</label>
+                        <div class="relative">
+                            <input type="email" id="email" name="email" data-bind="email" class="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teens-blue focus:border-transparent transition-colors duration-200" placeholder="example@email.com" required>
+                            <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="mb-6">
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Parol</label>
+                        <div class="relative">
+                            <input type="password" id="password" name="password" data-bind="password" class="w-full pl-11 pr-11 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teens-blue focus:border-transparent transition-colors duration-200" placeholder="••••••••" required>
+                            <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                            </svg>
+                            <button type="button" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Login Button -->
+                    <button type="submit" class="w-full bg-gradient-to-r from-teens-blue to-teens-navy text-white py-3 px-4 rounded-xl font-semibold text-lg transform hover:scale-105 transition-all duration-300 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-300">
+                        <span class="flex items-center justify-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                            </svg>
+                            <span>Tizimga kirish</span>
+                        </span>
+                    </button>
+                </form>
+
+                <!-- Demo Credentials -->
+                <div class="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                    <h3 class="text-sm font-medium text-gray-700 mb-2">Demo hisoblar:</h3>
+                    <div class="space-y-1 text-sm text-gray-600">
+                        <div><strong>Administrator:</strong> admin@mail.com / admin2233</div>
+                        <div><strong>O'quvchi:</strong> Administrator tomonidan yaratiladi</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: LoginPage -->
+
+    <!-- @COMPONENT: AdminDashboard -->
+    <div id="adminDashboard" class="hidden min-h-screen bg-gray-50">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 flex items-center">
+                            <div class="w-8 h-8 bg-teens-navy rounded-lg flex items-center justify-center mr-3">
+                                <div class="relative">
+                                    <div class="w-4 h-4 bg-white rounded-sm"></div>
+                                    <div class="absolute -top-0.5 -right-0.5 w-0 h-0 border-l-2 border-l-teens-red border-b-2 border-b-transparent border-t-2 border-t-transparent"></div>
+                                </div>
+                            </div>
+                            <span class="text-xl font-bold text-teens-navy">Teens IT School</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <button class="p-2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-teens-blue focus:ring-offset-2 rounded-lg">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-teens-red"></span>
+                            </button>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-gradient-to-r from-teens-blue to-teens-navy rounded-full flex items-center justify-center">
+                                <span class="text-white text-sm font-medium" data-bind="user.initials">AD</span>
+                            </div>
+                            <span class="text-sm font-medium text-gray-700" data-bind="user.name">Administrator</span>
+                        </div>
+                        <button data-event="click:handleLogout" class="text-gray-400 hover:text-gray-600 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-teens-blue">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="flex">
+            <!-- Sidebar -->
+            <div class="w-64 bg-white shadow-sm h-screen sticky top-0">
+                <div class="p-4">
+                    <nav class="space-y-2">
+                        <a href="#" data-tab="dashboard" class="nav-item active bg-teens-blue text-white group flex items-center px-3 py-2 text-sm font-medium rounded-lg">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v4H8V5z"></path>
+                            </svg>
+                            Boshqaruv paneli
+                        </a>
+                        <a href="#" data-tab="students" class="nav-item text-gray-700 hover:bg-gray-100 group flex items-center px-3 py-2 text-sm font-medium rounded-lg">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                            </svg>
+                            O'quvchilar
+                        </a>
+                        <a href="#" data-tab="groups" class="nav-item text-gray-700 hover:bg-gray-100 group flex items-center px-3 py-2 text-sm font-medium rounded-lg">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                            Guruhlar
+                        </a>
+                        <a href="#" data-tab="attendance" class="nav-item text-gray-700 hover:bg-gray-100 group flex items-center px-3 py-2 text-sm font-medium rounded-lg">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                            </svg>
+                            Davomat
+                        </a>
+                        <a href="#" data-tab="fees" class="nav-item text-gray-700 hover:bg-gray-100 group flex items-center px-3 py-2 text-sm font-medium rounded-lg">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            </svg>
+                            To'lovlar
+                        </a>
+                        <a href="#" data-tab="medals" class="nav-item text-gray-700 hover:bg-gray-100 group flex items-center px-3 py-2 text-sm font-medium rounded-lg">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                            </svg>
+                            Medallar
+                        </a>
+                        <a href="#" data-tab="marketplace" class="nav-item text-gray-700 hover:bg-gray-100 group flex items-center px-3 py-2 text-sm font-medium rounded-lg">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                            </svg>
+                            Do'kon
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="flex-1 p-6">
+                <!-- Dashboard Tab -->
+                <div id="dashboardTab" class="tab-content">
+                    <div class="mb-6">
+                        <h1 class="text-2xl font-bold text-gray-900 mb-2">Boshqaruv paneli</h1>
+                        <p class="text-gray-600">Tizim statistikasi va umumiy ma'lumotlar</p>
+                    </div>
+
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white transform hover:scale-105 transition-transform duration-200">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-blue-100 text-sm font-medium">Jami o'quvchilar</p>
+                                    <p class="text-3xl font-bold" data-bind="stats.totalStudents">24</p>
+                                </div>
+                                <div class="p-3 bg-blue-400 bg-opacity-30 rounded-full">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white transform hover:scale-105 transition-transform duration-200">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-green-100 text-sm font-medium">Aktiv guruhlar</p>
+                                    <p class="text-3xl font-bold" data-bind="stats.activeGroups">5</p>
+                                </div>
+                                <div class="p-3 bg-green-400 bg-opacity-30 rounded-full">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl p-6 text-white transform hover:scale-105 transition-transform duration-200">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-yellow-100 text-sm font-medium">Bugungi darslar</p>
+                                    <p class="text-3xl font-bold" data-bind="stats.todayClasses">3</p>
+                                </div>
+                                <div class="p-3 bg-yellow-400 bg-opacity-30 rounded-full">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-6 text-white transform hover:scale-105 transition-transform duration-200">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-red-100 text-sm font-medium">To'lanmagan to'lovlar</p>
+                                    <p class="text-3xl font-bold" data-bind="stats.unpaidFees">$340</p>
+                                </div>
+                                <div class="p-3 bg-red-400 bg-opacity-30 rounded-full">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Section -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">O'quvchilar faolligi</h3>
+                            <div class="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
+                                <div class="text-center">
+                                    <div class="w-16 h-16 bg-teens-blue rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                        </svg>
+                                    </div>
+                                    <p class="text-gray-500">Chart.js grafigi bu yerda ko'rinadi</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Medallar taqsimoti</h3>
+                            <div class="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
+                                <div class="text-center">
+                                    <div class="w-16 h-16 bg-teens-yellow rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                        </svg>
+                                    </div>
+                                    <p class="text-gray-500">Donut chart bu yerda ko'rinadi</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Students Tab -->
+                <div id="studentsTab" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900 mb-2">O'quvchilar</h1>
+                            <p class="text-gray-600">O'quvchilarni boshqarish va yangi hisoblar yaratish</p>
+                        </div>
+                        <button data-event="click:openAddStudentModal" class="bg-teens-blue text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            <span>Yangi o'quvchi</span>
+                        </button>
+                    </div>
+
+                    <!-- Students List -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                        <div class="p-6 border-b border-gray-200">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                                <div class="relative">
+                                    <input type="text" placeholder="O'quvchi qidirish..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teens-blue focus:border-transparent w-full sm:w-80">
+                                    <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <select class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teens-blue focus:border-transparent">
+                                        <option>Barcha guruhlar</option>
+                                        <option>Frontend Basics</option>
+                                        <option>Python Beginners</option>
+                                        <option>Web Design</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- @MAP: students.map(student => ( -->
+                        <div class="divide-y divide-gray-200">
+                            <div class="p-6 hover:bg-gray-50 transition-colors duration-150" data-mock="true">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-4">
+                                        <!-- Teenage student with laptop coding -->
+                                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&h=100" alt="Student profile" class="w-12 h-12 rounded-full object-cover" />
+                                        <div>
+                                            <h3 class="text-sm font-medium text-gray-900" data-bind="student.name">Alisher Karimov</h3>
+                                            <p class="text-sm text-gray-500" data-bind="student.email">alisher.k@email.com</p>
+                                            <div class="flex items-center space-x-2 mt-1">
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Frontend Basics</span>
+                                                <span class="text-xs text-gray-500">Yaratilgan: 15.12.2024</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-4">
+                                        <div class="text-right">
+                                            <div class="flex items-center space-x-1">
+                                                <span class="text-xs font-medium text-yellow-600">🥇 3</span>
+                                                <span class="text-xs font-medium text-gray-500">🥈 5</span>
+                                                <span class="text-xs font-medium text-orange-600">🥉 2</span>
+                                            </div>
+                                            <p class="text-sm text-green-600 font-medium">$120 to'langan</p>
+                                        </div>
+                                        <div class="flex space-x-2">
+                                            <button class="text-teens-blue hover:text-blue-600 p-2 rounded-lg hover:bg-blue-50">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                </svg>
+                                            </button>
+                                            <button class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-6 hover:bg-gray-50 transition-colors duration-150" data-mock="true">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-4">
+                                        <!-- Young girl learning to code -->
+                                        <img src="https://pixabay.com/get/gc7ae5e5079e6f7592284c15e4420c5ad8042db1a447c87ebdb154b207536cab587703037f8081d766183d44947fbfed495926d400335029ad3c1d85da628ab9e_1280.jpg" alt="Student profile" class="w-12 h-12 rounded-full object-cover" />
+                                        <div>
+                                            <h3 class="text-sm font-medium text-gray-900" data-bind="student.name">Madina Yusupova</h3>
+                                            <p class="text-sm text-gray-500" data-bind="student.email">madina.y@email.com</p>
+                                            <div class="flex items-center space-x-2 mt-1">
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Python Beginners</span>
+                                                <span class="text-xs text-gray-500">Yaratilgan: 12.12.2024</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-4">
+                                        <div class="text-right">
+                                            <div class="flex items-center space-x-1">
+                                                <span class="text-xs font-medium text-yellow-600">🥇 1</span>
+                                                <span class="text-xs font-medium text-gray-500">🥈 3</span>
+                                                <span class="text-xs font-medium text-orange-600">🥉 4</span>
+                                            </div>
+                                            <p class="text-sm text-red-600 font-medium">$40 qarzi</p>
+                                        </div>
+                                        <div class="flex space-x-2">
+                                            <button class="text-teens-blue hover:text-blue-600 p-2 rounded-lg hover:bg-blue-50">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                </svg>
+                                            </button>
+                                            <button class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- @END_MAP )) -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: AdminDashboard -->
+
+    <!-- @COMPONENT: StudentDashboard -->
+    <div id="studentDashboard" class="hidden min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+        <!-- Student Navigation -->
+        <nav class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 flex items-center">
+                            <div class="w-8 h-8 bg-teens-navy rounded-lg flex items-center justify-center mr-3">
+                                <div class="relative">
+                                    <div class="w-4 h-4 bg-white rounded-sm"></div>
+                                    <div class="absolute -top-0.5 -right-0.5 w-0 h-0 border-l-2 border-l-teens-red border-b-2 border-b-transparent border-t-2 border-t-transparent"></div>
+                                </div>
+                            </div>
+                            <span class="text-xl font-bold text-teens-navy">Teens IT School</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-gradient-to-r from-teens-green to-green-500 rounded-full flex items-center justify-center">
+                                <span class="text-white text-sm font-medium" data-bind="student.initials">AK</span>
+                            </div>
+                            <span class="text-sm font-medium text-gray-700" data-bind="student.name">Alisher</span>
+                        </div>
+                        <button data-event="click:handleLogout" class="text-gray-400 hover:text-gray-600 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-teens-blue">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Welcome Section -->
+            <div class="bg-gradient-to-r from-teens-blue to-teens-navy rounded-2xl p-8 text-white mb-8 relative overflow-hidden">
+                <div class="absolute top-4 right-4 text-6xl opacity-20">🚀</div>
+                <div class="relative z-10">
+                    <h1 class="text-3xl font-bold mb-2">Salom, <span data-bind="student.firstName">Alisher</span>!</h1>
+                    <p class="text-blue-100 text-lg">Bugun yangi texnologiyalarni o'rganishga tayyormisiz?</p>
+                    <div class="mt-4 flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-teens-yellow text-2xl">🥇</span>
+                            <span data-bind="student.medals.gold">3</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-gray-300 text-2xl">🥈</span>
+                            <span data-bind="student.medals.silver">5</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-orange-300 text-2xl">🥉</span>
+                            <span data-bind="student.medals.bronze">2</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Profile Card -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
+                        <h2 class="text-xl font-bold text-gray-900 mb-4">Mening profilim</h2>
+                        <div class="text-center">
+                            <!-- Student profile image -->
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=200&h=200" alt="Student profile" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-teens-blue" />
+                            <h3 class="text-lg font-semibold text-gray-900" data-bind="student.fullName">Alisher Karimov</h3>
+                            <p class="text-gray-500 mb-4" data-bind="student.email">alisher.k@email.com</p>
+                            <button data-event="click:openEditProfile" class="bg-teens-blue text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition-colors duration-200 w-full">
+                                Profilni tahrirlash
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Current Group -->
+                    <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200 mt-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-3">Mening guruhim</h3>
+                        <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4">
+                            <h4 class="font-medium text-teens-navy" data-bind="student.group.name">Frontend Basics</h4>
+                            <p class="text-sm text-gray-600 mt-1" data-bind="student.group.description">HTML, CSS va JavaScript asoslari</p>
+                            <div class="mt-3">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Keyingi dars:</span>
+                                    <span class="font-medium text-teens-navy" data-bind="student.nextClass">19.12.2024, 14:00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Content Area -->
+                <div class="lg:col-span-2 space-y-8">
+                    <!-- Medals Section -->
+                    <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-bold text-gray-900">Mening medallarim</h2>
+                            <div class="text-sm text-gray-500">Jami: <span class="font-medium" data-bind="student.totalMedals">10</span> ta medal</div>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-6">
+                            <div class="text-center group cursor-pointer" data-event="click:showMedalAnimation">
+                                <div class="w-20 h-20 mx-auto bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-3xl transform group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                                    🥇
+                                </div>
+                                <h3 class="font-semibold text-gray-900 mt-3">Oltin medal</h3>
+                                <p class="text-2xl font-bold text-yellow-600" data-bind="student.medals.gold">3</p>
+                                <p class="text-xs text-gray-500">Mukammal natijalar</p>
+                            </div>
+                            
+                            <div class="text-center group cursor-pointer" data-event="click:showMedalAnimation">
+                                <div class="w-20 h-20 mx-auto bg-gradient-to-br from-gray-300 to-gray-500 rounded-full flex items-center justify-center text-3xl transform group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                                    🥈
+                                </div>
+                                <h3 class="font-semibold text-gray-900 mt-3">Kumush medal</h3>
+                                <p class="text-2xl font-bold text-gray-600" data-bind="student.medals.silver">5</p>
+                                <p class="text-xs text-gray-500">Yaxshi natijalar</p>
+                            </div>
+                            
+                            <div class="text-center group cursor-pointer" data-event="click:showMedalAnimation">
+                                <div class="w-20 h-20 mx-auto bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-3xl transform group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                                    🥉
+                                </div>
+                                <h3 class="font-semibold text-gray-900 mt-3">Bronza medal</h3>
+                                <p class="text-2xl font-bold text-orange-600" data-bind="student.medals.bronze">2</p>
+                                <p class="text-xs text-gray-500">Qoniqarli natijalar</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Marketplace Section -->
+                    <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-bold text-gray-900">Medal do'koni</h2>
+                            <button class="text-teens-blue hover:text-blue-600 text-sm font-medium">Barchasini ko'rish</button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- @MAP: products.map(product => ( -->
+                            <div class="border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-shadow duration-200" data-mock="true">
+                                <!-- Gaming laptop for coding -->
+                                <img src="https://images.unsplash.com/photo-1603302576837-37561b2e2302?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&h=200" alt="Gaming laptop" class="w-full h-32 object-cover rounded-lg mb-3" />
+                                <h3 class="font-semibold text-gray-900" data-bind="product.name">Gaming Laptop</h3>
+                                <p class="text-sm text-gray-600 mb-3" data-bind="product.description">Yuqori sifatli o'yin kompyuteri</p>
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center space-x-1">
+                                        <span class="text-yellow-500">🥇</span>
+                                        <span class="font-medium" data-bind="product.price">50</span>
+                                    </div>
+                                    <button data-event="click:purchaseProduct" data-product-id="1" class="bg-teens-green text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors duration-200">
+                                        Sotib olish
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-shadow duration-200" data-mock="true">
+                                <!-- Wireless coding headphones -->
+                                <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&h=200" alt="Wireless headphones" class="w-full h-32 object-cover rounded-lg mb-3" />
+                                <h3 class="font-semibold text-gray-900" data-bind="product.name">Wireless Headphones</h3>
+                                <p class="text-sm text-gray-600 mb-3" data-bind="product.description">Simsiz quloqchin</p>
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center space-x-1">
+                                        <span class="text-gray-500">🥈</span>
+                                        <span class="font-medium" data-bind="product.price">15</span>
+                                    </div>
+                                    <button data-event="click:purchaseProduct" data-product-id="2" class="bg-teens-green text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors duration-200">
+                                        Sotib olish
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: StudentDashboard -->
+
+    <!-- Modal for Adding Student -->
+    <!-- @COMPONENT: AddStudentModal -->
+    <div id="addStudentModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-2xl bg-white">
+            <div class="mt-3">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Yangi o'quvchi qo'shish</h3>
+                    <button data-event="click:closeAddStudentModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <form data-event="submit:createStudent" data-implementation="Should create student account in PostgreSQL database">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Ism</label>
+                            <input type="text" name="firstName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teens-blue focus:border-transparent" placeholder="Alisher">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Familiya</label>
+                            <input type="text" name="lastName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teens-blue focus:border-transparent" placeholder="Karimov">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email manzil</label>
+                            <input type="email" name="email" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teens-blue focus:border-transparent" placeholder="alisher.k@email.com">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Avtomatik parol</label>
+                            <div class="flex">
+                                <input type="text" name="password" readonly class="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg bg-gray-50" data-bind="generatedPassword" placeholder="Avtomatik yaratiladi">
+                                <button type="button" data-event="click:generatePassword" class="px-3 py-2 bg-teens-blue text-white rounded-r-lg hover:bg-blue-600 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Profil rasmi</label>
+                            <input type="file" name="profilePic" accept="image/*" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teens-blue focus:border-transparent">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" data-event="click:closeAddStudentModal" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            Bekor qilish
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-teens-blue text-white rounded-lg hover:bg-blue-600 transition-colors">
+                            O'quvchi yaratish
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: AddStudentModal -->
+
+    <script>
+        // TODO: Implement business logic, API calls, and state management
+        
+        (function() {
+            // Application state
+            let currentUser = null;
+            let currentView = 'login';
+
+            // DOM elements
+            const loginPage = document.getElementById('loginPage');
+            const adminDashboard = document.getElementById('adminDashboard');
+            const studentDashboard = document.getElementById('studentDashboard');
+            const addStudentModal = document.getElementById('addStudentModal');
+
+            // Role selection functionality
+            const roleButtons = document.querySelectorAll('.role-btn');
+            roleButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    roleButtons.forEach(btn => {
+                        btn.classList.remove('bg-teens-blue', 'text-white', 'border-teens-blue');
+                        btn.classList.add('border-gray-300', 'text-gray-600');
+                    });
+                    
+                    this.classList.remove('border-gray-300', 'text-gray-600');
+                    this.classList.add('bg-teens-blue', 'text-white', 'border-teens-blue');
+                });
+            });
+
+            // Navigation functionality for admin dashboard
+            const navItems = document.querySelectorAll('.nav-item');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            navItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const tabName = this.getAttribute('data-tab');
+                    
+                    // Update active nav item
+                    navItems.forEach(nav => {
+                        nav.classList.remove('active', 'bg-teens-blue', 'text-white');
+                        nav.classList.add('text-gray-700', 'hover:bg-gray-100');
+                    });
+                    
+                    this.classList.remove('text-gray-700', 'hover:bg-gray-100');
+                    this.classList.add('active', 'bg-teens-blue', 'text-white');
+                    
+                    // Show corresponding tab content
+                    tabContents.forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    
+                    const activeTab = document.getElementById(tabName + 'Tab');
+                    if (activeTab) {
+                        activeTab.classList.remove('hidden');
+                    }
+                });
+            });
+
+            // Modal functionality
+            function openModal(modalId) {
+                document.getElementById(modalId).classList.remove('hidden');
+            }
+
+            function closeModal(modalId) {
+                document.getElementById(modalId).classList.add('hidden');
+            }
+
+            // Add event listeners for modal buttons
+            document.addEventListener('click', function(e) {
+                if (e.target.matches('[data-event*="openAddStudentModal"]')) {
+                    openModal('addStudentModal');
+                }
+                
+                if (e.target.matches('[data-event*="closeAddStudentModal"]') || 
+                    e.target.closest('[data-event*="closeAddStudentModal"]')) {
+                    closeModal('addStudentModal');
+                }
+            });
+
+            // Password generation functionality
+            function generatePassword() {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                let password = '';
+                for (let i = 0; i < 8; i++) {
+                    password += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return password;
+            }
+
+            document.addEventListener('click', function(e) {
+                if (e.target.matches('[data-event*="generatePassword"]')) {
+                    const passwordInput = document.querySelector('input[name="password"]');
+                    if (passwordInput) {
+                        passwordInput.value = generatePassword();
+                    }
+                }
+            });
+
+            // Demo login functionality
+            document.addEventListener('submit', function(e) {
+                if (e.target.matches('[data-event*="handleLogin"]')) {
+                    e.preventDefault();
+                    const formData = new FormData(e.target);
+                    const email = formData.get('email');
+                    const password = formData.get('password');
+                    
+                    // Demo login logic
+                    if (email === 'admin@mail.com' && password === 'admin2233') {
+                        showView('admin');
+                    } else {
+                        // For demo purposes, any other credentials show student dashboard
+                        showView('student');
+                    }
+                }
+            });
+
+            function showView(viewType) {
+                // Hide all views
+                loginPage.classList.add('hidden');
+                adminDashboard.classList.add('hidden');
+                studentDashboard.classList.add('hidden');
+                
+                // Show selected view
+                if (viewType === 'admin') {
+                    adminDashboard.classList.remove('hidden');
+                } else if (viewType === 'student') {
+                    studentDashboard.classList.remove('hidden');
+                } else {
+                    loginPage.classList.remove('hidden');
+                }
+            }
+
+            // Logout functionality
+            document.addEventListener('click', function(e) {
+                if (e.target.matches('[data-event*="handleLogout"]') || 
+                    e.target.closest('[data-event*="handleLogout"]')) {
+                    showView('login');
+                }
+            });
+
+            // Medal animation functionality
+            document.addEventListener('click', function(e) {
+                if (e.target.matches('[data-event*="showMedalAnimation"]') || 
+                    e.target.closest('[data-event*="showMedalAnimation"]')) {
+                    // TODO: Implement confetti animation for medals
+                    console.log('Medal clicked - should show celebration animation');
+                }
+            });
+
+            // Purchase functionality
+            document.addEventListener('click', function(e) {
+                if (e.target.matches('[data-event*="purchaseProduct"]')) {
+                    // TODO: Implement purchase logic with medal deduction
+                    console.log('Product purchase initiated');
+                }
+            });
+
+            // Initialize app
+            showView('login');
+        })();
+    </script>
+</body>
+</html>
