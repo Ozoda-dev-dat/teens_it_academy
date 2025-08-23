@@ -1883,7 +1883,7 @@ export default function AdminDashboard() {
                                       <div className="flex flex-wrap gap-2">
                                         {product.medalCost && typeof product.medalCost === 'object' && (() => {
                                           const medals = product.medalCost as { gold: number; silver: number; bronze: number };
-                                          const badges = [];
+                                          const badges: JSX.Element[] = [];
                                           
                                           if (medals.gold > 0) {
                                             badges.push(
