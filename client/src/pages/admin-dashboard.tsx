@@ -524,9 +524,9 @@ export default function AdminDashboard() {
         </div>
       </nav>
 
-      <div className="flex">
+      <div className="flex min-h-screen">
         {/* Sidebar */}
-        <div className="w-64 bg-white shadow-sm h-screen sticky top-0">
+        <div className="w-64 bg-white shadow-sm h-screen sticky top-0 flex-shrink-0">
           <div className="p-4">
             <nav className="space-y-2">
               <Tabs value={activeTab} onValueChange={setActiveTab} orientation="vertical">
@@ -588,9 +588,14 @@ export default function AdminDashboard() {
                     Do'kon
                   </TabsTrigger>
                 </TabsList>
+              </Tabs>
+            </nav>
+          </div>
+        </div>
 
-                {/* Main Content */}
-                <div className="flex-1 p-6 ml-64">
+        {/* Main Content */}
+        <div className="flex-1 p-4 lg:p-6 overflow-x-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
                   <TabsContent value="dashboard" className="space-y-6">
                     <div>
                       <h1 className="text-2xl font-bold text-gray-900 mb-2">Boshqaruv paneli</h1>
@@ -1677,25 +1682,31 @@ export default function AdminDashboard() {
                                       <div className="flex flex-wrap gap-2">
                                         {product.medalCost && typeof product.medalCost === 'object' && (() => {
                                           const medals = product.medalCost as { gold: number; silver: number; bronze: number };
-                                          return (
-                                            <>
-                                              {medals.gold > 0 && (
-                                                <Badge className="bg-yellow-100 text-yellow-800">
-                                                  🥇 {medals.gold}
-                                                </Badge>
-                                              )}
-                                              {medals.silver > 0 && (
-                                                <Badge className="bg-gray-100 text-gray-800">
-                                                  🥈 {medals.silver}
-                                                </Badge>
-                                              )}
-                                              {medals.bronze > 0 && (
-                                                <Badge className="bg-orange-100 text-orange-800">
-                                                  🥉 {medals.bronze}
-                                                </Badge>
-                                              )}
-                                            </>
-                                          );
+                                          const badges = [];
+                                          
+                                          if (medals.gold > 0) {
+                                            badges.push(
+                                              <Badge key="gold" className="bg-yellow-100 text-yellow-800">
+                                                🥇 {medals.gold}
+                                              </Badge>
+                                            );
+                                          }
+                                          if (medals.silver > 0) {
+                                            badges.push(
+                                              <Badge key="silver" className="bg-gray-100 text-gray-800">
+                                                🥈 {medals.silver}
+                                              </Badge>
+                                            );
+                                          }
+                                          if (medals.bronze > 0) {
+                                            badges.push(
+                                              <Badge key="bronze" className="bg-orange-100 text-orange-800">
+                                                🥉 {medals.bronze}
+                                              </Badge>
+                                            );
+                                          }
+                                          
+                                          return badges;
                                         })()}
                                       </div>
                                     </div>
@@ -1733,10 +1744,7 @@ export default function AdminDashboard() {
                       </CardContent>
                     </Card>
                   </TabsContent>
-                </div>
-              </Tabs>
-            </nav>
-          </div>
+          </Tabs>
         </div>
       </div>
       
