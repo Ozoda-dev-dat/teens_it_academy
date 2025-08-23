@@ -4,6 +4,16 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertUserSchema, insertGroupSchema, insertAttendanceSchema, insertPaymentSchema, insertProductSchema, insertPurchaseSchema, insertGroupStudentSchema } from "@shared/schema";
 import { z } from "zod";
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
+
+const scryptAsync = promisify(scrypt);
+
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
 
 export function registerRoutes(app: Express): Server {
   // Setup authentication routes
@@ -44,6 +54,11 @@ export function registerRoutes(app: Express): Server {
         role: "student",
         medals: { gold: 0, silver: 0, bronze: 0 }
       });
+      
+      // Hash the password before storing
+      if (studentData.password) {
+        studentData.password = await hashPassword(studentData.password);
+      }
       
       const student = await storage.createUser(studentData);
       res.status(201).json(student);
