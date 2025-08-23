@@ -27,7 +27,7 @@ export default function StudentLogin() {
 
     try {
       await loginMutation.mutateAsync({ 
-        username: email, 
+        email, 
         password 
       });
     } catch (error: any) {

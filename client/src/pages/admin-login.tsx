@@ -27,7 +27,7 @@ export default function AdminLogin() {
 
     try {
       await loginMutation.mutateAsync({ 
-        username: email, 
+        email, 
         password 
       });
     } catch (error: any) {
