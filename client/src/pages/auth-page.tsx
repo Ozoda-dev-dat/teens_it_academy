@@ -5,15 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Mail, Lock, Shield, BookOpen, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Shield, Loader2 } from "lucide-react";
 
 export default function AuthPage() {
-  const { user, loginMutation, registerMutation } = useAuth();
+  const { user, loginMutation } = useAuth();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<"admin" | "student">("admin");
 
   // Redirect if already logged in
   if (user) {
@@ -41,34 +39,6 @@ export default function AuthPage() {
     }
   };
 
-  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-    const firstName = formData.get("firstName") as string;
-    const lastName = formData.get("lastName") as string;
-
-    try {
-      await registerMutation.mutateAsync({
-        email,
-        password,
-        firstName,
-        lastName,
-        role: selectedRole,
-      });
-      toast({
-        title: "Muvaffaqiyat",
-        description: "Hisob yaratildi va tizimga kirildi",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Ro'yxatga olish xatosi",
-        description: error.message || "Hisob yaratishda xatolik yuz berdi",
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-slate-50 to-blue-50">
@@ -99,17 +69,11 @@ export default function AuthPage() {
             <p className="text-gray-600 font-medium">CRM Tizimiga xush kelibsiz</p>
           </div>
 
-          {/* Auth Tabs */}
+          {/* Login Card */}
           <Card className="shadow-xl border-blue-100">
             <CardContent className="p-8">
-              <Tabs defaultValue="login" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6">
-                  <TabsTrigger value="login" data-testid="tab-login">Kirish</TabsTrigger>
-                  <TabsTrigger value="register" data-testid="tab-register">Ro'yxatga olish</TabsTrigger>
-                </TabsList>
 
-                {/* Login Tab */}
-                <TabsContent value="login" className="space-y-6">
+              <div className="space-y-6">
                   <div className="text-center">
                     <h2 className="text-xl font-semibold text-gray-800 mb-2">Tizimga kirish</h2>
                     <p className="text-gray-500 text-sm">Hisobingizga kirish uchun ma'lumotlarni kiriting</p>
@@ -184,136 +148,7 @@ export default function AuthPage() {
                       <div><strong>O'quvchi:</strong> Administrator tomonidan yaratiladi</div>
                     </div>
                   </div>
-                </TabsContent>
-
-                {/* Register Tab */}
-                <TabsContent value="register" className="space-y-6">
-                  <div className="text-center">
-                    <h2 className="text-xl font-semibold text-gray-800 mb-2">Yangi hisob</h2>
-                    <p className="text-gray-500 text-sm">Administrator uchun yangi hisob yarating</p>
-                  </div>
-
-                  <form onSubmit={handleRegister} className="space-y-4">
-                    {/* Role Selection */}
-                    <div className="space-y-2">
-                      <Label>Rol tanlang</Label>
-                      <div className="grid grid-cols-2 gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedRole("admin")}
-                          className={`p-3 border-2 rounded-xl font-medium transition-all duration-200 hover:shadow-lg transform hover:scale-105 ${
-                            selectedRole === "admin"
-                              ? "border-teens-blue bg-teens-blue text-white"
-                              : "border-gray-300 text-gray-600 hover:border-teens-blue hover:text-teens-blue"
-                          }`}
-                          data-testid="button-role-admin"
-                        >
-                          <div className="flex items-center justify-center space-x-2">
-                            <Shield className="w-5 h-5" />
-                            <span>Administrator</span>
-                          </div>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedRole("student")}
-                          className={`p-3 border-2 rounded-xl font-medium transition-all duration-200 hover:shadow-lg transform hover:scale-105 ${
-                            selectedRole === "student"
-                              ? "border-teens-green bg-teens-green text-white"
-                              : "border-gray-300 text-gray-600 hover:border-teens-green hover:text-teens-green"
-                          }`}
-                          data-testid="button-role-student"
-                        >
-                          <div className="flex items-center justify-center space-x-2">
-                            <BookOpen className="w-5 h-5" />
-                            <span>O'quvchi</span>
-                          </div>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="firstName">Ism</Label>
-                        <Input
-                          id="firstName"
-                          name="firstName"
-                          placeholder="Ism"
-                          required
-                          data-testid="input-first-name"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="lastName">Familiya</Label>
-                        <Input
-                          id="lastName"
-                          name="lastName"
-                          placeholder="Familiya"
-                          required
-                          data-testid="input-last-name"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="register-email">Email manzil</Label>
-                      <div className="relative">
-                        <Input
-                          id="register-email"
-                          name="email"
-                          type="email"
-                          placeholder="example@email.com"
-                          className="pl-11"
-                          required
-                          data-testid="input-register-email"
-                        />
-                        <Mail className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="register-password">Parol</Label>
-                      <div className="relative">
-                        <Input
-                          id="register-password"
-                          name="password"
-                          type={showPassword ? "text" : "password"}
-                          placeholder="••••••••"
-                          className="pl-11 pr-11"
-                          required
-                          data-testid="input-register-password"
-                        />
-                        <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <Button
-                      type="submit"
-                      className="w-full bg-gradient-to-r from-teens-green to-green-600 hover:from-green-600 hover:to-green-700 transform hover:scale-105 transition-all duration-300"
-                      disabled={registerMutation.isPending}
-                      data-testid="button-register"
-                    >
-                      {registerMutation.isPending ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Yaratilmoqda...
-                        </>
-                      ) : (
-                        <>
-                          <BookOpen className="w-5 h-5 mr-2" />
-                          Hisob yaratish
-                        </>
-                      )}
-                    </Button>
-                  </form>
-                </TabsContent>
-              </Tabs>
+              </div>
             </CardContent>
           </Card>
         </div>
