@@ -1,43 +1,17 @@
-import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { Redirect } from "wouter";
+import { Redirect, Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Mail, Lock, Shield, Loader2 } from "lucide-react";
+import { Shield, GraduationCap } from "lucide-react";
 
 export default function AuthPage() {
-  const { user, loginMutation } = useAuth();
-  const { toast } = useToast();
-  const [showPassword, setShowPassword] = useState(false);
+  const { user } = useAuth();
 
   // Redirect if already logged in
   if (user) {
     const redirectPath = user.role === "admin" ? "/admin" : "/student";
     return <Redirect to={redirectPath} />;
   }
-
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
-    try {
-      await loginMutation.mutateAsync({ 
-        username: email, 
-        password 
-      });
-    } catch (error: any) {
-      toast({
-        title: "Kirish xatosi",
-        description: error.message || "Email yoki parol noto'g'ri",
-        variant: "destructive",
-      });
-    }
-  };
 
 
   return (
@@ -69,88 +43,62 @@ export default function AuthPage() {
             <p className="text-gray-600 font-medium">CRM Tizimiga xush kelibsiz</p>
           </div>
 
-          {/* Login Card */}
-          <Card className="shadow-xl border-blue-100">
-            <CardContent className="p-8">
-
-              <div className="space-y-6">
-                  <div className="text-center">
-                    <h2 className="text-xl font-semibold text-gray-800 mb-2">Tizimga kirish</h2>
-                    <p className="text-gray-500 text-sm">Hisobingizga kirish uchun ma'lumotlarni kiriting</p>
+          {/* Selection Cards */}
+          <div className="space-y-4">
+            <Card className="shadow-xl border-red-100 hover:shadow-2xl transition-shadow duration-300">
+              <CardContent className="p-8">
+                <div className="text-center space-y-6">
+                  <div className="mx-auto w-20 h-20 bg-gradient-to-r from-red-500 to-red-600 rounded-2xl flex items-center justify-center text-white">
+                    <Shield className="w-10 h-10" />
+                  </div>
+                  
+                  <div>
+                    <h2 className="text-2xl font-bold text-red-600 mb-2">Administrator</h2>
+                    <p className="text-gray-600 mb-6">
+                      Tizimni boshqarish, o'quvchilar va guruhlarni nazorat qilish
+                    </p>
                   </div>
 
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="login-email">Email manzil</Label>
-                      <div className="relative">
-                        <Input
-                          id="login-email"
-                          name="email"
-                          type="email"
-                          placeholder="example@email.com"
-                          className="pl-11"
-                          required
-                          data-testid="input-login-email"
-                        />
-                        <Mail className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="login-password">Parol</Label>
-                      <div className="relative">
-                        <Input
-                          id="login-password"
-                          name="password"
-                          type={showPassword ? "text" : "password"}
-                          placeholder="••••••••"
-                          className="pl-11 pr-11"
-                          required
-                          data-testid="input-login-password"
-                        />
-                        <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          data-testid="button-toggle-password"
-                        >
-                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <Button
-                      type="submit"
-                      className="w-full bg-gradient-to-r from-teens-blue to-teens-navy hover:from-blue-600 hover:to-blue-800 transform hover:scale-105 transition-all duration-300"
-                      disabled={loginMutation.isPending}
-                      data-testid="button-login"
+                  <Link href="/admin/login">
+                    <Button 
+                      className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-300 text-lg py-6"
+                      data-testid="button-admin-access"
                     >
-                      {loginMutation.isPending ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Kirish...
-                        </>
-                      ) : (
-                        <>
-                          <Shield className="w-5 h-5 mr-2" />
-                          Tizimga kirish
-                        </>
-                      )}
+                      <Shield className="w-5 h-5 mr-2" />
+                      Administrator sifatida kirish
                     </Button>
-                  </form>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
 
-                  {/* Demo Credentials */}
-                  <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                    <h3 className="text-sm font-medium text-gray-700 mb-2">Demo hisoblar:</h3>
-                    <div className="space-y-1 text-sm text-gray-600">
-                      <div><strong>Administrator:</strong> admin@mail.com / admin2233</div>
-                      <div><strong>O'quvchi:</strong> Administrator tomonidan yaratiladi</div>
-                    </div>
+            <Card className="shadow-xl border-blue-100 hover:shadow-2xl transition-shadow duration-300">
+              <CardContent className="p-8">
+                <div className="text-center space-y-6">
+                  <div className="mx-auto w-20 h-20 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center text-white">
+                    <GraduationCap className="w-10 h-10" />
                   </div>
-              </div>
-            </CardContent>
-          </Card>
+                  
+                  <div>
+                    <h2 className="text-2xl font-bold text-blue-600 mb-2">O'quvchi</h2>
+                    <p className="text-gray-600 mb-6">
+                      Shaxsiy hisobingizga kirib, yutuqlar va medallaringizni ko'ring
+                    </p>
+                  </div>
+
+                  <Link href="/student/login">
+                    <Button 
+                      className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 transform hover:scale-105 transition-all duration-300 text-lg py-6"
+                      data-testid="button-student-access"
+                    >
+                      <GraduationCap className="w-5 h-5 mr-2" />
+                      O'quvchi sifatida kirish
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
 
