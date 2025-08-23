@@ -154,6 +154,19 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.delete("/api/groups/:id", requireAdmin, async (req, res) => {
+    try {
+      const deleted = await storage.deleteGroup(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Guruh topilmadi" });
+      }
+      res.json({ message: "Guruh muvaffaqiyatli o'chirildi" });
+    } catch (error) {
+      console.error("Guruhni o'chirishda xatolik:", error);
+      res.status(500).json({ message: "Guruhni o'chirishda xatolik" });
+    }
+  });
+
   // Group-Student association routes
   app.post("/api/groups/:groupId/students", requireAdmin, async (req, res) => {
     try {

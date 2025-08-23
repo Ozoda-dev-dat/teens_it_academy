@@ -242,6 +242,20 @@ export default function AdminDashboard() {
     },
   });
   
+  const deleteGroupMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/groups/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      toast({ title: "Muvaffaqiyat", description: "Guruh o'chirildi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Xatolik", description: error.message || "Guruhni o'chirishda xatolik", variant: "destructive" });
+    },
+  });
+  
   // Product Mutations
   const createProductMutation = useMutation({
     mutationFn: async (productData: any) => {
@@ -427,6 +441,12 @@ export default function AdminDashboard() {
     e.preventDefault();
     if (editingGroup) {
       updateGroupMutation.mutate({ id: editingGroup.id, ...groupForm });
+    }
+  };
+  
+  const handleDeleteGroup = (id: string) => {
+    if (confirm("Guruhni o'chirishni tasdiqlaysizmi? Bu amal qaytarilmaydi.")) {
+      deleteGroupMutation.mutate(id);
     }
   };
   
@@ -1146,8 +1166,11 @@ export default function AdminDashboard() {
                                     <p className="text-sm text-gray-500 mt-1">{group.description}</p>
                                   </div>
                                   <div className="flex space-x-1">
-                                    <Button size="sm" variant="outline" onClick={() => handleEditGroup(group)}>
+                                    <Button size="sm" variant="outline" onClick={() => handleEditGroup(group)} data-testid={`button-edit-group-${group.id}`}>
                                       <Edit className="w-4 h-4" />
+                                    </Button>
+                                    <Button size="sm" variant="outline" onClick={() => handleDeleteGroup(group.id)} className="text-red-600 hover:text-red-700 hover:bg-red-50" data-testid={`button-delete-group-${group.id}`}>
+                                      <Trash2 className="w-4 h-4" />
                                     </Button>
                                   </div>
                                 </div>
