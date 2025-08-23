@@ -590,7 +590,7 @@ export default function AdminDashboard() {
                 </TabsList>
 
                 {/* Main Content */}
-                <div className="flex-1 p-6 ml-64 -mt-80">
+                <div className="flex-1 p-6 ml-64">
                   <TabsContent value="dashboard" className="space-y-6">
                     <div>
                       <h1 className="text-2xl font-bold text-gray-900 mb-2">Boshqaruv paneli</h1>
@@ -1675,25 +1675,28 @@ export default function AdminDashboard() {
                                     <div className="space-y-2">
                                       <p className="text-sm font-medium text-gray-700">Medal narxi:</p>
                                       <div className="flex flex-wrap gap-2">
-                                        {product.medalCost && typeof product.medalCost === 'object' && (
-                                          <>
-                                            {(product.medalCost as any).gold > 0 && (
-                                              <Badge className="bg-yellow-100 text-yellow-800">
-                                                🥇 {(product.medalCost as any).gold}
-                                              </Badge>
-                                            )}
-                                            {(product.medalCost as any).silver > 0 && (
-                                              <Badge className="bg-gray-100 text-gray-800">
-                                                🥈 {(product.medalCost as any).silver}
-                                              </Badge>
-                                            )}
-                                            {(product.medalCost as any).bronze > 0 && (
-                                              <Badge className="bg-orange-100 text-orange-800">
-                                                🥉 {(product.medalCost as any).bronze}
-                                              </Badge>
-                                            )}
-                                          </>
-                                        )}
+                                        {product.medalCost && typeof product.medalCost === 'object' && (() => {
+                                          const medals = product.medalCost as { gold: number; silver: number; bronze: number };
+                                          return (
+                                            <>
+                                              {medals.gold > 0 && (
+                                                <Badge className="bg-yellow-100 text-yellow-800">
+                                                  🥇 {medals.gold}
+                                                </Badge>
+                                              )}
+                                              {medals.silver > 0 && (
+                                                <Badge className="bg-gray-100 text-gray-800">
+                                                  🥈 {medals.silver}
+                                                </Badge>
+                                              )}
+                                              {medals.bronze > 0 && (
+                                                <Badge className="bg-orange-100 text-orange-800">
+                                                  🥉 {medals.bronze}
+                                                </Badge>
+                                              )}
+                                            </>
+                                          );
+                                        })()}
                                       </div>
                                     </div>
                                   </div>
