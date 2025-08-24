@@ -11,8 +11,6 @@ import StudentLogin from "@/pages/student-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import StudentDashboard from "@/pages/student-dashboard";
 import { ProtectedRoute } from "./lib/protected-route";
-import { useEffect } from "react";
-import { getUsers } from "./lib/api";
 
 function Router() {
   return (
@@ -39,10 +37,6 @@ function App() {
       </TooltipProvider>
     </QueryClientProvider>
   );
-   useEffect(() => {
-    getUsers().then(console.log).catch(console.error);
-  }, []);
-  return <h1>CRM Frontend</h1>;
 }
 
 export default App;
