@@ -207,12 +207,25 @@ export function registerRoutes(app: Express): Server {
   // Attendance routes
   app.post("/api/attendance", requireAdmin, async (req, res) => {
     try {
-      const attendanceData = insertAttendanceSchema.parse(req.body);
+      console.log("Received attendance data:", req.body);
+      
+      // Create a new object with converted date
+      const bodyWithDate = {
+        ...req.body,
+        date: new Date(req.body.date)
+      };
+      
+      const attendanceData = insertAttendanceSchema.parse(bodyWithDate);
+      console.log("Parsed attendance data:", attendanceData);
       const attendance = await storage.createAttendance(attendanceData);
       res.status(201).json(attendance);
     } catch (error) {
       console.error("Davomat yaratishda xatolik:", error);
-      res.status(400).json({ message: "Davomat yaratishda xatolik" });
+      if (error instanceof Error) {
+        res.status(400).json({ message: "Davomat yaratishda xatolik: " + error.message });
+      } else {
+        res.status(400).json({ message: "Davomat yaratishda xatolik" });
+      }
     }
   });
 
