@@ -4,7 +4,7 @@ import { db } from "./db";
 import { eq, and, sql, desc } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import { pool } from "./db";
+import MemoryStore from "memorystore";
 
 const PostgresSessionStore = connectPg(session);
 
@@ -66,9 +66,11 @@ export class DatabaseStorage implements IStorage {
   sessionStore: any;
 
   constructor() {
-    this.sessionStore = new PostgresSessionStore({ 
-      pool, 
-      createTableIfMissing: true 
+    // For HTTP-based Neon connection, use in-memory store for sessions
+    // In production, consider using Redis or another session store
+    const SessionStore = MemoryStore(session);
+    this.sessionStore = new SessionStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
     });
   }
 
@@ -106,7 +108,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllStudents(): Promise<User[]> {
-    return await db.select().from(users).where(eq(users.role, "student"));
+    const result = await db.select().from(users).where(eq(users.role, "student"));
+    return result || [];
   }
 
   // Group methods
@@ -119,7 +122,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllGroups(): Promise<Group[]> {
-    return await db.select().from(groups);
+    const result = await db.select().from(groups);
+    return result || [];
   }
 
   async getGroup(id: string): Promise<Group | undefined> {
@@ -161,7 +165,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getGroupStudents(groupId: string): Promise<any[]> {
-    return await db
+    const result = await db
       .select({
         id: groupStudents.id,
         groupId: groupStudents.groupId,
@@ -178,13 +182,15 @@ export class DatabaseStorage implements IStorage {
       .from(groupStudents)
       .innerJoin(users, eq(groupStudents.studentId, users.id))
       .where(eq(groupStudents.groupId, groupId));
+    return result || [];
   }
 
   async getStudentGroups(studentId: string): Promise<GroupStudent[]> {
-    return await db
+    const result = await db
       .select()
       .from(groupStudents)
       .where(eq(groupStudents.studentId, studentId));
+    return result || [];
   }
 
   // Attendance methods
@@ -197,11 +203,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getGroupAttendance(groupId: string): Promise<Attendance[]> {
-    return await db
-      .select()
-      .from(attendance)
-      .where(eq(attendance.groupId, groupId))
-      .orderBy(desc(attendance.date));
+    try {
+      const result = await db
+        .select()
+        .from(attendance)
+        .where(eq(attendance.groupId, groupId))
+        .orderBy(desc(attendance.date));
+      return result || [];
+    } catch (error) {
+      console.error("Error fetching group attendance:", error);
+      return [];
+    }
   }
 
   async getAttendanceByDate(groupId: string, date: Date): Promise<Attendance | undefined> {
@@ -225,11 +237,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getStudentPayments(studentId: string): Promise<Payment[]> {
-    return await db
+    const result = await db
       .select()
       .from(payments)
       .where(eq(payments.studentId, studentId))
       .orderBy(desc(payments.paymentDate));
+    return result || [];
   }
 
   async updatePayment(id: string, updates: Partial<InsertPayment>): Promise<Payment | undefined> {
@@ -251,10 +264,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllProducts(): Promise<Product[]> {
-    return await db
-      .select()
-      .from(products)
-      .where(eq(products.isActive, true));
+    try {
+      const result = await db
+        .select()
+        .from(products)
+        .where(eq(products.isActive, true));
+      return result || [];
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      return [];
+    }
   }
 
   async getProduct(id: string): Promise<Product | undefined> {
@@ -286,11 +305,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getStudentPurchases(studentId: string): Promise<Purchase[]> {
-    return await db
+    const result = await db
       .select()
       .from(purchases)
       .where(eq(purchases.studentId, studentId))
       .orderBy(desc(purchases.purchaseDate));
+    return result || [];
   }
 
   // Stats methods
@@ -300,48 +320,62 @@ export class DatabaseStorage implements IStorage {
     totalMedals: { gold: number; silver: number; bronze: number };
     unpaidAmount: number;
   }> {
-    // Get total students
-    const [{ count: totalStudents }] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(users)
-      .where(eq(users.role, "student"));
+    try {
+      // Get total students
+      const studentCountResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(users)
+        .where(eq(users.role, "student"));
+      
+      const totalStudents = studentCountResult[0]?.count || 0;
 
-    // Get active groups
-    const [{ count: activeGroups }] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(groups);
+      // Get active groups
+      const groupCountResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(groups);
+      
+      const activeGroups = groupCountResult[0]?.count || 0;
 
-    // Get total medals
-    const medalResults = await db
-      .select({ medals: users.medals })
-      .from(users)
-      .where(eq(users.role, "student"));
+      // Get total medals
+      const medalResults = await db
+        .select({ medals: users.medals })
+        .from(users)
+        .where(eq(users.role, "student"));
 
-    const totalMedals = medalResults.reduce(
-      (acc, user) => {
-        const medals = user.medals as { gold: number; silver: number; bronze: number };
-        acc.gold += medals?.gold || 0;
-        acc.silver += medals?.silver || 0;
-        acc.bronze += medals?.bronze || 0;
-        return acc;
-      },
-      { gold: 0, silver: 0, bronze: 0 }
-    );
+      const totalMedals = (medalResults || []).reduce(
+        (acc, user) => {
+          const medals = user.medals as { gold: number; silver: number; bronze: number };
+          acc.gold += medals?.gold || 0;
+          acc.silver += medals?.silver || 0;
+          acc.bronze += medals?.bronze || 0;
+          return acc;
+        },
+        { gold: 0, silver: 0, bronze: 0 }
+      );
 
-    // Get unpaid amount
-    const unpaidPayments = await db
-      .select({ amount: payments.amount })
-      .from(payments)
-      .where(eq(payments.status, "unpaid"));
+      // Get unpaid amount
+      const unpaidPayments = await db
+        .select({ amount: payments.amount })
+        .from(payments)
+        .where(eq(payments.status, "unpaid"));
 
-    const unpaidAmount = unpaidPayments.reduce((total, payment) => total + (payment.amount || 0), 0);
+      const unpaidAmount = (unpaidPayments || []).reduce((total, payment) => total + (payment.amount || 0), 0);
 
-    return {
-      totalStudents: Number(totalStudents),
-      activeGroups: Number(activeGroups),
-      totalMedals,
-      unpaidAmount: Number(unpaidAmount) / 100, // Convert from cents to dollars
-    };
+      return {
+        totalStudents: Number(totalStudents),
+        activeGroups: Number(activeGroups),
+        totalMedals,
+        unpaidAmount: Number(unpaidAmount) / 100, // Convert from cents to dollars
+      };
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+      return {
+        totalStudents: 0,
+        activeGroups: 0,
+        totalMedals: { gold: 0, silver: 0, bronze: 0 },
+        unpaidAmount: 0,
+      };
+    }
   }
 }
 
