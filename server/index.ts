@@ -1,3 +1,6 @@
+// Fix SSL certificate issues for cloud deployments  
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
