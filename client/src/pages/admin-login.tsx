@@ -149,13 +149,13 @@ export default function AdminLogin() {
                 </form>
 
                 {/* Demo Credentials */}
-                <div className="mt-6 p-4 bg-red-50 rounded-xl border border-red-200">
+{/*                 <div className="mt-6 p-4 bg-red-50 rounded-xl border border-red-200">
                   <h3 className="text-sm font-medium text-red-700 mb-2">Demo hisob:</h3>
                   <div className="space-y-1 text-sm text-red-600">
                     <div><strong>Email:</strong> admin@mail.com</div>
                     <div><strong>Parol:</strong> admin2233</div>
                   </div>
-                </div>
+                </div> */}
               </div>
             </CardContent>
           </Card>
