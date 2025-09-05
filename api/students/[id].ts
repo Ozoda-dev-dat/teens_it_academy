@@ -1,6 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from '../../lib/storage';
 import { insertUserSchema } from '../../shared/schema';
+import { scrypt, randomBytes } from 'crypto';
+import { promisify } from 'util';
+
+const scryptAsync = promisify(scrypt);
+
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
 
 function getUserFromSession(req: VercelRequest) {
   try {
@@ -73,6 +83,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
       const updates = insertUserSchema.partial().parse(req.body);
+      
+      // Hash the password if it's being updated
+      if (updates.password) {
+        updates.password = await hashPassword(updates.password);
+      }
+      
       const student = await storage.updateUser(id, updates);
       if (!student) {
         return res.status(404).json({ message: "Talaba topilmadi" });
