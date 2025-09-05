@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut, Edit, Star, ShoppingBag, Loader2 } from "lucide-react";
 import type { Product, Purchase } from "@shared/schema";
@@ -10,6 +12,20 @@ import type { Product, Purchase } from "@shared/schema";
 export default function StudentDashboard() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
+  const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState(user?.profilePic || null);
+  
+  // Available avatar options
+  const avatarOptions = [
+    { id: 'tech-boy', name: 'Tech Boy', src: '/attached_assets/generated_images/Student_avatar_tech_boy_f2f800be.png' },
+    { id: 'tech-girl', name: 'Tech Girl', src: '/attached_assets/generated_images/Student_avatar_tech_girl_eee7673a.png' },
+    { id: 'default-1', name: 'Happy Coder', emoji: '😊' },
+    { id: 'default-2', name: 'Cool Developer', emoji: '😎' },
+    { id: 'default-3', name: 'Smart Student', emoji: '🤓' },
+    { id: 'default-4', name: 'Creative Mind', emoji: '🎨' },
+    { id: 'default-5', name: 'Tech Genius', emoji: '🧠' },
+    { id: 'default-6', name: 'Code Wizard', emoji: '🧙‍♂️' }
+  ];
 
   // Queries
   const { data: products = [] } = useQuery<Product[]>({
@@ -44,6 +60,28 @@ export default function StudentDashboard() {
       });
     },
   });
+  
+  const updateAvatarMutation = useMutation({
+    mutationFn: async (avatarData: { profilePic: string }) => {
+      const res = await apiRequest("PUT", `/api/students/${user?.id}`, avatarData);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      setIsAvatarDialogOpen(false);
+      toast({
+        title: "🎨 Avatar yangilandi!",
+        description: "Yangi avataringiz juda chiroyli ko'rinmoqda!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Xatolik",
+        description: error.message || "Avatarni yangilashda xatolik",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -51,6 +89,16 @@ export default function StudentDashboard() {
 
   const handlePurchase = (productId: string) => {
     purchaseMutation.mutate(productId);
+  };
+  
+  const handleAvatarSelect = (avatar: any) => {
+    setSelectedAvatar(avatar.src || avatar.emoji);
+  };
+  
+  const handleAvatarSave = () => {
+    if (selectedAvatar) {
+      updateAvatarMutation.mutate({ profilePic: selectedAvatar });
+    }
   };
 
   const userMedals = user?.medals as { gold: number; silver: number; bronze: number } || { gold: 0, silver: 0, bronze: 0 };
@@ -134,17 +182,99 @@ export default function StudentDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-center">
-                  <div className="w-24 h-24 bg-gradient-to-r from-teens-blue to-teens-navy rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
-                    {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                  <div className="relative w-24 h-24 mx-auto mb-4 group">
+                    {user?.profilePic ? (
+                      user.profilePic.startsWith('/attached_assets') ? (
+                        <img 
+                          src={user.profilePic} 
+                          alt="Avatar" 
+                          className="w-24 h-24 rounded-full object-cover border-4 border-teens-blue group-hover:border-teens-green transition-colors"
+                        />
+                      ) : (
+                        <div className="w-24 h-24 bg-gradient-to-r from-teens-blue to-teens-navy rounded-full flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">
+                          {user.profilePic}
+                        </div>
+                      )
+                    ) : (
+                      <div className="w-24 h-24 bg-gradient-to-r from-teens-blue to-teens-navy rounded-full flex items-center justify-center text-white text-2xl font-bold group-hover:scale-110 transition-transform">
+                        {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                      </div>
+                    )}
+                    <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-teens-green rounded-full flex items-center justify-center text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                      🎨
+                    </div>
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900" data-testid="text-student-fullname">
                     {user?.firstName} {user?.lastName}
                   </h3>
                   <p className="text-gray-500 mb-4" data-testid="text-student-email">{user?.email}</p>
-                  <Button className="bg-teens-blue hover:bg-blue-600 w-full" data-testid="button-edit-profile">
-                    <Edit className="w-4 h-4 mr-2" />
-                    Profilni tahrirlash
-                  </Button>
+                  <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="bg-teens-blue hover:bg-blue-600 w-full" data-testid="button-edit-profile">
+                        <Edit className="w-4 h-4 mr-2" />
+                        🎨 Avatarni o'zgartirish
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle className="text-center">✨ O'zingizga avatar tanlang! ✨</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-6">
+                        <div className="text-center">
+                          <p className="text-gray-600 mb-4">Quyidagi avatarlardan birini tanlang</p>
+                          <div className="grid grid-cols-4 gap-4">
+                            {avatarOptions.map((avatar) => (
+                              <div
+                                key={avatar.id}
+                                className={`cursor-pointer p-3 rounded-xl border-2 transition-all hover:scale-110 ${
+                                  selectedAvatar === (avatar.src || avatar.emoji)
+                                    ? 'border-teens-green bg-green-50'
+                                    : 'border-gray-200 hover:border-teens-blue'
+                                }`}
+                                onClick={() => handleAvatarSelect(avatar)}
+                              >
+                                {avatar.src ? (
+                                  <img
+                                    src={avatar.src}
+                                    alt={avatar.name}
+                                    className="w-16 h-16 rounded-full object-cover mx-auto mb-2"
+                                  />
+                                ) : (
+                                  <div className="w-16 h-16 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-3xl mx-auto mb-2">
+                                    {avatar.emoji}
+                                  </div>
+                                )}
+                                <p className="text-xs font-medium text-center">{avatar.name}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex space-x-3">
+                          <Button
+                            variant="outline"
+                            onClick={() => setIsAvatarDialogOpen(false)}
+                            className="flex-1"
+                          >
+                            ❌ Bekor qilish
+                          </Button>
+                          <Button
+                            onClick={handleAvatarSave}
+                            disabled={!selectedAvatar || updateAvatarMutation.isPending}
+                            className="flex-1 bg-gradient-to-r from-teens-green to-green-500 hover:from-green-500 hover:to-green-600 text-white font-bold"
+                          >
+                            {updateAvatarMutation.isPending ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Saqlanmoqda...
+                              </>
+                            ) : (
+                              "🎉 Avatar saqlash!"
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </CardContent>
             </Card>
@@ -192,41 +322,91 @@ export default function StudentDashboard() {
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>Mening medallarim</CardTitle>
+                  <CardTitle>🏆 Mening medallarim</CardTitle>
                   <div className="text-sm text-gray-500">
-                    Jami: <span className="font-medium">{totalMedals}</span> ta medal
+                    Jami: <span className="font-medium text-teens-blue">{totalMedals}</span> ta medal
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-3 gap-6">
-                  <div className="text-center group cursor-pointer" data-testid="medal-gold">
-                    <div className="w-20 h-20 mx-auto bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-3xl transform group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                      🥇
+                {totalMedals === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-8xl mb-4">🌟</div>
+                    <h3 className="text-xl font-bold text-gray-700 mb-2">Hali medallaringiz yo'q</h3>
+                    <p className="text-gray-500 mb-6">Darslarni yaxshi o'qing va medallar yutib oling!</p>
+                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-dashed border-purple-200">
+                      <div className="text-4xl mb-3">🎯</div>
+                      <p className="text-sm font-medium text-purple-700">
+                        Birinchi medalingizni yutib, do'kon bo'limida ajoyib sovg'alar oling!
+                      </p>
                     </div>
-                    <h3 className="font-semibold text-gray-900 mt-3">Oltin medal</h3>
-                    <p className="text-2xl font-bold text-yellow-600">{userMedals.gold}</p>
-                    <p className="text-xs text-gray-500">Mukammal natijalar</p>
                   </div>
-                  
-                  <div className="text-center group cursor-pointer" data-testid="medal-silver">
-                    <div className="w-20 h-20 mx-auto bg-gradient-to-br from-gray-300 to-gray-500 rounded-full flex items-center justify-center text-3xl transform group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                      🥈
+                ) : (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-3 gap-6">
+                      <div className="text-center group cursor-pointer relative" data-testid="medal-gold">
+                        <div className="w-20 h-20 mx-auto bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-3xl transform group-hover:scale-110 transition-all duration-300 shadow-lg group-hover:shadow-yellow-200">
+                          🥇
+                        </div>
+                        <h3 className="font-semibold text-gray-900 mt-3">Oltin medal</h3>
+                        <p className="text-2xl font-bold text-yellow-600 animate-pulse">{userMedals.gold}</p>
+                        <p className="text-xs text-gray-500">Mukammal natijalar</p>
+                        {userMedals.gold > 0 && (
+                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold animate-bounce">
+                            ⚡
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="text-center group cursor-pointer relative" data-testid="medal-silver">
+                        <div className="w-20 h-20 mx-auto bg-gradient-to-br from-gray-300 to-gray-500 rounded-full flex items-center justify-center text-3xl transform group-hover:scale-110 transition-all duration-300 shadow-lg group-hover:shadow-gray-200">
+                          🥈
+                        </div>
+                        <h3 className="font-semibold text-gray-900 mt-3">Kumush medal</h3>
+                        <p className="text-2xl font-bold text-gray-600 animate-pulse">{userMedals.silver}</p>
+                        <p className="text-xs text-gray-500">Yaxshi natijalar</p>
+                        {userMedals.silver > 0 && (
+                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold animate-bounce delay-100">
+                            ⚡
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="text-center group cursor-pointer relative" data-testid="medal-bronze">
+                        <div className="w-20 h-20 mx-auto bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-3xl transform group-hover:scale-110 transition-all duration-300 shadow-lg group-hover:shadow-orange-200">
+                          🥉
+                        </div>
+                        <h3 className="font-semibold text-gray-900 mt-3">Bronza medal</h3>
+                        <p className="text-2xl font-bold text-orange-600 animate-pulse">{userMedals.bronze}</p>
+                        <p className="text-xs text-gray-500">Qoniqarli natijalar</p>
+                        {userMedals.bronze > 0 && (
+                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold animate-bounce delay-200">
+                            ⚡
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <h3 className="font-semibold text-gray-900 mt-3">Kumush medal</h3>
-                    <p className="text-2xl font-bold text-gray-600">{userMedals.silver}</p>
-                    <p className="text-xs text-gray-500">Yaxshi natijalar</p>
-                  </div>
-                  
-                  <div className="text-center group cursor-pointer" data-testid="medal-bronze">
-                    <div className="w-20 h-20 mx-auto bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-3xl transform group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                      🥉
+                    
+                    {/* Marketplace Call-to-Action */}
+                    <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 rounded-2xl p-6 text-white relative overflow-hidden">
+                      <div className="absolute top-2 right-2 text-4xl opacity-30 animate-spin">🌟</div>
+                      <div className="relative z-10">
+                        <div className="flex items-center space-x-3 mb-3">
+                          <div className="text-3xl animate-bounce">🛍️</div>
+                          <h3 className="text-xl font-bold">Medal do'koniga xush kelibsiz!</h3>
+                        </div>
+                        <p className="text-purple-100 mb-4 text-sm">
+                          Medallaringiz bilan quyidagi bo'limda ajoyib sovg'alarni sotib olishingiz mumkin:
+                        </p>
+                        <div className="flex items-center justify-center space-x-2 text-sm">
+                          <span className="bg-white/20 rounded-full px-3 py-1">🎁 Sovg'alar</span>
+                          <span className="bg-white/20 rounded-full px-3 py-1">📚 Kitoblar</span>
+                          <span className="bg-white/20 rounded-full px-3 py-1">🎮 O'yinlar</span>
+                        </div>
+                      </div>
                     </div>
-                    <h3 className="font-semibold text-gray-900 mt-3">Bronza medal</h3>
-                    <p className="text-2xl font-bold text-orange-600">{userMedals.bronze}</p>
-                    <p className="text-xs text-gray-500">Qoniqarli natijalar</p>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -259,9 +439,15 @@ export default function StudentDashboard() {
                             className="w-full h-32 object-cover rounded-lg mb-3"
                           />
                         )}
-                        <h3 className="font-semibold text-gray-900" data-testid={`product-name-${product.id}`}>
-                          {product.name}
-                        </h3>
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="font-semibold text-gray-900 flex-1" data-testid={`product-name-${product.id}`}>
+                            {product.name}
+                          </h3>
+                          <div className="flex items-center space-x-1 text-xs text-gray-500">
+                            <span>📦</span>
+                            <span>{(product as any).quantity || 0}</span>
+                          </div>
+                        </div>
                         <p className="text-sm text-gray-600 mb-3" data-testid={`product-description-${product.id}`}>
                           {product.description}
                         </p>
