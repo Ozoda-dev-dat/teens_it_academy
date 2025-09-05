@@ -81,6 +81,7 @@ export default function AdminDashboard() {
     name: "",
     description: "",
     image: "",
+    quantity: 0,
     medalCost: { gold: 0, silver: 0, bronze: 0 },
     isActive: true
   });
@@ -88,6 +89,8 @@ export default function AdminDashboard() {
   // Medals states
   const [selectedStudentForMedals, setSelectedStudentForMedals] = useState<User | null>(null);
   const [medalForm, setMedalForm] = useState({ gold: 0, silver: 0, bronze: 0 });
+  const [isAwardingMedals, setIsAwardingMedals] = useState(false);
+  const [celebrationMedals, setCelebrationMedals] = useState<Array<{type: string, count: number}>>([]);
   
   // Payment states
   const [isAddPaymentOpen, setIsAddPaymentOpen] = useState(false);
@@ -265,7 +268,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       setIsAddProductOpen(false);
-      setProductForm({ name: "", description: "", image: "", medalCost: { gold: 0, silver: 0, bronze: 0 }, isActive: true });
+      setProductForm({ name: "", description: "", image: "", quantity: 0, medalCost: { gold: 0, silver: 0, bronze: 0 }, isActive: true });
       toast({ title: "Muvaffaqiyat", description: "Yangi mahsulot yaratildi" });
     },
     onError: (error: any) => {
@@ -295,11 +298,42 @@ export default function AdminDashboard() {
       const res = await apiRequest("PUT", `/api/students/${studentId}/medals`, medals);
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Calculate new medals awarded
+      const currentMedals = selectedStudentForMedals?.medals as any || { gold: 0, silver: 0, bronze: 0 };
+      const newMedals = variables.medals;
+      const awarded = [];
+      
+      if (newMedals.gold > currentMedals.gold) {
+        awarded.push({ type: 'gold', count: newMedals.gold - currentMedals.gold });
+      }
+      if (newMedals.silver > currentMedals.silver) {
+        awarded.push({ type: 'silver', count: newMedals.silver - currentMedals.silver });
+      }
+      if (newMedals.bronze > currentMedals.bronze) {
+        awarded.push({ type: 'bronze', count: newMedals.bronze - currentMedals.bronze });
+      }
+      
+      if (awarded.length > 0) {
+        setIsAwardingMedals(true);
+        setCelebrationMedals(awarded);
+        
+        // Hide celebration after animation
+        setTimeout(() => {
+          setIsAwardingMedals(false);
+          setCelebrationMedals([]);
+          setSelectedStudentForMedals(null);
+        }, 4000);
+      } else {
+        setSelectedStudentForMedals(null);
+      }
+      
       queryClient.invalidateQueries({ queryKey: ["/api/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
-      setSelectedStudentForMedals(null);
-      toast({ title: "Muvaffaqiyat", description: "Medallar yangilandi" });
+      toast({ 
+        title: "🎉 Tabriklaymiz!", 
+        description: awarded.length > 0 ? "Yangi medallar berildi!" : "Medallar yangilandi" 
+      });
     },
     onError: (error: any) => {
       toast({ title: "Xatolik", description: error.message || "Medallarni yangilashda xatolik", variant: "destructive" });
@@ -461,6 +495,7 @@ export default function AdminDashboard() {
       name: product.name,
       description: product.description || "",
       image: product.image || "",
+      quantity: (product as any).quantity || 0,
       medalCost: product.medalCost as any,
       isActive: product.isActive
     });
@@ -1696,66 +1731,144 @@ export default function AdminDashboard() {
                     </div>
                     
                     {/* Medal Edit Dialog */}
-                    <Dialog open={!!selectedStudentForMedals} onOpenChange={() => setSelectedStudentForMedals(null)}>
-                      <DialogContent>
+                    <Dialog open={!!selectedStudentForMedals && !isAwardingMedals} onOpenChange={() => setSelectedStudentForMedals(null)}>
+                      <DialogContent className="max-w-md">
                         <DialogHeader>
-                          <DialogTitle>
-                            {selectedStudentForMedals?.firstName} {selectedStudentForMedals?.lastName} medallarini tahrirlash
+                          <DialogTitle className="text-center text-lg">
+                            ✨ {selectedStudentForMedals?.firstName} ga medal berish ✨
                           </DialogTitle>
                         </DialogHeader>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="gold-medals">🥇 Oltin medallar</Label>
-                            <Input
-                              id="gold-medals"
-                              type="number"
-                              min="0"
-                              value={medalForm.gold}
-                              onChange={(e) => setMedalForm(prev => ({ ...prev, gold: parseInt(e.target.value) || 0 }))}
-                            />
+                        <div className="space-y-6">
+                          <div className="text-center">
+                            <div className="w-16 h-16 bg-gradient-to-r from-teens-blue to-teens-navy rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-2">
+                              {selectedStudentForMedals?.firstName?.[0]}{selectedStudentForMedals?.lastName?.[0]}
+                            </div>
+                            <p className="text-sm text-gray-600">Ushbu o'quvchiga medal bering!</p>
                           </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="silver-medals">🥈 Kumush medallar</Label>
-                            <Input
-                              id="silver-medals"
-                              type="number"
-                              min="0"
-                              value={medalForm.silver}
-                              onChange={(e) => setMedalForm(prev => ({ ...prev, silver: parseInt(e.target.value) || 0 }))}
-                            />
+                          
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="gold-medals" className="flex items-center space-x-2 text-sm font-medium">
+                                <span className="text-2xl animate-bounce">🥇</span>
+                                <span>Oltin medallar</span>
+                              </Label>
+                              <div className="relative">
+                                <Input
+                                  id="gold-medals"
+                                  type="number"
+                                  min="0"
+                                  value={medalForm.gold}
+                                  onChange={(e) => setMedalForm(prev => ({ ...prev, gold: parseInt(e.target.value) || 0 }))}
+                                  className="text-center text-lg font-bold border-2 border-yellow-200 focus:border-yellow-400"
+                                />
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-yellow-500 font-bold">
+                                  {medalForm.gold}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="silver-medals" className="flex items-center space-x-2 text-sm font-medium">
+                                <span className="text-2xl animate-bounce delay-100">🥈</span>
+                                <span>Kumush medallar</span>
+                              </Label>
+                              <div className="relative">
+                                <Input
+                                  id="silver-medals"
+                                  type="number"
+                                  min="0"
+                                  value={medalForm.silver}
+                                  onChange={(e) => setMedalForm(prev => ({ ...prev, silver: parseInt(e.target.value) || 0 }))}
+                                  className="text-center text-lg font-bold border-2 border-gray-200 focus:border-gray-400"
+                                />
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold">
+                                  {medalForm.silver}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="bronze-medals" className="flex items-center space-x-2 text-sm font-medium">
+                                <span className="text-2xl animate-bounce delay-200">🥉</span>
+                                <span>Bronza medallar</span>
+                              </Label>
+                              <div className="relative">
+                                <Input
+                                  id="bronze-medals"
+                                  type="number"
+                                  min="0"
+                                  value={medalForm.bronze}
+                                  onChange={(e) => setMedalForm(prev => ({ ...prev, bronze: parseInt(e.target.value) || 0 }))}
+                                  className="text-center text-lg font-bold border-2 border-orange-200 focus:border-orange-400"
+                                />
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-orange-500 font-bold">
+                                  {medalForm.bronze}
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="bronze-medals">🥉 Bronza medallar</Label>
-                            <Input
-                              id="bronze-medals"
-                              type="number"
-                              min="0"
-                              value={medalForm.bronze}
-                              onChange={(e) => setMedalForm(prev => ({ ...prev, bronze: parseInt(e.target.value) || 0 }))}
-                            />
-                          </div>
-                          <div className="flex justify-end space-x-3">
+                          
+                          <div className="flex space-x-3">
                             <Button
                               type="button"
                               variant="outline"
                               onClick={() => setSelectedStudentForMedals(null)}
+                              className="flex-1"
                             >
-                              Bekor qilish
+                              ❌ Bekor qilish
                             </Button>
                             <Button
                               onClick={handleUpdateMedals}
-                              className="bg-teens-blue hover:bg-blue-600"
+                              className="flex-1 bg-gradient-to-r from-teens-green to-green-500 hover:from-green-500 hover:to-green-600 text-white font-bold"
                               disabled={updateMedalsMutation.isPending}
                             >
                               {updateMedalsMutation.isPending ? (
                                 <>
                                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                  Yangilanmoqda...
+                                  ⭐ Berilmoqda...
                                 </>
                               ) : (
-                                "Saqlash"
+                                "🎉 Medal berish!"
                               )}
                             </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
+                    {/* Medal Award Celebration Dialog */}
+                    <Dialog open={isAwardingMedals} onOpenChange={() => {}}>
+                      <DialogContent className="max-w-lg border-none bg-gradient-to-br from-purple-500 via-pink-500 to-yellow-500 text-white">
+                        <div className="text-center space-y-6 py-8">
+                          <div className="animate-bounce">
+                            <div className="text-6xl mb-4">🎉</div>
+                            <h2 className="text-2xl font-bold">Tabriklaymiz!</h2>
+                            <p className="text-lg opacity-90">
+                              {selectedStudentForMedals?.firstName} yangi medal(lar) oldi!
+                            </p>
+                          </div>
+                          
+                          <div className="flex justify-center space-x-4">
+                            {celebrationMedals.map((medal, index) => (
+                              <div 
+                                key={medal.type}
+                                className="animate-pulse"
+                                style={{ animationDelay: `${index * 200}ms` }}
+                              >
+                                <div className="text-6xl animate-bounce mb-2">
+                                  {medal.type === 'gold' && '🥇'}
+                                  {medal.type === 'silver' && '🥈'}
+                                  {medal.type === 'bronze' && '🥉'}
+                                </div>
+                                <div className="text-xl font-bold">+{medal.count}</div>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <div className="animate-bounce delay-1000">
+                            <div className="text-4xl mb-2">⭐</div>
+                            <p className="text-lg font-semibold">Ajoyib ish!</p>
+                            <p className="text-sm opacity-90">Davom eting va ko'proq medal yutib oling!</p>
                           </div>
                         </div>
                       </DialogContent>
@@ -1800,15 +1913,55 @@ export default function AdminDashboard() {
                                 placeholder="Mahsulot haqida batafsil ma'lumot"
                               />
                             </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="product-image">Rasm URL</Label>
-                              <Input
-                                id="product-image"
-                                value={productForm.image}
-                                onChange={(e) => setProductForm(prev => ({ ...prev, image: e.target.value }))}
-                                placeholder="https://example.com/image.jpg"
-                              />
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="product-image">Rasm URL</Label>
+                                <Input
+                                  id="product-image"
+                                  value={productForm.image}
+                                  onChange={(e) => setProductForm(prev => ({ ...prev, image: e.target.value }))}
+                                  placeholder="https://example.com/image.jpg"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="product-quantity">📦 Miqdori</Label>
+                                <Input
+                                  id="product-quantity"
+                                  type="number"
+                                  min="0"
+                                  value={productForm.quantity}
+                                  onChange={(e) => setProductForm(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))}
+                                  placeholder="10"
+                                  required
+                                />
+                              </div>
                             </div>
+                            
+                            {/* Image Preview */}
+                            {productForm.image && (
+                              <div className="space-y-2">
+                                <Label>Rasm ko'rinishi</Label>
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                                  <img
+                                    src={productForm.image}
+                                    alt="Mahsulot rasm ko'rinishi"
+                                    className="w-full max-w-xs h-48 object-cover rounded-lg mx-auto"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
+                                    onLoad={(e) => {
+                                      (e.target as HTMLImageElement).style.display = 'block';
+                                    }}
+                                  />
+                                  {!productForm.image.match(/\.(jpeg|jpg|gif|png)$/) && (
+                                    <p className="text-center text-gray-500 text-sm mt-2">
+                                      Rasm yuklanmadi yoki noto'g'ri URL
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                             <div className="space-y-3">
                               <Label>Medal narxi</Label>
                               <div className="grid grid-cols-3 gap-3">
@@ -1902,7 +2055,13 @@ export default function AdminDashboard() {
                                     <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
                                     <p className="text-sm text-gray-600 mb-3">{product.description}</p>
                                     <div className="space-y-2">
-                                      <p className="text-sm font-medium text-gray-700">Medal narxi:</p>
+                                      <div className="flex items-center justify-between">
+                                        <p className="text-sm font-medium text-gray-700">Medal narxi:</p>
+                                        <div className="flex items-center space-x-1 text-sm text-gray-600">
+                                          <span>📦</span>
+                                          <span className="font-medium">{(product as any).quantity || 0} dona</span>
+                                        </div>
+                                      </div>
                                       <div className="flex flex-wrap gap-2">
                                         {product.medalCost && typeof product.medalCost === 'object' && (() => {
                                           const medals = product.medalCost as { gold: number; silver: number; bronze: number };
@@ -1948,7 +2107,16 @@ export default function AdminDashboard() {
                                     </Badge>
                                   </div>
                                 </div>
-                                {product.image && (
+                                {product.image ? (
+                                  <img
+                                    src={product.image}
+                                    alt={product.name}
+                                    className="w-full h-32 object-cover rounded-lg mb-3"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
+                                  />
+                                ) : (
                                   <div className="w-full h-32 bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
                                     <Package className="w-12 h-12 text-gray-400" />
                                   </div>
@@ -2069,14 +2237,52 @@ export default function AdminDashboard() {
                 onChange={(e) => setProductForm(prev => ({ ...prev, description: e.target.value }))}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-product-image">Rasm URL</Label>
-              <Input
-                id="edit-product-image"
-                value={productForm.image}
-                onChange={(e) => setProductForm(prev => ({ ...prev, image: e.target.value }))}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-product-image">Rasm URL</Label>
+                <Input
+                  id="edit-product-image"
+                  value={productForm.image}
+                  onChange={(e) => setProductForm(prev => ({ ...prev, image: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-product-quantity">📦 Miqdori</Label>
+                <Input
+                  id="edit-product-quantity"
+                  type="number"
+                  min="0"
+                  value={productForm.quantity}
+                  onChange={(e) => setProductForm(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))}
+                  required
+                />
+              </div>
             </div>
+            
+            {/* Image Preview */}
+            {productForm.image && (
+              <div className="space-y-2">
+                <Label>Rasm ko'rinishi</Label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                  <img
+                    src={productForm.image}
+                    alt="Mahsulot rasm ko'rinishi"
+                    className="w-full max-w-xs h-48 object-cover rounded-lg mx-auto"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                    onLoad={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'block';
+                    }}
+                  />
+                  {!productForm.image.match(/\.(jpeg|jpg|gif|png)$/) && (
+                    <p className="text-center text-gray-500 text-sm mt-2">
+                      Rasm yuklanmadi yoki noto'g'ri URL
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
             <div className="space-y-3">
               <Label>Medal narxi</Label>
               <div className="grid grid-cols-3 gap-3">
