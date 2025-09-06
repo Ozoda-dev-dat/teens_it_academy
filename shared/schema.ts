@@ -12,6 +12,7 @@ export const users = pgTable("users", {
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   profilePic: text("profile_pic"),
+  avatarConfig: jsonb("avatar_config"), // Stores detailed avatar customization data
   medals: jsonb("medals").default(sql`'{"gold": 0, "silver": 0, "bronze": 0}'`),
   createdAt: timestamp("created_at").defaultNow(),
 });
