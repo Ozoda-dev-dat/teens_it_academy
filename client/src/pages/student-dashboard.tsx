@@ -4,28 +4,16 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut, Edit, Star, ShoppingBag, Loader2 } from "lucide-react";
 import type { Product, Purchase } from "@shared/schema";
+import AvatarBuilder from "@/components/avatar-builder";
+import AvatarRenderer from "@/components/avatar-renderer";
 
 export default function StudentDashboard() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
-  const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
-  const [selectedAvatar, setSelectedAvatar] = useState(user?.profilePic || null);
-  
-  // Available avatar options
-  const avatarOptions = [
-    { id: 'tech-boy', name: 'Tech Boy', src: '/attached_assets/generated_images/Student_avatar_tech_boy_f2f800be.png' },
-    { id: 'tech-girl', name: 'Tech Girl', src: '/attached_assets/generated_images/Student_avatar_tech_girl_eee7673a.png' },
-    { id: 'default-1', name: 'Happy Coder', emoji: '😊' },
-    { id: 'default-2', name: 'Cool Developer', emoji: '😎' },
-    { id: 'default-3', name: 'Smart Student', emoji: '🤓' },
-    { id: 'default-4', name: 'Creative Mind', emoji: '🎨' },
-    { id: 'default-5', name: 'Tech Genius', emoji: '🧠' },
-    { id: 'default-6', name: 'Code Wizard', emoji: '🧙‍♂️' }
-  ];
+  const [isAvatarBuilderOpen, setIsAvatarBuilderOpen] = useState(false);
 
   // Queries
   const { data: products = [] } = useQuery<Product[]>({
@@ -62,13 +50,13 @@ export default function StudentDashboard() {
   });
   
   const updateAvatarMutation = useMutation({
-    mutationFn: async (avatarData: { profilePic: string }) => {
+    mutationFn: async (avatarData: { profilePic?: string; avatarConfig?: any }) => {
       const res = await apiRequest("PUT", `/api/students/${user?.id}`, avatarData);
       return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      setIsAvatarDialogOpen(false);
+      setIsAvatarBuilderOpen(false);
       toast({
         title: "🎨 Avatar yangilandi!",
         description: "Yangi avataringiz juda chiroyli ko'rinmoqda!",
@@ -91,13 +79,19 @@ export default function StudentDashboard() {
     purchaseMutation.mutate(productId);
   };
   
-  const handleAvatarSelect = (avatar: any) => {
-    setSelectedAvatar(avatar.src || avatar.emoji);
-  };
-  
-  const handleAvatarSave = () => {
-    if (selectedAvatar) {
-      updateAvatarMutation.mutate({ profilePic: selectedAvatar });
+  const handleAvatarSave = (avatarConfig: any) => {
+    if (avatarConfig.style && avatarConfig.style.startsWith('/')) {
+      // Pre-built avatar
+      updateAvatarMutation.mutate({ 
+        profilePic: avatarConfig.style,
+        avatarConfig: avatarConfig 
+      });
+    } else {
+      // Custom avatar configuration
+      updateAvatarMutation.mutate({ 
+        profilePic: `custom:${JSON.stringify(avatarConfig)}`,
+        avatarConfig: avatarConfig 
+      });
     }
   };
 
@@ -190,9 +184,19 @@ export default function StudentDashboard() {
                           alt="Avatar" 
                           className="w-24 h-24 rounded-full object-cover border-4 border-teens-blue group-hover:border-teens-green transition-colors"
                         />
-                      ) : (
+                      ) : user?.avatarConfig ? (
+                        <AvatarRenderer 
+                          avatarConfig={user.avatarConfig as any}
+                          size="md"
+                          className="group-hover:scale-110 transition-transform"
+                        />
+                      ) : user.profilePic.length > 3 ? (
                         <div className="w-24 h-24 bg-gradient-to-r from-teens-blue to-teens-navy rounded-full flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">
                           {user.profilePic}
+                        </div>
+                      ) : (
+                        <div className="w-24 h-24 bg-gradient-to-r from-teens-blue to-teens-navy rounded-full flex items-center justify-center text-white text-2xl font-bold group-hover:scale-110 transition-transform">
+                          {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
                         </div>
                       )
                     ) : (
@@ -208,73 +212,14 @@ export default function StudentDashboard() {
                     {user?.firstName} {user?.lastName}
                   </h3>
                   <p className="text-gray-500 mb-4" data-testid="text-student-email">{user?.email}</p>
-                  <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="bg-teens-blue hover:bg-blue-600 w-full" data-testid="button-edit-profile">
-                        <Edit className="w-4 h-4 mr-2" />
-                        🎨 Avatarni o'zgartirish
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle className="text-center">✨ O'zingizga avatar tanlang! ✨</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-6">
-                        <div className="text-center">
-                          <p className="text-gray-600 mb-4">Quyidagi avatarlardan birini tanlang</p>
-                          <div className="grid grid-cols-4 gap-4">
-                            {avatarOptions.map((avatar) => (
-                              <div
-                                key={avatar.id}
-                                className={`cursor-pointer p-3 rounded-xl border-2 transition-all hover:scale-110 ${
-                                  selectedAvatar === (avatar.src || avatar.emoji)
-                                    ? 'border-teens-green bg-green-50'
-                                    : 'border-gray-200 hover:border-teens-blue'
-                                }`}
-                                onClick={() => handleAvatarSelect(avatar)}
-                              >
-                                {avatar.src ? (
-                                  <img
-                                    src={avatar.src}
-                                    alt={avatar.name}
-                                    className="w-16 h-16 rounded-full object-cover mx-auto mb-2"
-                                  />
-                                ) : (
-                                  <div className="w-16 h-16 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-3xl mx-auto mb-2">
-                                    {avatar.emoji}
-                                  </div>
-                                )}
-                                <p className="text-xs font-medium text-center">{avatar.name}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="flex space-x-3">
-                          <Button
-                            variant="outline"
-                            onClick={() => setIsAvatarDialogOpen(false)}
-                            className="flex-1"
-                          >
-                            ❌ Bekor qilish
-                          </Button>
-                          <Button
-                            onClick={handleAvatarSave}
-                            disabled={!selectedAvatar || updateAvatarMutation.isPending}
-                            className="flex-1 bg-gradient-to-r from-teens-green to-green-500 hover:from-green-500 hover:to-green-600 text-white font-bold"
-                          >
-                            {updateAvatarMutation.isPending ? (
-                              <>
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Saqlanmoqda...
-                              </>
-                            ) : (
-                              "🎉 Avatar saqlash!"
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  <Button 
+                    className="bg-teens-blue hover:bg-blue-600 w-full" 
+                    data-testid="button-edit-profile"
+                    onClick={() => setIsAvatarBuilderOpen(true)}
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    🎨 Avatarni o'zgartirish
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -545,6 +490,14 @@ export default function StudentDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Avatar Builder Component */}
+      <AvatarBuilder
+        isOpen={isAvatarBuilderOpen}
+        onClose={() => setIsAvatarBuilderOpen(false)}
+        onSave={handleAvatarSave}
+        currentAvatar={user?.profilePic || undefined}
+      />
     </div>
   );
 }
