@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut, Edit, Star, ShoppingBag, Loader2 } from "lucide-react";
 import type { Product, Purchase } from "@shared/schema";
-import AvatarBuilder from "@/components/ui/avatar-builder.tsx";
+import AvatarBuilder from "@/components/ui/avata-builder.tsx";
 import AvatarRenderer from "@/components/ui/avatar-renderer.tsx";
 
 export default function StudentDashboard() {
