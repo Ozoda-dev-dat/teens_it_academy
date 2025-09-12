@@ -140,6 +140,42 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.get("/api/groups/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Autentifikatsiya talab qilinadi" });
+    }
+
+    try {
+      // Allow admin to access any group, teachers only their assigned groups
+      if (req.user.role === "admin") {
+        const group = await storage.getGroup(req.params.id);
+        if (!group) {
+          return res.status(404).json({ message: "Guruh topilmadi" });
+        }
+        return res.json(group);
+      } else if (req.user.role === "teacher") {
+        // Check if teacher is assigned to this group
+        const teacherGroups = await storage.getTeacherGroups(req.user.id);
+        const hasAccess = teacherGroups.some(tg => tg.groupId === req.params.id);
+        
+        if (!hasAccess) {
+          return res.status(403).json({ message: "Bu guruhga kirish huquqingiz yo'q" });
+        }
+        
+        const group = await storage.getGroup(req.params.id);
+        if (!group) {
+          return res.status(404).json({ message: "Guruh topilmadi" });
+        }
+        return res.json(group);
+      }
+      
+      return res.status(403).json({ message: "Kirish rad etildi" });
+    } catch (error) {
+      console.error("Guruh ma'lumotlarini olishda xatolik:", error);
+      res.status(500).json({ message: "Guruh ma'lumotlarini yuklashda xatolik" });
+    }
+  });
+
   app.put("/api/groups/:id", requireAdmin, async (req, res) => {
     try {
       const updates = insertGroupSchema.partial().parse(req.body);
@@ -181,10 +217,30 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get("/api/groups/:groupId/students", requireAdmin, async (req, res) => {
+  app.get("/api/groups/:groupId/students", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Autentifikatsiya talab qilinadi" });
+    }
+
     try {
-      const groupStudents = await storage.getGroupStudents(req.params.groupId);
-      res.json(groupStudents);
+      // Allow admin to access any group, teachers only their assigned groups
+      if (req.user.role === "admin") {
+        const groupStudents = await storage.getGroupStudents(req.params.groupId);
+        return res.json(groupStudents);
+      } else if (req.user.role === "teacher") {
+        // Check if teacher is assigned to this group
+        const teacherGroups = await storage.getTeacherGroups(req.user.id);
+        const hasAccess = teacherGroups.some(tg => tg.groupId === req.params.groupId);
+        
+        if (!hasAccess) {
+          return res.status(403).json({ message: "Bu guruhga kirish huquqingiz yo'q" });
+        }
+        
+        const groupStudents = await storage.getGroupStudents(req.params.groupId);
+        return res.json(groupStudents);
+      }
+      
+      return res.status(403).json({ message: "Kirish rad etildi" });
     } catch (error) {
       console.error("Guruh talabalarini olishda xatolik:", error);
       res.status(500).json({ message: "Guruh talabalarini yuklashda xatolik" });
@@ -205,7 +261,11 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Attendance routes
-  app.post("/api/attendance", requireAdmin, async (req, res) => {
+  app.post("/api/attendance", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Autentifikatsiya talab qilinadi" });
+    }
+
     try {
       console.log("Received attendance data:", req.body);
       
@@ -217,8 +277,25 @@ export function registerRoutes(app: Express): Server {
       
       const attendanceData = insertAttendanceSchema.parse(bodyWithDate);
       console.log("Parsed attendance data:", attendanceData);
-      const attendance = await storage.createAttendance(attendanceData);
-      res.status(201).json(attendance);
+      
+      // Allow admin to create attendance for any group, teachers only for their assigned groups
+      if (req.user.role === "admin") {
+        const attendance = await storage.createAttendance(attendanceData);
+        return res.status(201).json(attendance);
+      } else if (req.user.role === "teacher") {
+        // Check if teacher is assigned to this group
+        const teacherGroups = await storage.getTeacherGroups(req.user.id);
+        const hasAccess = teacherGroups.some(tg => tg.groupId === attendanceData.groupId);
+        
+        if (!hasAccess) {
+          return res.status(403).json({ message: "Bu guruh uchun davomat yaratish huquqingiz yo'q" });
+        }
+        
+        const attendance = await storage.createAttendance(attendanceData);
+        return res.status(201).json(attendance);
+      }
+      
+      return res.status(403).json({ message: "Kirish rad etildi" });
     } catch (error) {
       console.error("Davomat yaratishda xatolik:", error);
       if (error instanceof Error) {

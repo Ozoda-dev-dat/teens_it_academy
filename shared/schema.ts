@@ -46,7 +46,7 @@ export const attendance = pgTable("attendance", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   groupId: varchar("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
   date: timestamp("date").notNull(),
-  participants: jsonb("participants").notNull(), // array of student IDs
+  participants: jsonb("participants").notNull(), // array of {studentId: string, status: 'arrived' | 'late' | 'absent'}
   createdAt: timestamp("created_at").defaultNow(),
 });
 

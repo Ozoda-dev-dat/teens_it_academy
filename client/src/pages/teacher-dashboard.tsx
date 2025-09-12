@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Calendar, Award, BookOpen, LogOut, User, ClipboardCheck } from "lucide-react";
+import { Users, Calendar, Award, BookOpen, LogOut, User, ClipboardCheck, ArrowRight } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function TeacherDashboard() {
   const { user, logoutMutation } = useAuth();
   const [selectedTab, setSelectedTab] = useState("overview");
+  const [, setLocation] = useLocation();
 
   // Fetch teacher's assigned groups and data
   const { data: teacherData, isLoading } = useQuery({
@@ -27,6 +29,10 @@ export default function TeacherDashboard() {
     } catch (error) {
       console.error("Logout failed:", error);
     }
+  };
+
+  const handleGroupClick = (groupId: string) => {
+    setLocation(`/teacher/attendance/${groupId}`);
   };
 
   if (isLoading) {
@@ -156,14 +162,21 @@ export default function TeacherDashboard() {
                   <div className="space-y-3">
                     {teacherData?.groups?.length ? (
                       teacherData.groups.map((group: any) => (
-                        <div key={group.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div 
+                          key={group.id} 
+                          onClick={() => handleGroupClick(group.id)}
+                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                        >
                           <div>
                             <h4 className="font-medium">{group.name}</h4>
                             <p className="text-sm text-gray-500">{group.description || "Tavsif yo'q"}</p>
                           </div>
-                          <Badge variant="secondary">
-                            {group.studentCount || 0} o'quvchi
-                          </Badge>
+                          <div className="flex items-center space-x-2">
+                            <Badge variant="secondary">
+                              {group.studentCount || 0} o'quvchi
+                            </Badge>
+                            <ArrowRight className="w-4 h-4 text-gray-400" />
+                          </div>
                         </div>
                       ))
                     ) : (
@@ -216,7 +229,11 @@ export default function TeacherDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {teacherData?.groups?.length ? (
                     teacherData.groups.map((group: any) => (
-                      <Card key={group.id} className="border-l-4 border-l-green-500">
+                      <Card 
+                        key={group.id} 
+                        className="border-l-4 border-l-green-500 hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => handleGroupClick(group.id)}
+                      >
                         <CardContent className="p-6">
                           <div className="space-y-4">
                             <div>
@@ -227,10 +244,11 @@ export default function TeacherDashboard() {
                               <Badge variant="secondary">
                                 {group.studentCount || 0} o'quvchi
                               </Badge>
-                              <div className="flex space-x-2">
-                                <Button size="sm" variant="outline">
-                                  Batafsil
+                              <div className="flex items-center space-x-2">
+                                <Button size="sm" variant="outline" className="pointer-events-none">
+                                  Davomat
                                 </Button>
+                                <ArrowRight className="w-4 h-4 text-gray-400" />
                               </div>
                             </div>
                           </div>

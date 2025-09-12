@@ -12,6 +12,7 @@ import TeacherLogin from "@/pages/teacher-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import StudentDashboard from "@/pages/student-dashboard";
 import TeacherDashboard from "@/pages/teacher-dashboard";
+import TeacherAttendance from "@/pages/teacher-attendance";
 import { ProtectedRoute } from "./lib/protected-route";
 
 function Router() {
@@ -21,6 +22,7 @@ function Router() {
       <ProtectedRoute path="/admin" component={AdminDashboard} requiredRole="admin" />
       <ProtectedRoute path="/student" component={StudentDashboard} requiredRole="student" />
       <ProtectedRoute path="/teacher" component={TeacherDashboard} requiredRole="teacher" />
+      <ProtectedRoute path="/teacher/attendance/:groupId" component={TeacherAttendance} requiredRole="teacher" />
       <Route path="/auth" component={AuthPage} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/student/login" component={StudentLogin} />
