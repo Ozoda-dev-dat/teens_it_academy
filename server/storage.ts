@@ -1,5 +1,5 @@
-import { users, groups, groupStudents, attendance, payments, products, purchases } from "@shared/schema";
-import type { User, InsertUser, Group, InsertGroup, GroupStudent, InsertGroupStudent, Attendance, InsertAttendance, Payment, InsertPayment, Product, InsertProduct, Purchase, InsertPurchase } from "@shared/schema";
+import { users, groups, groupStudents, teacherGroups, attendance, payments, products, purchases } from "@shared/schema";
+import type { User, InsertUser, Group, InsertGroup, GroupStudent, InsertGroupStudent, TeacherGroup, InsertTeacherGroup, Attendance, InsertAttendance, Payment, InsertPayment, Product, InsertProduct, Purchase, InsertPurchase } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, desc } from "drizzle-orm";
 import session from "express-session";
@@ -29,6 +29,13 @@ export interface IStorage {
   removeStudentFromGroup(groupId: string, studentId: string): Promise<boolean>;
   getGroupStudents(groupId: string): Promise<GroupStudent[]>;
   getStudentGroups(studentId: string): Promise<GroupStudent[]>;
+
+  // Teacher Group methods
+  assignTeacherToGroup(teacherGroup: InsertTeacherGroup): Promise<TeacherGroup>;
+  removeTeacherFromGroup(teacherId: string, groupId: string): Promise<boolean>;
+  getTeacherGroups(teacherId: string): Promise<TeacherGroup[]>;
+  getGroupTeachers(groupId: string): Promise<TeacherGroup[]>;
+  getAllTeachers(): Promise<User[]>;
 
   // Attendance methods
   createAttendance(attendance: InsertAttendance): Promise<Attendance>;
@@ -117,6 +124,11 @@ export class DatabaseStorage implements IStorage {
     return result || [];
   }
 
+  async getAllTeachers(): Promise<User[]> {
+    const result = await db.select().from(users).where(eq(users.role, "teacher"));
+    return result || [];
+  }
+
   // Group methods
   async createGroup(group: InsertGroup): Promise<Group> {
     const [newGroup] = await db
@@ -195,6 +207,41 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(groupStudents)
       .where(eq(groupStudents.studentId, studentId));
+    return result || [];
+  }
+
+  // Teacher Group methods
+  async assignTeacherToGroup(teacherGroup: InsertTeacherGroup): Promise<TeacherGroup> {
+    const [newTeacherGroup] = await db
+      .insert(teacherGroups)
+      .values(teacherGroup)
+      .returning();
+    return newTeacherGroup;
+  }
+
+  async removeTeacherFromGroup(teacherId: string, groupId: string): Promise<boolean> {
+    const result = await db
+      .delete(teacherGroups)
+      .where(and(
+        eq(teacherGroups.teacherId, teacherId),
+        eq(teacherGroups.groupId, groupId)
+      ));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getTeacherGroups(teacherId: string): Promise<TeacherGroup[]> {
+    const result = await db
+      .select()
+      .from(teacherGroups)
+      .where(eq(teacherGroups.teacherId, teacherId));
+    return result || [];
+  }
+
+  async getGroupTeachers(groupId: string): Promise<TeacherGroup[]> {
+    const result = await db
+      .select()
+      .from(teacherGroups)
+      .where(eq(teacherGroups.groupId, groupId));
     return result || [];
   }
 

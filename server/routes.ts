@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertUserSchema, insertGroupSchema, insertAttendanceSchema, insertPaymentSchema, insertProductSchema, insertPurchaseSchema, insertGroupStudentSchema } from "@shared/schema";
+import { insertUserSchema, insertGroupSchema, insertAttendanceSchema, insertPaymentSchema, insertProductSchema, insertPurchaseSchema, insertGroupStudentSchema, insertTeacherGroupSchema } from "@shared/schema";
 import { z } from "zod";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
@@ -383,6 +383,109 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Xaridlar tarixini olishda xatolik:", error);
       res.status(500).json({ message: "Xaridlar tarixini yuklashda xatolik" });
+    }
+  });
+
+  // Teacher management routes (Admin only)
+  app.post("/api/teachers", requireAdmin, async (req, res) => {
+    try {
+      const teacherData = insertUserSchema.parse({
+        ...req.body,
+        role: "teacher",
+        medals: { gold: 0, silver: 0, bronze: 0 }
+      });
+      
+      // Hash the password before storing
+      if (teacherData.password) {
+        teacherData.password = await hashPassword(teacherData.password);
+      }
+      
+      const teacher = await storage.createUser(teacherData);
+      res.status(201).json(teacher);
+    } catch (error) {
+      console.error("O'qituvchi yaratishda xatolik:", error);
+      res.status(400).json({ message: "O'qituvchi yaratishda xatolik yuz berdi" });
+    }
+  });
+
+  app.get("/api/teachers", requireAdmin, async (req, res) => {
+    try {
+      const teachers = await storage.getAllTeachers();
+      res.json(teachers);
+    } catch (error) {
+      console.error("O'qituvchilarni olishda xatolik:", error);
+      res.status(500).json({ message: "O'qituvchilarni yuklashda xatolik" });
+    }
+  });
+
+  // Teacher-Group assignment routes (Admin only)
+  app.post("/api/teachers/groups", requireAdmin, async (req, res) => {
+    try {
+      const assignmentData = insertTeacherGroupSchema.parse(req.body);
+      const assignment = await storage.assignTeacherToGroup(assignmentData);
+      res.status(201).json(assignment);
+    } catch (error) {
+      console.error("O'qituvchini guruhga tayinlashda xatolik:", error);
+      res.status(400).json({ message: "O'qituvchini guruhga tayinlashda xatolik" });
+    }
+  });
+
+  app.delete("/api/teachers/groups", requireAdmin, async (req, res) => {
+    try {
+      const { teacherId, groupId } = req.query;
+      if (!teacherId || !groupId) {
+        return res.status(400).json({ message: "O'qituvchi ID va Guruh ID talab qilinadi" });
+      }
+
+      const success = await storage.removeTeacherFromGroup(teacherId as string, groupId as string);
+      if (success) {
+        res.status(200).json({ message: "O'qituvchi guruhdan muvaffaqiyatli olib tashlandi" });
+      } else {
+        res.status(404).json({ message: "Tayinlash topilmadi" });
+      }
+    } catch (error) {
+      console.error("O'qituvchini guruhdan olib tashlashda xatolik:", error);
+      res.status(500).json({ message: "O'qituvchini guruhdan olib tashlashda xatolik" });
+    }
+  });
+
+  // Teacher dashboard route
+  app.get("/api/teachers/dashboard", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.role !== "teacher") {
+      return res.status(403).json({ message: "Faqat o'qituvchilar uchun" });
+    }
+
+    try {
+      const teacherGroups = await storage.getTeacherGroups(req.user.id);
+      const groupsWithDetails = await Promise.all(
+        teacherGroups.map(async (tg) => {
+          const group = await storage.getGroup(tg.groupId);
+          const students = await storage.getGroupStudents(tg.groupId);
+          const attendance = await storage.getGroupAttendance(tg.groupId);
+          
+          return {
+            id: group?.id,
+            name: group?.name,
+            description: group?.description,
+            schedule: group?.schedule,
+            students: students,
+            studentCount: students.length,
+            recentAttendance: attendance.slice(0, 5),
+            assignedAt: tg.assignedAt
+          };
+        })
+      );
+
+      res.json({
+        groups: groupsWithDetails,
+        totalStudents: groupsWithDetails.reduce((sum, group) => sum + group.studentCount, 0),
+        todayAttendance: 0, // Could be calculated based on today's date
+        medalsGiven: 0, // Could be tracked separately
+        recentActivity: [] // Could be implemented later
+      });
+    } catch (error) {
+      console.error("O'qituvchi dashboard ma'lumotlarini olishda xatolik:", error);
+      res.status(500).json({ message: "Ma'lumotlarni yuklashda xatolik" });
     }
   });
 
