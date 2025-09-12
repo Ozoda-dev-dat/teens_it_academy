@@ -14,11 +14,18 @@ export default function TeacherDashboard() {
   const [, setLocation] = useLocation();
 
   // Fetch teacher's assigned groups and data
-  const { data: teacherData, isLoading } = useQuery({
+  const { data: teacherData, isLoading, error } = useQuery({
     queryKey: ["teacher-dashboard"],
     queryFn: async () => {
-      const res = await fetch("/api/teachers/dashboard");
-      if (!res.ok) throw new Error("Failed to fetch teacher data");
+      const res = await fetch("/api/teachers/dashboard", {
+        credentials: "include"
+      });
+      if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("Authentication required");
+        }
+        throw new Error("Failed to fetch teacher data");
+      }
       return res.json();
     },
   });
@@ -41,6 +48,12 @@ export default function TeacherDashboard() {
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-500"></div>
       </div>
     );
+  }
+
+  // Handle authentication errors
+  if (error?.message === "Authentication required") {
+    setLocation("/teacher/login");
+    return null;
   }
 
   return (
