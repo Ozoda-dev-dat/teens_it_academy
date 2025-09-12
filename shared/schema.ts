@@ -6,7 +6,7 @@ import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  role: text("role").notNull().default("student"), // "admin", "teacher", or "student"
+  role: text("role").notNull().default("student"), // "admin" or "student"
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   firstName: text("first_name").notNull(),
@@ -14,6 +14,17 @@ export const users = pgTable("users", {
   profilePic: text("profile_pic"),
   avatarConfig: jsonb("avatar_config"), // Stores detailed avatar customization data
   medals: jsonb("medals").default(sql`'{"gold": 0, "silver": 0, "bronze": 0}'`),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const teachers = pgTable("teachers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  profilePic: text("profile_pic"),
+  avatarConfig: jsonb("avatar_config"), // Stores detailed avatar customization data
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -34,7 +45,7 @@ export const groupStudents = pgTable("group_students", {
 
 export const teacherGroups = pgTable("teacher_groups", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  teacherId: varchar("teacher_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  teacherId: varchar("teacher_id").notNull().references(() => teachers.id, { onDelete: "cascade" }),
   groupId: varchar("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
   assignedAt: timestamp("assigned_at").defaultNow(),
 }, (table) => ({
@@ -82,9 +93,12 @@ export const purchases = pgTable("purchases", {
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   groupStudents: many(groupStudents),
-  teacherGroups: many(teacherGroups),
   payments: many(payments),
   purchases: many(purchases),
+}));
+
+export const teachersRelations = relations(teachers, ({ many }) => ({
+  teacherGroups: many(teacherGroups),
 }));
 
 export const groupsRelations = relations(groups, ({ many }) => ({
@@ -105,9 +119,9 @@ export const groupStudentsRelations = relations(groupStudents, ({ one }) => ({
 }));
 
 export const teacherGroupsRelations = relations(teacherGroups, ({ one }) => ({
-  teacher: one(users, {
+  teacher: one(teachers, {
     fields: [teacherGroups.teacherId],
-    references: [users.id],
+    references: [teachers.id],
   }),
   group: one(groups, {
     fields: [teacherGroups.groupId],
@@ -150,6 +164,11 @@ export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
 });
 
+export const insertTeacherSchema = createInsertSchema(teachers).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertGroupSchema = createInsertSchema(groups).omit({
   id: true,
   createdAt: true,
@@ -188,6 +207,8 @@ export const insertPurchaseSchema = createInsertSchema(purchases).omit({
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Teacher = typeof teachers.$inferSelect;
+export type InsertTeacher = z.infer<typeof insertTeacherSchema>;
 export type Group = typeof groups.$inferSelect;
 export type InsertGroup = z.infer<typeof insertGroupSchema>;
 export type GroupStudent = typeof groupStudents.$inferSelect;

@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertUserSchema, insertGroupSchema, insertAttendanceSchema, insertPaymentSchema, insertProductSchema, insertPurchaseSchema, insertGroupStudentSchema, insertTeacherGroupSchema } from "@shared/schema";
+import { insertUserSchema, insertTeacherSchema, insertGroupSchema, insertAttendanceSchema, insertPaymentSchema, insertProductSchema, insertPurchaseSchema, insertGroupStudentSchema, insertTeacherGroupSchema } from "@shared/schema";
 import { z } from "zod";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
@@ -495,18 +495,14 @@ export function registerRoutes(app: Express): Server {
   // Teacher management routes (Admin only)
   app.post("/api/teachers", requireAdmin, async (req, res) => {
     try {
-      const teacherData = insertUserSchema.parse({
-        ...req.body,
-        role: "teacher",
-        medals: { gold: 0, silver: 0, bronze: 0 }
-      });
+      const teacherData = insertTeacherSchema.parse(req.body);
       
       // Hash the password before storing
       if (teacherData.password) {
         teacherData.password = await hashPassword(teacherData.password);
       }
       
-      const teacher = await storage.createUser(teacherData);
+      const teacher = await storage.createTeacher(teacherData);
       res.status(201).json(teacher);
     } catch (error) {
       console.error("O'qituvchi yaratishda xatolik:", error);

@@ -1,5 +1,5 @@
-import { users, groups, groupStudents, teacherGroups, attendance, payments, products, purchases } from "@shared/schema";
-import type { User, InsertUser, Group, InsertGroup, GroupStudent, InsertGroupStudent, TeacherGroup, InsertTeacherGroup, Attendance, InsertAttendance, Payment, InsertPayment, Product, InsertProduct, Purchase, InsertPurchase } from "@shared/schema";
+import { users, teachers, groups, groupStudents, teacherGroups, attendance, payments, products, purchases } from "@shared/schema";
+import type { User, InsertUser, Teacher, InsertTeacher, Group, InsertGroup, GroupStudent, InsertGroupStudent, TeacherGroup, InsertTeacherGroup, Attendance, InsertAttendance, Payment, InsertPayment, Product, InsertProduct, Purchase, InsertPurchase } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, and, sql, desc } from "drizzle-orm";
 import session from "express-session";
@@ -35,7 +35,12 @@ export interface IStorage {
   removeTeacherFromGroup(teacherId: string, groupId: string): Promise<boolean>;
   getTeacherGroups(teacherId: string): Promise<TeacherGroup[]>;
   getGroupTeachers(groupId: string): Promise<TeacherGroup[]>;
-  getAllTeachers(): Promise<User[]>;
+  getAllTeachers(): Promise<Teacher[]>;
+  createTeacher(teacher: InsertTeacher): Promise<Teacher>;
+  getTeacher(id: string): Promise<Teacher | undefined>;
+  getTeacherByEmail(email: string): Promise<Teacher | undefined>;
+  updateTeacher(id: string, updates: Partial<InsertTeacher>): Promise<Teacher | undefined>;
+  deleteTeacher(id: string): Promise<boolean>;
 
   // Attendance methods
   createAttendance(attendance: InsertAttendance): Promise<Attendance>;
@@ -124,9 +129,41 @@ export class DatabaseStorage implements IStorage {
     return result || [];
   }
 
-  async getAllTeachers(): Promise<User[]> {
-    const result = await db.select().from(users).where(eq(users.role, "teacher"));
+  async getAllTeachers(): Promise<Teacher[]> {
+    const result = await db.select().from(teachers);
     return result || [];
+  }
+
+  async createTeacher(insertTeacher: InsertTeacher): Promise<Teacher> {
+    const [teacher] = await db
+      .insert(teachers)
+      .values(insertTeacher)
+      .returning();
+    return teacher;
+  }
+
+  async getTeacher(id: string): Promise<Teacher | undefined> {
+    const [teacher] = await db.select().from(teachers).where(eq(teachers.id, id));
+    return teacher || undefined;
+  }
+
+  async getTeacherByEmail(email: string): Promise<Teacher | undefined> {
+    const [teacher] = await db.select().from(teachers).where(eq(teachers.email, email));
+    return teacher || undefined;
+  }
+
+  async updateTeacher(id: string, updates: Partial<InsertTeacher>): Promise<Teacher | undefined> {
+    const [teacher] = await db
+      .update(teachers)
+      .set(updates)
+      .where(eq(teachers.id, id))
+      .returning();
+    return teacher || undefined;
+  }
+
+  async deleteTeacher(id: string): Promise<boolean> {
+    const result = await db.delete(teachers).where(eq(teachers.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Group methods
@@ -431,4 +468,5 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
+// Export the storage instance for better build compatibility
 export const storage = new DatabaseStorage();
