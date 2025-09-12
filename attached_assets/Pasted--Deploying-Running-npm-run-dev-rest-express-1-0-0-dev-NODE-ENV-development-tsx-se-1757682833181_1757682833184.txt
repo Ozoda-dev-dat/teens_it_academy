@@ -1,0 +1,60 @@
+==> Deploying...
+==> Running 'npm run dev'
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+1:02:26 PM [express] serving on port 10000
+     ==> Your service is live 🎉
+     ==> 
+     ==> ///////////////////////////////////////////////////////////
+     ==> 
+     ==> Available at your primary URL https://crm-teens.onrender.com
+     ==> 
+     ==> ///////////////////////////////////////////////////////////
+(node:94) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+==> Running 'npm run dev'
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+1:03:57 PM [express] serving on port 10000
+(node:76) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+1:05:18 PM [express] GET /api/user 304 in 283ms :: {"id":"2e885a32-34d7-43a1-9862-6bb656af9a3e","rol…
+1:05:19 PM [express] GET /api/teachers/dashboard 304 in 377ms :: {"groups":[],"totalStudents":0,"tod…
+     ==> Detected service running on port 10000
+     ==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+1:08:28 PM [express] POST /api/logout 200 in 1041ms
+🔍 Login attempt: { email: 'admin@mail.com', passwordLength: 9 }
+👤 User found: YES
+🔐 Password match: true
+✅ Login successful
+1:08:59 PM [express] POST /api/login 200 in 1366ms :: {"id":"41c5e76f-36b8-4d1d-b04d-0a466096ed47","…
+1:09:01 PM [express] GET /api/stats 304 in 656ms :: {"totalStudents":26,"activeGroups":4,"totalMedal…
+1:09:01 PM [express] GET /api/students 304 in 941ms :: [{"id":"a57de89c-c888-478b-b5ac-0544be93fe22"…
+1:09:01 PM [express] GET /api/teachers 304 in 936ms :: [{"id":"2e885a32-34d7-43a1-9862-6bb656af9a3e"…
+1:09:01 PM [express] GET /api/groups 304 in 943ms :: [{"id":"d0217947-26c6-401a-b834-bea1a5f669bf","…
+1:09:01 PM [express] GET /api/products 304 in 941ms :: [{"id":"bbde683c-0fa0-4d2f-9e71-3d78afa72189"…
+O'qituvchini guruhga tayinlashda xatolik: error: insert or update on table "teacher_groups" violates foreign key constraint "teacher_groups_teacher_id_fkey"
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/opt/render/project/src/node_modules/src/node-postgres/session.ts:104:19)
+    at async DatabaseStorage.assignTeacherToGroup (/opt/render/project/src/server/storage.ts:215:31)
+    at async <anonymous> (/opt/render/project/src/server/routes.ts:531:26) {
+  length: 325,
+  severity: 'ERROR',
+  code: '23503',
+  detail: 'Key (teacher_id)=(2e885a32-34d7-43a1-9862-6bb656af9a3e) is not present in table "teachers".',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'teacher_groups',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'teacher_groups_teacher_id_fkey',
+  file: 'ri_triggers.c',
+  line: '2599',
+  routine: 'ri_ReportViolation'
+}
+1:09:18 PM [express] POST /api/teachers/groups 400 in 1544ms :: {"message":"O'qituvchini guruhga tay…
