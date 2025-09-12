@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Calendar, Award, BookOpen, LogOut, User, ClipboardCheck, ArrowRight, UserCheck, UserX, Clock } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
+import { Users, Calendar, Award, BookOpen, LogOut, User, ClipboardCheck, ArrowRight, UserCheck, UserX, Clock, Medal, Trophy, Star } from "lucide-react";
 import { useLocation } from "wouter";
 
 interface AttendanceRecord {
@@ -129,6 +131,312 @@ function AttendanceGroupCard({ group, onMarkAttendance }: { group: any; onMarkAt
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// Medal giving component with animations
+function MedalGivingSection({ teacherData }: { teacherData: any }) {
+  const [selectedStudent, setSelectedStudent] = useState<string>("");
+  const [selectedMedalType, setSelectedMedalType] = useState<string>("");
+  const [isAwarding, setIsAwarding] = useState(false);
+  const [animatingMedal, setAnimatingMedal] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  // Get all students from teacher's groups
+  const { data: allStudents, isLoading: studentsLoading } = useQuery({
+    queryKey: ["teacher-students", teacherData?.groups],
+    queryFn: async () => {
+      if (!teacherData?.groups || teacherData.groups.length === 0) return [];
+      
+      const students: any[] = [];
+      for (const group of teacherData.groups) {
+        const res = await fetch(`/api/groups/${group.id}`, {
+          credentials: "include"
+        });
+        if (res.ok) {
+          const groupData = await res.json();
+          if (groupData.students) {
+            groupData.students.forEach((student: any) => {
+              if (!students.find(s => s.id === student.id)) {
+                students.push({
+                  ...student,
+                  groupName: group.name
+                });
+              }
+            });
+          }
+        }
+      }
+      return students;
+    },
+    enabled: !!teacherData?.groups
+  });
+
+  const awardMedalMutation = useMutation({
+    mutationFn: async ({ studentId, medalType }: { studentId: string; medalType: string }) => {
+      const student = allStudents?.find(s => s.id === studentId);
+      if (!student) throw new Error("Student not found");
+
+      const currentMedals = student.medals || { gold: 0, silver: 0, bronze: 0 };
+      const updatedMedals = {
+        ...currentMedals,
+        [medalType]: currentMedals[medalType] + 1
+      };
+
+      const res = await fetch('/api/teachers/medals', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          studentId,
+          medals: updatedMedals
+        })
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Failed to award medal');
+      }
+
+      return res.json();
+    },
+    onSuccess: (data, variables) => {
+      // Start animation
+      setAnimatingMedal(variables.medalType);
+      
+      // Show success toast
+      const medalNames = { gold: "Oltin", silver: "Kumush", bronze: "Bronza" };
+      const studentName = allStudents?.find(s => s.id === variables.studentId)?.firstName;
+      
+      toast({
+        title: "🎉 Medal berildi!",
+        description: `${studentName}ga ${medalNames[variables.medalType as keyof typeof medalNames]} medal berildi`,
+      });
+
+      // Clear animation after delay
+      setTimeout(() => {
+        setAnimatingMedal(null);
+      }, 2000);
+
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ["teacher-students"] });
+      
+      // Reset form
+      setSelectedStudent("");
+      setSelectedMedalType("");
+      setIsAwarding(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Xatolik",
+        description: error.message || "Medal berishda xatolik yuz berdi",
+        variant: "destructive"
+      });
+      setIsAwarding(false);
+    }
+  });
+
+  const handleAwardMedal = () => {
+    if (!selectedStudent || !selectedMedalType) {
+      toast({
+        title: "Ma'lumot yetishmayapti",
+        description: "O'quvchi va medal turini tanlang",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsAwarding(true);
+    awardMedalMutation.mutate({
+      studentId: selectedStudent,
+      medalType: selectedMedalType
+    });
+  };
+
+  const getMedalIcon = (type: string) => {
+    switch (type) {
+      case 'gold': return <Trophy className="w-5 h-5 text-yellow-500" />;
+      case 'silver': return <Medal className="w-5 h-5 text-gray-400" />;
+      case 'bronze': return <Star className="w-5 h-5 text-orange-600" />;
+      default: return null;
+    }
+  };
+
+  const getMedalColor = (type: string) => {
+    switch (type) {
+      case 'gold': return 'from-yellow-400 to-yellow-600';
+      case 'silver': return 'from-gray-300 to-gray-500';
+      case 'bronze': return 'from-orange-400 to-orange-600';
+      default: return '';
+    }
+  };
+
+  if (studentsLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Medal berish</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Award className="w-5 h-5" />
+            Medal berish
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Student Selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">O'quvchini tanlang</label>
+            <Select value={selectedStudent} onValueChange={setSelectedStudent}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="O'quvchini tanlang" />
+              </SelectTrigger>
+              <SelectContent>
+                {allStudents?.map((student) => (
+                  <SelectItem key={student.id} value={student.id}>
+                    <div className="flex items-center justify-between w-full">
+                      <span>{student.firstName} {student.lastName}</span>
+                      <div className="flex items-center gap-1 ml-4 text-xs text-gray-500">
+                        {getMedalIcon('gold')} {student.medals?.gold || 0}
+                        {getMedalIcon('silver')} {student.medals?.silver || 0}
+                        {getMedalIcon('bronze')} {student.medals?.bronze || 0}
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Medal Type Selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Medal turini tanlang</label>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { type: 'gold', name: 'Oltin', icon: Trophy, color: 'yellow' },
+                { type: 'silver', name: 'Kumush', icon: Medal, color: 'gray' },
+                { type: 'bronze', name: 'Bronza', icon: Star, color: 'orange' }
+              ].map(({ type, name, icon: Icon, color }) => (
+                <Button
+                  key={type}
+                  variant={selectedMedalType === type ? "default" : "outline"}
+                  className={`relative h-16 ${
+                    selectedMedalType === type 
+                      ? `bg-gradient-to-br ${getMedalColor(type)} text-white border-0` 
+                      : 'hover:bg-gray-50'
+                  } ${
+                    animatingMedal === type 
+                      ? 'animate-bounce transform scale-110' 
+                      : ''
+                  } transition-all duration-300`}
+                  onClick={() => setSelectedMedalType(type)}
+                >
+                  <div className="flex flex-col items-center gap-1">
+                    <Icon className={`w-6 h-6 ${
+                      selectedMedalType === type 
+                        ? 'text-white' 
+                        : color === 'yellow' ? 'text-yellow-500' 
+                        : color === 'gray' ? 'text-gray-400'
+                        : 'text-orange-600'
+                    }`} />
+                    <span className="text-xs font-medium">{name}</span>
+                  </div>
+                  {animatingMedal === type && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center animate-ping">
+                        <Icon className="w-4 h-4 text-yellow-500" />
+                      </div>
+                    </div>
+                  )}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Award Button */}
+          <Button
+            onClick={handleAwardMedal}
+            disabled={!selectedStudent || !selectedMedalType || isAwarding}
+            className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium"
+          >
+            {isAwarding ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Medal berilmoqda...
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4" />
+                Medal berish
+              </div>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Students List with Current Medals */}
+      {allStudents && allStudents.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>O'quvchilar ro'yxati</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {allStudents.map((student) => (
+                <div
+                  key={student.id}
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div>
+                    <div className="font-medium">{student.firstName} {student.lastName}</div>
+                    <div className="text-sm text-gray-500">{student.groupName}</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
+                      <Trophy className="w-4 h-4 text-yellow-500" />
+                      <span className="text-sm font-medium">{student.medals?.gold || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Medal className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm font-medium">{student.medals?.silver || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Star className="w-4 h-4 text-orange-600" />
+                      <span className="text-sm font-medium">{student.medals?.bronze || 0}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Empty State */}
+      {(!allStudents || allStudents.length === 0) && !studentsLoading && (
+        <Card>
+          <CardContent className="text-center py-12">
+            <Users className="w-24 h-24 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">O'quvchilar topilmadi</h3>
+            <p className="text-gray-500">
+              Medal berish uchun sizga o'quvchilari bor guruhlar tayinlanishi kerak
+            </p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }
 
@@ -432,20 +740,7 @@ export default function TeacherDashboard() {
 
           {/* Medals Tab */}
           <TabsContent value="medals" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Medal berish</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <Award className="w-24 h-24 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Medal berish funksiyasi</h3>
-                  <p className="text-gray-500 mb-4">
-                    O'quvchilarga medal berish funksiyasi tez orada qo'shiladi
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <MedalGivingSection teacherData={teacherData} />
           </TabsContent>
         </Tabs>
       </main>
