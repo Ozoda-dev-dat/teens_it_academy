@@ -75,7 +75,13 @@ export function setupAuth(app: Express) {
   passport.deserializeUser(async (id: string, done) => {
     try {
       const user = await storage.getUser(id);
-      done(null, user);
+      if (user) {
+        // Remove password from user object for security
+        const { password, ...userWithoutPassword } = user;
+        done(null, userWithoutPassword);
+      } else {
+        done(null, null);
+      }
     } catch (error) {
       done(error);
     }
@@ -94,7 +100,9 @@ export function setupAuth(app: Express) {
         if (err) {
           return res.status(500).json({ message: "Tizimga kirishda xatolik yuz berdi" });
         }
-        res.status(200).json(user);
+        // Remove password from response for security
+        const { password, ...userWithoutPassword } = user;
+        res.status(200).json(userWithoutPassword);
       });
     })(req, res, next);
   });
@@ -108,6 +116,8 @@ export function setupAuth(app: Express) {
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    res.json(req.user);
+    // Remove password from response for security
+    const { password, ...userWithoutPassword } = req.user;
+    res.json(userWithoutPassword);
   });
 }

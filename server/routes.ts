@@ -61,7 +61,9 @@ export function registerRoutes(app: Express): Server {
       }
       
       const student = await storage.createUser(studentData);
-      res.status(201).json(student);
+      // Remove password from response
+      const { password, ...studentWithoutPassword } = student;
+      res.status(201).json(studentWithoutPassword);
     } catch (error) {
       console.error("Talaba yaratishda xatolik:", error);
       res.status(400).json({ message: "Talaba yaratishda xatolik yuz berdi" });
@@ -71,7 +73,9 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/students", requireAdmin, async (req, res) => {
     try {
       const students = await storage.getAllStudents();
-      res.json(students);
+      // Remove password from response
+      const studentsWithoutPassword = students.map(({ password, ...student }) => student);
+      res.json(studentsWithoutPassword);
     } catch (error) {
       console.error("Talabalarni olishda xatolik:", error);
       res.status(500).json({ message: "Talabalarni yuklashda xatolik" });
@@ -84,7 +88,9 @@ export function registerRoutes(app: Express): Server {
       if (!student) {
         return res.status(404).json({ message: "Talaba topilmadi" });
       }
-      res.json(student);
+      // Remove password from response
+      const { password, ...studentWithoutPassword } = student;
+      res.json(studentWithoutPassword);
     } catch (error) {
       console.error("Talaba ma'lumotlarini olishda xatolik:", error);
       res.status(500).json({ message: "Talaba ma'lumotlarini yuklashda xatolik" });
@@ -98,7 +104,9 @@ export function registerRoutes(app: Express): Server {
       if (!student) {
         return res.status(404).json({ message: "Talaba topilmadi" });
       }
-      res.json(student);
+      // Remove password from response
+      const { password, ...studentWithoutPassword } = student;
+      res.json(studentWithoutPassword);
     } catch (error) {
       console.error("Talaba ma'lumotlarini yangilashda xatolik:", error);
       res.status(400).json({ message: "Ma'lumotlarni yangilashda xatolik" });
@@ -278,6 +286,12 @@ export function registerRoutes(app: Express): Server {
       const attendanceData = insertAttendanceSchema.parse(bodyWithDate);
       console.log("Parsed attendance data:", attendanceData);
       
+      // Check for duplicate attendance record for same group and date
+      const existingAttendance = await storage.getAttendanceByDate(attendanceData.groupId, attendanceData.date);
+      if (existingAttendance) {
+        return res.status(400).json({ message: "Bu sana uchun davomat allaqachon mavjud" });
+      }
+      
       // Allow admin to create attendance for any group, teachers only for their assigned groups
       if (req.user.role === "admin") {
         const attendance = await storage.createAttendance(attendanceData);
@@ -433,7 +447,9 @@ export function registerRoutes(app: Express): Server {
         return res.status(401).json({ message: "Autentifikatsiya talab qilinadi" });
       }
       
-      const purchaseData = insertPurchaseSchema.parse({
+      // Create input validation schema that excludes medalsPaid (server computes this)
+      const purchaseInputSchema = insertPurchaseSchema.omit({ medalsPaid: true });
+      const purchaseData = purchaseInputSchema.parse({
         ...req.body,
         studentId: req.user.id // Ensure student can only purchase for themselves
       });
@@ -503,7 +519,9 @@ export function registerRoutes(app: Express): Server {
       }
       
       const teacher = await storage.createTeacher(teacherData);
-      res.status(201).json(teacher);
+      // Remove password from response
+      const { password, ...teacherWithoutPassword } = teacher;
+      res.status(201).json(teacherWithoutPassword);
     } catch (error) {
       console.error("O'qituvchi yaratishda xatolik:", error);
       res.status(400).json({ message: "O'qituvchi yaratishda xatolik yuz berdi" });
@@ -513,7 +531,9 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/teachers", requireAdmin, async (req, res) => {
     try {
       const teachers = await storage.getAllTeachers();
-      res.json(teachers);
+      // Remove password from response
+      const teachersWithoutPassword = teachers.map(({ password, ...teacher }) => teacher);
+      res.json(teachersWithoutPassword);
     } catch (error) {
       console.error("O'qituvchilarni olishda xatolik:", error);
       res.status(500).json({ message: "O'qituvchilarni yuklashda xatolik" });

@@ -21,7 +21,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
       const students = await storage.getAllStudents();
-      return res.status(200).json(students);
+      // Remove password from response
+      const studentsWithoutPassword = students.map(({ password, ...student }) => student);
+      return res.status(200).json(studentsWithoutPassword);
     } catch (error) {
       console.error("Talabalarni olishda xatolik:", error);
       return res.status(500).json({ message: "Talabalarni yuklashda xatolik" });
@@ -46,7 +48,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       
       const student = await storage.createUser(studentData);
-      return res.status(201).json(student);
+      // Remove password from response
+      const { password, ...studentWithoutPassword } = student;
+      return res.status(201).json(studentWithoutPassword);
     } catch (error) {
       console.error("Talaba yaratishda xatolik:", error);
       return res.status(400).json({ message: "Talaba yaratishda xatolik yuz berdi" });

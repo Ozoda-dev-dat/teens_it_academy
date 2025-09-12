@@ -35,11 +35,11 @@ export interface IStorage {
   removeTeacherFromGroup(teacherId: string, groupId: string): Promise<boolean>;
   getTeacherGroups(teacherId: string): Promise<TeacherGroup[]>;
   getGroupTeachers(groupId: string): Promise<TeacherGroup[]>;
-  getAllTeachers(): Promise<Teacher[]>;
-  createTeacher(teacher: InsertTeacher): Promise<Teacher>;
-  getTeacher(id: string): Promise<Teacher | undefined>;
-  getTeacherByEmail(email: string): Promise<Teacher | undefined>;
-  updateTeacher(id: string, updates: Partial<InsertTeacher>): Promise<Teacher | undefined>;
+  getAllTeachers(): Promise<User[]>;
+  createTeacher(teacher: InsertUser): Promise<User>;
+  getTeacher(id: string): Promise<User | undefined>;
+  getTeacherByEmail(email: string): Promise<User | undefined>;
+  updateTeacher(id: string, updates: Partial<InsertUser>): Promise<User | undefined>;
   deleteTeacher(id: string): Promise<boolean>;
 
   // Attendance methods
@@ -129,40 +129,41 @@ export class DatabaseStorage implements IStorage {
     return result || [];
   }
 
-  async getAllTeachers(): Promise<Teacher[]> {
-    const result = await db.select().from(teachers);
+  async getAllTeachers(): Promise<User[]> {
+    const result = await db.select().from(users).where(eq(users.role, "teacher"));
     return result || [];
   }
 
-  async createTeacher(insertTeacher: InsertTeacher): Promise<Teacher> {
+  async createTeacher(insertUser: InsertUser): Promise<User> {
+    const teacherData = { ...insertUser, role: 'teacher' as const };
     const [teacher] = await db
-      .insert(teachers)
-      .values(insertTeacher)
+      .insert(users)
+      .values(teacherData)
       .returning();
     return teacher;
   }
 
-  async getTeacher(id: string): Promise<Teacher | undefined> {
-    const [teacher] = await db.select().from(teachers).where(eq(teachers.id, id));
+  async getTeacher(id: string): Promise<User | undefined> {
+    const [teacher] = await db.select().from(users).where(and(eq(users.id, id), eq(users.role, "teacher")));
     return teacher || undefined;
   }
 
-  async getTeacherByEmail(email: string): Promise<Teacher | undefined> {
-    const [teacher] = await db.select().from(teachers).where(eq(teachers.email, email));
+  async getTeacherByEmail(email: string): Promise<User | undefined> {
+    const [teacher] = await db.select().from(users).where(and(eq(users.email, email), eq(users.role, "teacher")));
     return teacher || undefined;
   }
 
-  async updateTeacher(id: string, updates: Partial<InsertTeacher>): Promise<Teacher | undefined> {
+  async updateTeacher(id: string, updates: Partial<InsertUser>): Promise<User | undefined> {
     const [teacher] = await db
-      .update(teachers)
+      .update(users)
       .set(updates)
-      .where(eq(teachers.id, id))
+      .where(and(eq(users.id, id), eq(users.role, "teacher")))
       .returning();
     return teacher || undefined;
   }
 
   async deleteTeacher(id: string): Promise<boolean> {
-    const result = await db.delete(teachers).where(eq(teachers.id, id));
+    const result = await db.delete(users).where(and(eq(users.id, id), eq(users.role, "teacher")));
     return (result.rowCount ?? 0) > 0;
   }
 
