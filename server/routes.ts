@@ -316,6 +316,35 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Teacher attendance route - allows teachers to get attendance for their assigned groups
+  app.get("/api/teachers/attendance", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.role !== "teacher") {
+      return res.status(403).json({ message: "Faqat o'qituvchilar uchun" });
+    }
+
+    const { groupId } = req.query;
+    
+    if (!groupId || typeof groupId !== 'string') {
+      return res.status(400).json({ message: "Guruh ID talab qilinadi" });
+    }
+
+    try {
+      // Verify teacher is assigned to this group
+      const teacherGroups = await storage.getTeacherGroups(req.user.id);
+      const hasAccess = teacherGroups.some(tg => tg.groupId === groupId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Bu guruhni ko'rish huquqingiz yo'q" });
+      }
+
+      const attendance = await storage.getGroupAttendance(groupId);
+      res.json(attendance);
+    } catch (error) {
+      console.error("Davomat ma'lumotlarini olishda xatolik:", error);
+      res.status(500).json({ message: "Davomat ma'lumotlarini yuklashda xatolik" });
+    }
+  });
+
   // Payment routes
   app.post("/api/payments", requireAdmin, async (req, res) => {
     try {

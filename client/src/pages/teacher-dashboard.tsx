@@ -5,8 +5,132 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Calendar, Award, BookOpen, LogOut, User, ClipboardCheck, ArrowRight } from "lucide-react";
+import { Users, Calendar, Award, BookOpen, LogOut, User, ClipboardCheck, ArrowRight, UserCheck, UserX, Clock } from "lucide-react";
 import { useLocation } from "wouter";
+
+interface AttendanceRecord {
+  id: string;
+  date: string;
+  participants: Array<{
+    studentId: string;
+    status: 'arrived' | 'late' | 'absent';
+  }>;
+}
+
+function AttendanceGroupCard({ group, onMarkAttendance }: { group: any; onMarkAttendance: () => void }) {
+  const { data: attendanceHistory, isLoading: attendanceLoading, error: attendanceError } = useQuery<AttendanceRecord[]>({
+    queryKey: ["group-attendance", group.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/teachers/attendance?groupId=${group.id}`, {
+        credentials: "include"
+      });
+      if (!res.ok) {
+        if (res.status === 403) throw new Error("Bu guruhni ko'rish huquqingiz yo'q");
+        if (res.status === 404) throw new Error("Guruh topilmadi");
+        throw new Error("Davomat ma'lumotlarini yuklashda xatolik");
+      }
+      const data = await res.json();
+      // Ensure data is sorted by date descending (most recent first)
+      return data.sort((a: AttendanceRecord, b: AttendanceRecord) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+    },
+  });
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('uz-UZ', {
+      day: '2-digit',
+      month: '2-digit', 
+      year: 'numeric'
+    });
+  };
+
+  const getAttendanceStats = (participants: AttendanceRecord['participants']) => {
+    const arrived = participants.filter(p => p.status === 'arrived').length;
+    const late = participants.filter(p => p.status === 'late').length;
+    const absent = participants.filter(p => p.status === 'absent').length;
+    return { arrived, late, absent };
+  };
+
+  return (
+    <Card className="border-l-4 border-l-green-500">
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-lg">{group.name}</CardTitle>
+            <p className="text-sm text-gray-500">{group.studentCount || 0} o'quvchi</p>
+          </div>
+          <Button onClick={onMarkAttendance} size="sm" className="bg-green-600 hover:bg-green-700">
+            <ClipboardCheck className="w-4 h-4 mr-2" />
+            Davomat belgilash
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          <h4 className="font-medium text-sm text-gray-700">So'nggi davomatlar</h4>
+          {attendanceLoading ? (
+            <div className="flex justify-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
+            </div>
+          ) : attendanceError ? (
+            <div className="text-center py-4">
+              <div className="text-red-500 text-sm mb-2">
+                {attendanceError.message || "Ma'lumotlarni yuklashda xatolik"}
+              </div>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => window.location.reload()}
+                className="text-xs"
+              >
+                Qayta urinish
+              </Button>
+            </div>
+          ) : attendanceHistory && attendanceHistory.length > 0 ? (
+            <div className="space-y-2">
+              {attendanceHistory.slice(0, 3).map((record) => {
+                const stats = getAttendanceStats(record.participants);
+                return (
+                  <div key={record.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <Calendar className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm font-medium">{formatDate(record.date)}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-1">
+                        <UserCheck className="w-3 h-3 text-green-600" />
+                        <span className="text-xs text-green-600">{stats.arrived}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Clock className="w-3 h-3 text-yellow-600" />
+                        <span className="text-xs text-yellow-600">{stats.late}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <UserX className="w-3 h-3 text-red-600" />
+                        <span className="text-xs text-red-600">{stats.absent}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {attendanceHistory.length > 3 && (
+                <p className="text-xs text-gray-500 text-center">
+                  +{attendanceHistory.length - 3} ta yana davomat
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <ClipboardCheck className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">Hali davomat belgilanmagan</p>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function TeacherDashboard() {
   const { user, logoutMutation } = useAuth();
@@ -282,20 +406,28 @@ export default function TeacherDashboard() {
 
           {/* Attendance Tab */}
           <TabsContent value="attendance" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Davomat boshqaruvi</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <ClipboardCheck className="w-24 h-24 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Davomat funksiyasi</h3>
-                  <p className="text-gray-500 mb-4">
-                    Davomat belgilash va kuzatish funksiyasi tez orada qo'shiladi
-                  </p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {teacherData?.groups?.map((group: any) => (
+                <AttendanceGroupCard 
+                  key={group.id} 
+                  group={group} 
+                  onMarkAttendance={() => handleGroupClick(group.id)} 
+                />
+              ))}
+              {(!teacherData?.groups || teacherData.groups.length === 0) && (
+                <div className="col-span-full">
+                  <Card>
+                    <CardContent className="text-center py-12">
+                      <ClipboardCheck className="w-24 h-24 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">Guruhlar topilmadi</h3>
+                      <p className="text-gray-500">
+                        Davomat belgilash uchun sizga guruhlar tayinlanishi kerak
+                      </p>
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
+              )}
+            </div>
           </TabsContent>
 
           {/* Medals Tab */}
