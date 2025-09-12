@@ -526,8 +526,14 @@ export function registerRoutes(app: Express): Server {
       const assignmentData = insertTeacherGroupSchema.parse(req.body);
       const assignment = await storage.assignTeacherToGroup(assignmentData);
       res.status(201).json(assignment);
-    } catch (error) {
+    } catch (error: any) {
       console.error("O'qituvchini guruhga tayinlashda xatolik:", error);
+      
+      // Check if this is a unique constraint violation (teacher already assigned to group)
+      if (error.code === '23505' && error.constraint === 'teacher_groups_teacher_id_group_id_unique') {
+        return res.status(409).json({ message: "Bu o'qituvchi allaqachon shu guruhga tayinlangan" });
+      }
+      
       res.status(400).json({ message: "O'qituvchini guruhga tayinlashda xatolik" });
     }
   });
