@@ -8,6 +8,12 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// Trust proxy when behind Replit proxy in production
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -44,12 +50,33 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
+  // Health check endpoint for deployment monitoring
+  app.get('/health', (_req: Request, res: Response) => {
+    res.status(200).json({ 
+      status: 'ok', 
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'development'
+    });
+  });
+
+  // Global error handler - DO NOT throw errors here as it will crash the server
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
+    // Log the error for debugging but don't crash the server
+    console.error('Server Error:', {
+      message: err.message,
+      stack: err.stack,
+      status,
+      timestamp: new Date().toISOString(),
+      url: _req.url,
+      method: _req.method
+    });
+
+    // Send error response and continue serving other requests
     res.status(status).json({ message });
-    throw err;
   });
 
   // importantly only setup vite in development and after
