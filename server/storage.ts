@@ -1,6 +1,6 @@
 import { users, groups, groupStudents, teacherGroups, attendance, payments, products, purchases } from "@shared/schema";
 import type { User, InsertUser, Group, InsertGroup, GroupStudent, InsertGroupStudent, TeacherGroup, InsertTeacherGroup, Attendance, InsertAttendance, Payment, InsertPayment, Product, InsertProduct, Purchase, InsertPurchase } from "@shared/schema";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { eq, and, sql, desc } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -74,10 +74,10 @@ export class DatabaseStorage implements IStorage {
 
   constructor() {
     // Use PostgreSQL session store for better security and scalability
-    // This connects to the same database as the main app
+    // This connects to the same database as the main app using the existing pool
     this.sessionStore = new PostgresSessionStore({
-      // Use the same database connection as the main app
-      conString: process.env.DATABASE_URL,
+      // Use the existing database pool instead of creating a new connection
+      pool: pool,
       tableName: 'session', // Table to store sessions
       createTableIfMissing: true,
       pruneSessionInterval: 60 * 15, // Prune expired sessions every 15 minutes
