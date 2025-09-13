@@ -35,7 +35,10 @@ export interface IStorage {
   // Attendance methods
   createAttendance(attendance: InsertAttendance): Promise<Attendance>;
   getGroupAttendance(groupId: string): Promise<Attendance[]>;
+  getAttendance(id: string): Promise<Attendance | undefined>;
   getAttendanceByDate(groupId: string, date: Date): Promise<Attendance | undefined>;
+  updateAttendance(id: string, updates: Partial<InsertAttendance>): Promise<Attendance | undefined>;
+  deleteAttendance(id: string): Promise<boolean>;
 
   // Payment methods
   createPayment(payment: InsertPayment): Promise<Payment>;
@@ -232,6 +235,11 @@ export class ServerlessStorage implements IStorage {
       .orderBy(desc(attendance.date));
   }
 
+  async getAttendance(id: string): Promise<Attendance | undefined> {
+    const [attendanceRecord] = await db.select().from(attendance).where(eq(attendance.id, id));
+    return attendanceRecord || undefined;
+  }
+
   async getAttendanceByDate(groupId: string, date: Date): Promise<Attendance | undefined> {
     const [attendanceRecord] = await db
       .select()
@@ -241,6 +249,20 @@ export class ServerlessStorage implements IStorage {
         eq(attendance.date, date)
       ));
     return attendanceRecord || undefined;
+  }
+
+  async updateAttendance(id: string, updates: Partial<InsertAttendance>): Promise<Attendance | undefined> {
+    const [attendanceRecord] = await db
+      .update(attendance)
+      .set(updates)
+      .where(eq(attendance.id, id))
+      .returning();
+    return attendanceRecord || undefined;
+  }
+
+  async deleteAttendance(id: string): Promise<boolean> {
+    const result = await db.delete(attendance).where(eq(attendance.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Payment methods

@@ -24,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(403).json({ message: "Bu guruhni boshqarish huquqingiz yo'q" });
       }
 
-      // RESTRICTION: Teachers can only mark attendance for today's date (not past dates)
+      // RESTRICTION: Teachers can only mark attendance for TODAY'S date (not past or future dates)
       const today = new Date();
       const attendanceDate = new Date(attendanceData.date);
       
@@ -32,9 +32,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const attendanceDateOnly = new Date(attendanceDate.getFullYear(), attendanceDate.getMonth(), attendanceDate.getDate());
       
-      if (attendanceDateOnly < todayDateOnly) {
+      if (attendanceDateOnly.getTime() !== todayDateOnly.getTime()) {
         return res.status(403).json({ 
-          message: "O'qituvchilar o'tmishdagi sanalar uchun davomat belgilay olmaydi. Faqat bugungi sana uchun davomat belgilash mumkin." 
+          message: "O'qituvchilar faqat bugungi sana uchun davomat belgilashi mumkin. O'tmish yoki kelajak sanalar uchun davomat belgilab bo'lmaydi." 
         });
       }
 
