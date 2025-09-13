@@ -30,7 +30,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       // Get students for this group
-      const students = await storage.getGroupStudents(id);
+      const groupStudents = await storage.getGroupStudents(id);
+      
+      // Flatten the student data structure to match what the teacher dashboard expects
+      const students = groupStudents.map((gs: any) => ({
+        id: gs.student.id,
+        firstName: gs.student.firstName,
+        lastName: gs.student.lastName,
+        email: gs.student.email,
+        role: gs.student.role,
+        medals: gs.student.medals || { gold: 0, silver: 0, bronze: 0 },
+        joinedAt: gs.joinedAt
+      }));
       
       return res.status(200).json({
         ...group,
