@@ -1686,7 +1686,7 @@ export default function AdminDashboard() {
                                 <SelectValue placeholder="Barcha guruhlar" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">Barcha guruhlar</SelectItem>
+                                <SelectItem value="all">Barcha guruhlar</SelectItem>
                                 {groups.map((group) => (
                                   <SelectItem key={group.id} value={group.id}>
                                     {group.name}
@@ -1727,7 +1727,7 @@ export default function AdminDashboard() {
                         {groups.length > 0 ? (
                           <div className="space-y-4">
                             {groups
-                              .filter(group => !attendanceFilter.groupId || group.id === attendanceFilter.groupId)
+                              .filter(group => !attendanceFilter.groupId || attendanceFilter.groupId === "all" || group.id === attendanceFilter.groupId)
                               .map((group) => (
                                 <div key={group.id} className="border rounded-lg p-4">
                                   <div className="flex justify-between items-center mb-4">
