@@ -38,5 +38,8 @@ export default defineConfig({
       strict: false,
       allow: ['..']
     },
+    hmr: {
+      port: 5001
+    }
   },
 });
