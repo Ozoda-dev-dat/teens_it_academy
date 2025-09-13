@@ -1274,7 +1274,14 @@ export default function AdminDashboard() {
                       <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                           {filteredGroups.map((group) => (
-                            <Card key={group.id} className="hover:shadow-lg transition-shadow">
+                            <Card 
+                              key={group.id} 
+                              className="hover:shadow-lg transition-shadow cursor-pointer" 
+                              onClick={() => {
+                                setActiveTab("attendance");
+                                setAttendanceFilter(prev => ({ ...prev, groupId: group.id }));
+                              }}
+                            >
                               <CardHeader>
                                 <div className="flex items-start justify-between">
                                   <div>
@@ -1282,10 +1289,10 @@ export default function AdminDashboard() {
                                     <p className="text-sm text-gray-500 mt-1">{group.description}</p>
                                   </div>
                                   <div className="flex space-x-1">
-                                    <Button size="sm" variant="outline" onClick={() => handleEditGroup(group)} data-testid={`button-edit-group-${group.id}`}>
+                                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleEditGroup(group); }} data-testid={`button-edit-group-${group.id}`}>
                                       <Edit className="w-4 h-4" />
                                     </Button>
-                                    <Button size="sm" variant="outline" onClick={() => handleDeleteGroup(group.id)} className="text-red-600 hover:text-red-700 hover:bg-red-50" data-testid={`button-delete-group-${group.id}`}>
+                                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleDeleteGroup(group.id); }} className="text-red-600 hover:text-red-700 hover:bg-red-50" data-testid={`button-delete-group-${group.id}`}>
                                       <Trash2 className="w-4 h-4" />
                                     </Button>
                                   </div>
