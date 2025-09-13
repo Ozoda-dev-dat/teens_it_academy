@@ -100,10 +100,21 @@ export default function AdminDashboard() {
     classesAttended: 0
   });
   
-  // Attendance states
+  // Attendance states  
   const [selectedGroupForAttendance, setSelectedGroupForAttendance] = useState<string>("");
   const [attendanceDate, setAttendanceDate] = useState("");
   const [selectedStudentsForAttendance, setSelectedStudentsForAttendance] = useState<string[]>([]);
+  
+  // Admin attendance management states
+  const [selectedGroupForAdmin, setSelectedGroupForAdmin] = useState<string>("");
+  const [attendanceRecords, setAttendanceRecords] = useState<Attendance[]>([]);
+  const [isEditingAttendance, setIsEditingAttendance] = useState(false);
+  const [editingAttendanceRecord, setEditingAttendanceRecord] = useState<Attendance | null>(null);
+  const [attendanceFilter, setAttendanceFilter] = useState({ 
+    dateFrom: "", 
+    dateTo: "", 
+    groupId: "" 
+  });
   
   // Group assignment states
   const [selectedGroupForAssignment, setSelectedGroupForAssignment] = useState<string>("");
@@ -748,6 +759,14 @@ export default function AdminDashboard() {
                   >
                     <UserCheck className="w-5 h-5 mr-3" />
                     O'qituvchilar
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="attendance"
+                    className="w-full justify-start data-[state=active]:bg-teens-blue data-[state=active]:text-white"
+                    data-testid="tab-attendance"
+                  >
+                    <Calendar className="w-5 h-5 mr-3" />
+                    Davomat
                   </TabsTrigger>
                   <TabsTrigger
                     value="fees"
@@ -1640,6 +1659,143 @@ export default function AdminDashboard() {
                             </form>
                           </DialogContent>
                         </Dialog>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  {/* Attendance Management Tab */}
+                  <TabsContent value="attendance" className="space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
+                      <div>
+                        <h1 className="text-2xl font-bold text-gray-900 mb-2">Davomat boshqaruvi</h1>
+                        <p className="text-gray-600">Barcha guruhlar davomatini ko'rish va o'zgartirish</p>
+                      </div>
+                    </div>
+
+                    {/* Attendance Filters */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Filtrlash</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label>Guruh tanlang</Label>
+                            <Select value={attendanceFilter.groupId} onValueChange={(value) => setAttendanceFilter(prev => ({ ...prev, groupId: value }))}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Barcha guruhlar" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">Barcha guruhlar</SelectItem>
+                                {groups.map((group) => (
+                                  <SelectItem key={group.id} value={group.id}>
+                                    {group.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Boshlanish sanasi</Label>
+                            <Input
+                              type="date"
+                              value={attendanceFilter.dateFrom}
+                              onChange={(e) => setAttendanceFilter(prev => ({ ...prev, dateFrom: e.target.value }))}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Tugash sanasi</Label>
+                            <Input
+                              type="date"
+                              value={attendanceFilter.dateTo}
+                              onChange={(e) => setAttendanceFilter(prev => ({ ...prev, dateTo: e.target.value }))}
+                            />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Attendance Records */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Davomat yozuvlari</CardTitle>
+                        <p className="text-sm text-gray-600">
+                          Adminlar o'tmishdagi davomatni o'zgartirishi mumkin. O'qituvchilar faqat bir kunda bir marta davomat belgilashlari mumkin.
+                        </p>
+                      </CardHeader>
+                      <CardContent>
+                        {groups.length > 0 ? (
+                          <div className="space-y-4">
+                            {groups
+                              .filter(group => !attendanceFilter.groupId || group.id === attendanceFilter.groupId)
+                              .map((group) => (
+                                <div key={group.id} className="border rounded-lg p-4">
+                                  <div className="flex justify-between items-center mb-4">
+                                    <div>
+                                      <h3 className="font-semibold text-lg">{group.name}</h3>
+                                      <p className="text-sm text-gray-600">{group.description}</p>
+                                    </div>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedGroupForAdmin(group.id);
+                                        // Fetch attendance for this group
+                                      }}
+                                    >
+                                      <Eye className="w-4 h-4 mr-2" />
+                                      Davomatni ko'rish
+                                    </Button>
+                                  </div>
+                                  
+                                  {selectedGroupForAdmin === group.id && (
+                                    <div className="mt-4 space-y-3">
+                                      <div className="text-center py-8 bg-gray-50 rounded-lg">
+                                        <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                                        <p className="text-gray-600">Bu guruh uchun davomat yozuvlari bu yerda ko'rinadi</p>
+                                        <p className="text-sm text-gray-500">
+                                          API endpoint: GET /api/groups/{group.id}/attendance
+                                        </p>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                            <p className="text-gray-500">Hali guruhlar yo'q</p>
+                            <p className="text-gray-400 text-sm">Avval guruhlar yarating</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Attendance Rules */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Davomat qoidalari</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3 text-sm">
+                          <div className="flex items-start space-x-3">
+                            <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
+                            <span>O'qituvchilar har kuni faqat bir marta davomat belgilashlari mumkin</span>
+                          </div>
+                          <div className="flex items-start space-x-3">
+                            <XCircle className="w-5 h-5 text-red-500 mt-0.5" />
+                            <span>O'qituvchilar o'tmishdagi davomatni o'zgartira olmaydi</span>
+                          </div>
+                          <div className="flex items-start space-x-3">
+                            <CheckCircle className="w-5 h-5 text-blue-500 mt-0.5" />
+                            <span>Faqat adminlar o'tmishdagi davomatni o'zgartirishi mumkin</span>
+                          </div>
+                          <div className="flex items-start space-x-3">
+                            <Clock className="w-5 h-5 text-yellow-500 mt-0.5" />
+                            <span>O'quvchilar holati: Keldi, Kech keldi, Kelmadi</span>
+                          </div>
+                        </div>
                       </CardContent>
                     </Card>
                   </TabsContent>
