@@ -23,6 +23,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!canManageGroup) {
         return res.status(403).json({ message: "Bu guruhni boshqarish huquqingiz yo'q" });
       }
+
+      // RESTRICTION: Teachers can only mark attendance for today's date (not past dates)
+      const today = new Date();
+      const attendanceDate = new Date(attendanceData.date);
+      
+      // Normalize dates to compare only year, month, day (ignore time)
+      const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const attendanceDateOnly = new Date(attendanceDate.getFullYear(), attendanceDate.getMonth(), attendanceDate.getDate());
+      
+      if (attendanceDateOnly < todayDateOnly) {
+        return res.status(403).json({ 
+          message: "O'qituvchilar o'tmishdagi sanalar uchun davomat belgilay olmaydi. Faqat bugungi sana uchun davomat belgilash mumkin." 
+        });
+      }
+
+      // RESTRICTION: Check if attendance already exists for this group and date (teachers can only mark once per day)
+      const existingAttendance = await storage.getAttendanceByDate(attendanceData.groupId, attendanceData.date);
+      if (existingAttendance) {
+        return res.status(400).json({ 
+          message: "Bu guruh uchun bugungi sana uchun davomat allaqachon belgilangan. Har kuni faqat bir marta davomat belgilash mumkin." 
+        });
+      }
       
       const attendance = await storage.createAttendance(attendanceData);
       return res.status(201).json(attendance);

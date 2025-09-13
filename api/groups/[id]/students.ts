@@ -1,0 +1,32 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { storage } from '../../../lib/storage';
+import { requireSecureAdmin } from '../../../lib/secure-auth';
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const { id } = req.query;
+  if (typeof id !== 'string') {
+    return res.status(400).json({ message: 'Guruh ID noto\'g\'ri' });
+  }
+
+  if (req.method === 'GET') {
+    // GET /api/groups/[id]/students - Get students in a specific group (admin only)
+    const adminUser = await requireSecureAdmin(req, res);
+    if (!adminUser) return;
+
+    try {
+      // First verify the group exists
+      const group = await storage.getGroup(id);
+      if (!group) {
+        return res.status(404).json({ message: "Guruh topilmadi" });
+      }
+
+      const groupStudents = await storage.getGroupStudents(id);
+      return res.status(200).json(groupStudents);
+    } catch (error) {
+      console.error("Guruh talabalarini olishda xatolik:", error);
+      return res.status(500).json({ message: "Guruh talabalarini yuklashda xatolik" });
+    }
+  }
+
+  return res.status(405).json({ message: 'Method not allowed' });
+}
