@@ -6,7 +6,7 @@ import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  role: text("role").notNull().default("student"), // "admin" or "student"
+  role: text("role").notNull().default("student"), // "admin", "student", or "teacher"
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   firstName: text("first_name").notNull(),
@@ -17,16 +17,7 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const teachers = pgTable("teachers", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  profilePic: text("profile_pic"),
-  avatarConfig: jsonb("avatar_config"), // Stores detailed avatar customization data
-  createdAt: timestamp("created_at").defaultNow(),
-});
+// Teachers are now users with role="teacher" - removed separate teachers table
 
 export const groups = pgTable("groups", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -45,9 +36,11 @@ export const groupStudents = pgTable("group_students", {
 
 export const teacherGroups = pgTable("teacher_groups", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  teacherId: varchar("teacher_id").notNull().references(() => teachers.id, { onDelete: "cascade" }),
+  teacherId: varchar("teacher_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   groupId: varchar("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("active"), // "active" or "completed"
   assignedAt: timestamp("assigned_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
 }, (table) => ({
   // Unique constraint to prevent duplicate teacher-group assignments
   uniqueTeacherGroup: unique().on(table.teacherId, table.groupId),
@@ -97,9 +90,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   purchases: many(purchases),
 }));
 
-export const teachersRelations = relations(teachers, ({ many }) => ({
-  teacherGroups: many(teacherGroups),
-}));
+// Teachers are now users with role="teacher" - no separate relations needed
 
 export const groupsRelations = relations(groups, ({ many }) => ({
   groupStudents: many(groupStudents),
@@ -119,9 +110,9 @@ export const groupStudentsRelations = relations(groupStudents, ({ one }) => ({
 }));
 
 export const teacherGroupsRelations = relations(teacherGroups, ({ one }) => ({
-  teacher: one(teachers, {
+  teacher: one(users, {
     fields: [teacherGroups.teacherId],
-    references: [teachers.id],
+    references: [users.id],
   }),
   group: one(groups, {
     fields: [teacherGroups.groupId],
@@ -164,10 +155,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
 });
 
-export const insertTeacherSchema = createInsertSchema(teachers).omit({
-  id: true,
-  createdAt: true,
-});
+// Teachers use the same schema as users with role="teacher"
 
 export const insertGroupSchema = createInsertSchema(groups).omit({
   id: true,
@@ -207,8 +195,7 @@ export const insertPurchaseSchema = createInsertSchema(purchases).omit({
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type Teacher = typeof teachers.$inferSelect;
-export type InsertTeacher = z.infer<typeof insertTeacherSchema>;
+// Teachers are users with role="teacher" - use User type with role filtering
 export type Group = typeof groups.$inferSelect;
 export type InsertGroup = z.infer<typeof insertGroupSchema>;
 export type GroupStudent = typeof groupStudents.$inferSelect;

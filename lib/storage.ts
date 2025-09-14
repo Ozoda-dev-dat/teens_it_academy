@@ -31,6 +31,7 @@ export interface IStorage {
   removeTeacherFromGroup(teacherId: string, groupId: string): Promise<boolean>;
   getTeacherGroups(teacherId: string): Promise<TeacherGroup[]>;
   getGroupTeachers(groupId: string): Promise<TeacherGroup[]>;
+  updateTeacherGroupStatus(teacherGroupId: string, status: string, completedAt: Date | null): Promise<TeacherGroup | undefined>;
 
   // Attendance methods
   createAttendance(attendance: InsertAttendance): Promise<Attendance>;
@@ -202,6 +203,15 @@ export class ServerlessStorage implements IStorage {
         eq(teacherGroups.groupId, groupId)
       ));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async updateTeacherGroupStatus(teacherGroupId: string, status: string, completedAt: Date | null): Promise<TeacherGroup | undefined> {
+    const [updated] = await db
+      .update(teacherGroups)
+      .set({ status, completedAt })
+      .where(eq(teacherGroups.id, teacherGroupId))
+      .returning();
+    return updated || undefined;
   }
 
   async getTeacherGroups(teacherId: string): Promise<TeacherGroup[]> {

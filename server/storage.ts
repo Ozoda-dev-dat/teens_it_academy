@@ -1,5 +1,5 @@
-import { users, teachers, groups, groupStudents, teacherGroups, attendance, payments, products, purchases } from "@shared/schema";
-import type { User, InsertUser, Teacher, InsertTeacher, Group, InsertGroup, GroupStudent, InsertGroupStudent, TeacherGroup, InsertTeacherGroup, Attendance, InsertAttendance, Payment, InsertPayment, Product, InsertProduct, Purchase, InsertPurchase } from "@shared/schema";
+import { users, groups, groupStudents, teacherGroups, attendance, payments, products, purchases } from "@shared/schema";
+import type { User, InsertUser, Group, InsertGroup, GroupStudent, InsertGroupStudent, TeacherGroup, InsertTeacherGroup, Attendance, InsertAttendance, Payment, InsertPayment, Product, InsertProduct, Purchase, InsertPurchase } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, and, sql, desc } from "drizzle-orm";
 import session from "express-session";
@@ -35,6 +35,7 @@ export interface IStorage {
   removeTeacherFromGroup(teacherId: string, groupId: string): Promise<boolean>;
   getTeacherGroups(teacherId: string): Promise<TeacherGroup[]>;
   getGroupTeachers(groupId: string): Promise<TeacherGroup[]>;
+  updateTeacherGroupStatus(teacherGroupId: string, status: string, completedAt: Date | null): Promise<TeacherGroup | undefined>;
   getAllTeachers(): Promise<User[]>;
   createTeacher(teacher: InsertUser): Promise<User>;
   getTeacher(id: string): Promise<User | undefined>;
@@ -265,6 +266,15 @@ export class DatabaseStorage implements IStorage {
         eq(teacherGroups.groupId, groupId)
       ));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async updateTeacherGroupStatus(teacherGroupId: string, status: string, completedAt: Date | null): Promise<TeacherGroup | undefined> {
+    const [updated] = await db
+      .update(teacherGroups)
+      .set({ status, completedAt })
+      .where(eq(teacherGroups.id, teacherGroupId))
+      .returning();
+    return updated || undefined;
   }
 
   async getTeacherGroups(teacherId: string): Promise<TeacherGroup[]> {

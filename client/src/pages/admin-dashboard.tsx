@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Users, 
   UserPlus, 
+  User as UserIcon,
   BookOpen, 
   Calendar, 
   DollarSign, 
@@ -136,6 +137,10 @@ export default function AdminDashboard() {
   const [isAssignTeacherToGroupOpen, setIsAssignTeacherToGroupOpen] = useState(false);
   const [selectedTeacherForAssignment, setSelectedTeacherForAssignment] = useState<string>("");
   const [selectedGroupForTeacherAssignment, setSelectedGroupForTeacherAssignment] = useState<string>("");
+  
+  // Teacher profile states
+  const [isTeacherProfileOpen, setIsTeacherProfileOpen] = useState(false);
+  const [selectedTeacherId, setSelectedTeacherId] = useState<string>("");
 
   // Queries
   const { data: stats } = useQuery<{
@@ -166,6 +171,17 @@ export default function AdminDashboard() {
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ["/api/products"],
     enabled: !!user,
+  });
+  
+  // Teacher profile query
+  const { data: teacherProfile } = useQuery({
+    queryKey: ["/api/teachers", selectedTeacherId],
+    queryFn: async () => {
+      if (!selectedTeacherId) return null;
+      const res = await apiRequest("GET", `/api/teachers/${selectedTeacherId}`);
+      return await res.json();
+    },
+    enabled: !!selectedTeacherId && isTeacherProfileOpen,
   });
   
   const { data: payments = [] } = useQuery<Payment[]>({
@@ -290,6 +306,30 @@ export default function AdminDashboard() {
         variant: "destructive",
       });
     },
+  });
+
+  // Teacher Group Completion mutation
+  const completeGroupMutation = useMutation({
+    mutationFn: async ({ teacherGroupId, completed }: { teacherGroupId: string; completed: boolean }) => {
+      const res = await apiRequest("PUT", "/api/teachers/groups/complete", { teacherGroupId, completed });
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Muvaffaqiyat",
+        description: "Guruh holati muvaffaqiyatli yangilandi",
+        variant: "default",
+      });
+      // Invalidate teacher profile query to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["/api/teachers", selectedTeacherId] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Xatolik",
+        description: error.message || "Guruh holatini yangilashda xatolik yuz berdi",
+        variant: "destructive",
+      });
+    }
   });
   
   // Group Mutations
@@ -535,6 +575,15 @@ export default function AdminDashboard() {
     if (confirm("O'quvchini o'chirishni tasdiqlaysizmi?")) {
       deleteStudentMutation.mutate(id);
     }
+  };
+  
+  const handleViewTeacherProfile = (id: string) => {
+    setSelectedTeacherId(id);
+    setIsTeacherProfileOpen(true);
+  };
+
+  const handleCompleteTeacherGroup = (teacherGroupId: string, completed: boolean) => {
+    completeGroupMutation.mutate({ teacherGroupId, completed });
   };
   
   const handleCreateGroup = (e: React.FormEvent) => {
@@ -1569,10 +1618,23 @@ export default function AdminDashboard() {
                             {teachers.map((teacher) => (
                               <Card key={teacher.id} className="hover:shadow-md transition-shadow">
                                 <CardContent className="p-4">
-                                  <div className="space-y-2">
-                                    <h4 className="font-medium text-lg">{teacher.firstName} {teacher.lastName}</h4>
-                                    <p className="text-sm text-gray-500">{teacher.email}</p>
-                                    <Badge variant="secondary">O'qituvchi</Badge>
+                                  <div className="space-y-3">
+                                    <div>
+                                      <h4 className="font-medium text-lg">{teacher.firstName} {teacher.lastName}</h4>
+                                      <p className="text-sm text-gray-500">{teacher.email}</p>
+                                      <Badge variant="secondary">O'qituvchi</Badge>
+                                    </div>
+                                    <div className="flex space-x-2">
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        onClick={() => handleViewTeacherProfile(teacher.id)}
+                                        className="flex-1"
+                                      >
+                                        <UserIcon className="w-4 h-4 mr-1" />
+                                        Profil
+                                      </Button>
+                                    </div>
                                   </div>
                                 </CardContent>
                               </Card>
@@ -2385,6 +2447,166 @@ export default function AdminDashboard() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Teacher Profile Dialog */}
+      <Dialog open={isTeacherProfileOpen} onOpenChange={setIsTeacherProfileOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>O'qituvchi profili</DialogTitle>
+          </DialogHeader>
+          
+          {teacherProfile.isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin" />
+              <span className="ml-2">Yuklanmoqda...</span>
+            </div>
+          ) : teacherProfile.error ? (
+            <div className="text-center py-8">
+              <p className="text-red-500">Ma'lumotlarni yuklashda xatolik yuz berdi</p>
+            </div>
+          ) : teacherProfile.data ? (
+            <div className="space-y-6">
+              {/* Teacher Info */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Shaxsiy ma'lumotlar</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Ism-familiya</p>
+                      <p className="font-medium">{teacherProfile.data.teacher.firstName} {teacherProfile.data.teacher.lastName}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Email</p>
+                      <p className="font-medium">{teacherProfile.data.teacher.email}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Statistics */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Statistika</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">{teacherProfile.data.stats.totalGroups}</div>
+                      <div className="text-sm text-gray-500">Jami guruhlar</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">{teacherProfile.data.stats.activeGroups}</div>
+                      <div className="text-sm text-gray-500">Faol guruhlar</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-orange-600">{teacherProfile.data.stats.completedGroups}</div>
+                      <div className="text-sm text-gray-500">Tugatilgan guruhlar</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-600">{teacherProfile.data.stats.totalStudents}</div>
+                      <div className="text-sm text-gray-500">Jami talabalar</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-indigo-600">{teacherProfile.data.stats.totalClasses}</div>
+                      <div className="text-sm text-gray-500">Jami darslar</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Groups Tabs */}
+              <Tabs defaultValue="active" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="active">Faol guruhlar ({teacherProfile.data.stats.activeGroups})</TabsTrigger>
+                  <TabsTrigger value="completed">Tugatilgan guruhlar ({teacherProfile.data.stats.completedGroups})</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="active" className="space-y-4">
+                  {teacherProfile.data.groups.active.length > 0 ? (
+                    <div className="grid gap-4">
+                      {teacherProfile.data.groups.active.map((group: any) => (
+                        <Card key={group.id}>
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start">
+                              <div className="space-y-2">
+                                <h4 className="font-semibold">{group.name}</h4>
+                                <p className="text-sm text-gray-600">{group.description}</p>
+                                <div className="flex space-x-4 text-sm text-gray-500">
+                                  <span>👥 {group.totalStudents} talaba</span>
+                                  <span>📚 {group.totalClasses} dars</span>
+                                  <span>📅 {new Date(group.assignedAt).toLocaleDateString()}</span>
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleCompleteTeacherGroup(group.teacherGroupId, true)}
+                                disabled={completeGroupMutation.isPending}
+                              >
+                                {completeGroupMutation.isPending ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  "Tugatish"
+                                )}
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">Faol guruhlar yo'q</p>
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="completed" className="space-y-4">
+                  {teacherProfile.data.groups.completed.length > 0 ? (
+                    <div className="grid gap-4">
+                      {teacherProfile.data.groups.completed.map((group: any) => (
+                        <Card key={group.id}>
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start">
+                              <div className="space-y-2">
+                                <h4 className="font-semibold">{group.name}</h4>
+                                <p className="text-sm text-gray-600">{group.description}</p>
+                                <div className="flex space-x-4 text-sm text-gray-500">
+                                  <span>👥 {group.totalStudents} talaba</span>
+                                  <span>📚 {group.totalClasses} dars</span>
+                                  <span>✅ {new Date(group.completedAt).toLocaleDateString()}</span>
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleCompleteTeacherGroup(group.teacherGroupId, false)}
+                                disabled={completeGroupMutation.isPending}
+                              >
+                                {completeGroupMutation.isPending ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  "Qayta faollashtirish"
+                                )}
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">Tugatilgan guruhlar yo'q</p>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>

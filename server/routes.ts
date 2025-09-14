@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertUserSchema, insertTeacherSchema, insertGroupSchema, insertAttendanceSchema, insertPaymentSchema, insertProductSchema, insertPurchaseSchema, insertGroupStudentSchema, insertTeacherGroupSchema } from "@shared/schema";
+import { insertUserSchema, insertGroupSchema, insertAttendanceSchema, insertPaymentSchema, insertProductSchema, insertPurchaseSchema, insertGroupStudentSchema, insertTeacherGroupSchema } from "@shared/schema";
 import { z } from "zod";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
@@ -511,14 +511,17 @@ export function registerRoutes(app: Express): Server {
   // Teacher management routes (Admin only)
   app.post("/api/teachers", requireAdmin, async (req, res) => {
     try {
-      const teacherData = insertTeacherSchema.parse(req.body);
+      const teacherData = insertUserSchema.parse({
+        ...req.body,
+        role: "teacher"
+      });
       
       // Hash the password before storing
       if (teacherData.password) {
         teacherData.password = await hashPassword(teacherData.password);
       }
       
-      const teacher = await storage.createTeacher(teacherData);
+      const teacher = await storage.createUser(teacherData);
       // Remove password from response
       const { password, ...teacherWithoutPassword } = teacher;
       res.status(201).json(teacherWithoutPassword);
@@ -614,6 +617,106 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("O'qituvchi dashboard ma'lumotlarini olishda xatolik:", error);
       res.status(500).json({ message: "Ma'lumotlarni yuklashda xatolik" });
+    }
+  });
+
+  // Teacher Profile routes (Admin only)
+  app.get("/api/teachers/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get teacher details
+      const teacher = await storage.getTeacher(id);
+      if (!teacher) {
+        return res.status(404).json({ message: "O'qituvchi topilmadi" });
+      }
+
+      // Get teacher's assigned groups with details
+      const teacherGroups = await storage.getTeacherGroups(id);
+      
+      // Get detailed information for each group
+      const groupsWithDetails = await Promise.all(
+        teacherGroups.map(async (tg) => {
+          const group = await storage.getGroup(tg.groupId);
+          const groupStudents = await storage.getGroupStudents(tg.groupId);
+          const attendance = await storage.getGroupAttendance(tg.groupId);
+          
+          return {
+            id: group?.id,
+            name: group?.name,
+            description: group?.description,
+            schedule: group?.schedule,
+            status: tg.status,
+            assignedAt: tg.assignedAt,
+            completedAt: tg.completedAt,
+            totalStudents: groupStudents.length,
+            totalClasses: attendance.length,
+            teacherGroupId: tg.id
+          };
+        })
+      );
+
+      // Separate active and completed groups
+      const activeGroups = groupsWithDetails.filter(g => g.status === 'active');
+      const completedGroups = groupsWithDetails.filter(g => g.status === 'completed');
+
+      // Remove password from teacher response
+      const { password, ...teacherWithoutPassword } = teacher;
+
+      res.status(200).json({
+        teacher: teacherWithoutPassword,
+        groups: {
+          active: activeGroups,
+          completed: completedGroups,
+          total: groupsWithDetails.length
+        },
+        stats: {
+          totalGroups: groupsWithDetails.length,
+          activeGroups: activeGroups.length,
+          completedGroups: completedGroups.length,
+          totalStudents: groupsWithDetails.reduce((sum, group) => sum + group.totalStudents, 0),
+          totalClasses: groupsWithDetails.reduce((sum, group) => sum + group.totalClasses, 0)
+        }
+      });
+    } catch (error) {
+      console.error("O'qituvchi ma'lumotlarini olishda xatolik:", error);
+      res.status(500).json({ message: "O'qituvchi ma'lumotlarini yuklashda xatolik" });
+    }
+  });
+
+  const completeTeacherGroupSchema = z.object({
+    teacherGroupId: z.string(),
+    completed: z.boolean()
+  });
+
+  app.put("/api/teachers/groups/complete", requireAdmin, async (req, res) => {
+    try {
+      const { teacherGroupId, completed } = completeTeacherGroupSchema.parse(req.body);
+      
+      const status = completed ? 'completed' : 'active';
+      const completedAt = completed ? new Date() : null;
+      
+      const updated = await storage.updateTeacherGroupStatus(teacherGroupId, status, completedAt);
+      
+      if (!updated) {
+        return res.status(404).json({ message: "Tayinlash topilmadi" });
+      }
+
+      res.status(200).json({
+        message: completed 
+          ? "Guruh muvaffaqiyatli tugatilgan deb belgilandi"
+          : "Guruh qayta faol holga keltirildi",
+        teacherGroup: updated
+      });
+    } catch (error) {
+      console.error("Guruh holatini yangilashda xatolik:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Ma'lumotlarni to'g'ri kiriting",
+          errors: error.errors
+        });
+      }
+      res.status(400).json({ message: "Guruh holatini yangilashda xatolik" });
     }
   });
 
