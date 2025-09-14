@@ -73,7 +73,7 @@ export default function TeacherAttendance() {
 
   // Create attendance mutation
   const createAttendanceMutation = useMutation({
-    mutationFn: async (attendanceData: { groupId: string; participants: string[]; date: Date }) => {
+    mutationFn: async (attendanceData: { groupId: string; participants: { studentId: string; status: AttendanceStatus }[]; date: Date }) => {
       const res = await fetch("/api/attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

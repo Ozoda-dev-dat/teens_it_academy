@@ -77,7 +77,7 @@ export const products = pgTable("products", {
   description: text("description"),
   image: text("image"),
   quantity: integer("quantity").notNull().default(0),
-  medalCost: jsonb("medal_cost").notNull(), // {gold: 0, silver: 0, bronze: 0}
+  medalCost: jsonb("medal_cost").$type<{ gold: number; silver: number; bronze: number }>().notNull().default(sql`'{"gold": 0, "silver": 0, "bronze": 0}'`), // {gold: 0, silver: 0, bronze: 0}
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });

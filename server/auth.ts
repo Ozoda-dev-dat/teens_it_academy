@@ -9,7 +9,7 @@ import { User as SelectUser } from "@shared/schema";
 
 declare global {
   namespace Express {
-    interface User extends SelectUser {}
+    interface User extends Omit<SelectUser, 'password'> {}
   }
 }
 
@@ -77,8 +77,8 @@ export function setupAuth(app: Express) {
       const user = await storage.getUser(id);
       if (user) {
         // Remove password from user object for security
-        const { password, ...userWithoutPassword } = user;
-        done(null, userWithoutPassword);
+        const { password, ...publicUser } = user;
+        done(null, publicUser as Express.User);
       } else {
         done(null, null);
       }
@@ -116,8 +116,7 @@ export function setupAuth(app: Express) {
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    // Remove password from response for security
-    const { password, ...userWithoutPassword } = req.user;
-    res.json(userWithoutPassword);
+    // Password is already excluded from req.user
+    res.json(req.user);
   });
 }
