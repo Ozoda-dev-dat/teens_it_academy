@@ -174,7 +174,7 @@ export default function AdminDashboard() {
   });
   
   // Teacher profile query
-  const { data: teacherProfile } = useQuery({
+  const teacherProfile = useQuery({
     queryKey: ["/api/teachers", selectedTeacherId],
     queryFn: async () => {
       if (!selectedTeacherId) return null;
