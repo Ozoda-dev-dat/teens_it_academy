@@ -15,13 +15,43 @@ async function hashPassword(password: string) {
   return `${buf.toString("hex")}.${salt}`;
 }
 
+// Helper function to check if bronze medals can be awarded for attendance participants
+async function canAwardBronzeMedalsForAttendance(participants: Array<{studentId: string, status: string}>): Promise<{canAward: boolean, issues: string[]}> {
+  const issues: string[] = [];
+  
+  try {
+    for (const participant of participants) {
+      // Only check bronze medals for students who attended (status: 'arrived')
+      if (participant.status === 'arrived') {
+        const canAward = await storage.canAwardMedals(participant.studentId, 'bronze', 1);
+        if (!canAward) {
+          const student = await storage.getUser(participant.studentId);
+          const studentName = student ? `${student.firstName} ${student.lastName}` : participant.studentId;
+          issues.push(`${studentName} has reached monthly bronze medal limit (48)`);
+        }
+      }
+    }
+    
+    return {
+      canAward: issues.length === 0,
+      issues
+    };
+  } catch (error) {
+    console.error('Error checking bronze medal eligibility:', error);
+    return {
+      canAward: false,
+      issues: ['Internal error checking medal eligibility']
+    };
+  }
+}
+
 // Helper function to automatically award bronze medals for attendance
-async function awardBronzeMedalsForAttendance(participants: Array<{studentId: string, status: string}>) {
+async function awardBronzeMedalsForAttendance(participants: Array<{studentId: string, status: string}>, attendanceId: string) {
   try {
     for (const participant of participants) {
       // Only award bronze medals to students who attended (status: 'arrived')
       if (participant.status === 'arrived') {
-        const success = await storage.awardMedalsSafely(participant.studentId, 'bronze', 1);
+        const success = await storage.awardMedalsSafely(participant.studentId, 'bronze', 1, 'attendance', attendanceId);
         if (success) {
           console.log(`🥉 Awarded +1 bronze medal to student ${participant.studentId} for attendance`);
         } else {
@@ -311,12 +341,21 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Bu sana uchun davomat allaqachon mavjud" });
       }
       
+      // Check if bronze medals can be awarded BEFORE creating attendance
+      const medalCheck = await canAwardBronzeMedalsForAttendance(attendanceData.participants);
+      if (!medalCheck.canAward) {
+        return res.status(400).json({ 
+          message: "Ba'zi talabalar oylik medal limitiga yetgan. Davomat yaratilmadi.",
+          issues: medalCheck.issues
+        });
+      }
+      
       // Allow admin to create attendance for any group, teachers only for their assigned groups
       if (req.user.role === "admin") {
         const attendance = await storage.createAttendance(attendanceData);
         
         // Automatically award +1 bronze medal to students who attended
-        await awardBronzeMedalsForAttendance(attendanceData.participants);
+        await awardBronzeMedalsForAttendance(attendanceData.participants, attendance.id);
         
         return res.status(201).json(attendance);
       } else if (req.user.role === "teacher") {
@@ -331,7 +370,7 @@ export function registerRoutes(app: Express): Server {
         const attendance = await storage.createAttendance(attendanceData);
         
         // Automatically award +1 bronze medal to students who attended
-        await awardBronzeMedalsForAttendance(attendanceData.participants);
+        await awardBronzeMedalsForAttendance(attendanceData.participants, attendance.id);
         
         return res.status(201).json(attendance);
       }

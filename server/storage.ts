@@ -1,5 +1,5 @@
-import { users, groups, groupStudents, teacherGroups, attendance, payments, products, purchases } from "@shared/schema";
-import type { User, InsertUser, Group, InsertGroup, GroupStudent, InsertGroupStudent, TeacherGroup, InsertTeacherGroup, Attendance, InsertAttendance, Payment, InsertPayment, Product, InsertProduct, Purchase, InsertPurchase } from "@shared/schema";
+import { users, groups, groupStudents, teacherGroups, attendance, payments, products, purchases, medalAwards } from "@shared/schema";
+import type { User, InsertUser, Group, InsertGroup, GroupStudent, InsertGroupStudent, TeacherGroup, InsertTeacherGroup, Attendance, InsertAttendance, Payment, InsertPayment, Product, InsertProduct, Purchase, InsertPurchase, MedalAward, InsertMedalAward } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, and, sql, desc, gte, lte } from "drizzle-orm";
 import session from "express-session";
@@ -64,6 +64,11 @@ export interface IStorage {
   createPurchase(purchase: InsertPurchase): Promise<Purchase>;
   getStudentPurchases(studentId: string): Promise<Purchase[]>;
 
+  // Medal Award methods
+  createMedalAward(medalAward: InsertMedalAward): Promise<MedalAward>;
+  getStudentMedalAwards(studentId: string): Promise<MedalAward[]>;
+  getMonthlyMedalAwards(studentId: string, year: number, month: number): Promise<MedalAward[]>;
+
   // Stats methods
   getStats(): Promise<{
     totalStudents: number;
@@ -120,42 +125,56 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
-  // Monthly medal tracking functions
-  async getMonthlyMedalCount(studentId: string, year: number, month: number): Promise<{ gold: number; silver: number; bronze: number }> {
-    // For now, we'll calculate this from current total minus historical totals
-    // In a production system, you'd want a separate medal_awards table to track individual awards
-    
-    // This is a simplified approach - we check attendance history for bronze medals
+  // Medal Award methods
+  async createMedalAward(medalAward: InsertMedalAward): Promise<MedalAward> {
+    const [award] = await db
+      .insert(medalAwards)
+      .values(medalAward)
+      .returning();
+    return award;
+  }
+
+  async getStudentMedalAwards(studentId: string): Promise<MedalAward[]> {
+    const result = await db
+      .select()
+      .from(medalAwards)
+      .where(eq(medalAwards.studentId, studentId))
+      .orderBy(desc(medalAwards.awardedAt));
+    return result || [];
+  }
+
+  async getMonthlyMedalAwards(studentId: string, year: number, month: number): Promise<MedalAward[]> {
     const startOfMonth = new Date(year, month - 1, 1);
     const endOfMonth = new Date(year, month, 0, 23, 59, 59);
     
-    // Count bronze medals from attendance this month
-    const monthlyAttendance = await db
+    const result = await db
       .select()
-      .from(attendance)
+      .from(medalAwards)
       .where(
         and(
-          gte(attendance.date, startOfMonth),
-          lte(attendance.date, endOfMonth)
+          eq(medalAwards.studentId, studentId),
+          gte(medalAwards.awardedAt, startOfMonth),
+          lte(medalAwards.awardedAt, endOfMonth)
         )
-      );
+      )
+      .orderBy(desc(medalAwards.awardedAt));
+    return result || [];
+  }
+
+  // Monthly medal tracking using the new medal_awards table
+  async getMonthlyMedalCount(studentId: string, year: number, month: number): Promise<{ gold: number; silver: number; bronze: number }> {
+    const monthlyAwards = await this.getMonthlyMedalAwards(studentId, year, month);
     
-    let bronzeFromAttendance = 0;
-    for (const record of monthlyAttendance) {
-      const participants = record.participants as Array<{studentId: string, status: string}>;
-      const student = participants.find(p => p.studentId === studentId);
-      if (student && student.status === 'arrived') {
-        bronzeFromAttendance++;
+    const counts = { gold: 0, silver: 0, bronze: 0 };
+    
+    for (const award of monthlyAwards) {
+      const medalType = award.medalType as 'gold' | 'silver' | 'bronze';
+      if (medalType in counts) {
+        counts[medalType] += award.amount;
       }
     }
     
-    // For gold and silver, we'll assume they haven't reached the limit yet
-    // In a production system, you'd track these separately
-    return {
-      gold: 0, // Would need proper tracking
-      silver: 0, // Would need proper tracking  
-      bronze: bronzeFromAttendance
-    };
+    return counts;
   }
 
   async canAwardMedals(studentId: string, medalType: 'gold' | 'silver' | 'bronze', amount: number = 1): Promise<boolean> {
@@ -174,25 +193,45 @@ export class DatabaseStorage implements IStorage {
     return (monthlyCount[medalType] + amount) <= monthlyLimits[medalType];
   }
 
-  async awardMedalsSafely(studentId: string, medalType: 'gold' | 'silver' | 'bronze', amount: number = 1): Promise<boolean> {
-    const canAward = await this.canAwardMedals(studentId, medalType, amount);
-    if (!canAward) {
-      return false;
-    }
-    
-    const student = await this.getUser(studentId);
-    if (!student) {
-      return false;
-    }
-    
-    const currentMedals = student.medals as { gold: number; silver: number; bronze: number };
-    const newMedals = {
-      ...currentMedals,
-      [medalType]: currentMedals[medalType] + amount
-    };
-    
-    await this.updateUser(studentId, { medals: newMedals });
-    return true;
+  async awardMedalsSafely(studentId: string, medalType: 'gold' | 'silver' | 'bronze', amount: number = 1, reason: string = 'attendance', relatedId?: string): Promise<boolean> {
+    // Begin transaction to ensure atomicity
+    return await db.transaction(async (tx) => {
+      // Check if we can award medals (using current state)
+      const canAward = await this.canAwardMedals(studentId, medalType, amount);
+      if (!canAward) {
+        return false;
+      }
+      
+      const student = await tx.select().from(users).where(eq(users.id, studentId)).then(res => res[0]);
+      if (!student) {
+        return false;
+      }
+      
+      // Update the user's total medal count
+      const currentMedals = student.medals as { gold: number; silver: number; bronze: number };
+      const newMedals = {
+        ...currentMedals,
+        [medalType]: currentMedals[medalType] + amount
+      };
+      
+      await tx
+        .update(users)
+        .set({ medals: newMedals })
+        .where(eq(users.id, studentId));
+      
+      // Create a medal award record for tracking
+      await tx
+        .insert(medalAwards)
+        .values({
+          studentId,
+          medalType,
+          amount,
+          reason,
+          relatedId
+        });
+      
+      return true;
+    });
   }
 
   async deleteUser(id: string): Promise<boolean> {
@@ -392,12 +431,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAttendanceByDate(groupId: string, date: Date): Promise<Attendance | undefined> {
+    // Use date-only comparison to prevent duplicate attendance records for the same day
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const nextDay = new Date(dateOnly.getTime() + 24 * 60 * 60 * 1000);
+    
     const [attendanceRecord] = await db
       .select()
       .from(attendance)
       .where(and(
         eq(attendance.groupId, groupId),
-        eq(attendance.date, date)
+        gte(attendance.date, dateOnly),
+        sql`${attendance.date} < ${nextDay}`
       ));
     return attendanceRecord || undefined;
   }

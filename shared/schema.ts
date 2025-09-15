@@ -83,6 +83,17 @@ export const purchases = pgTable("purchases", {
   purchaseDate: timestamp("purchase_date").defaultNow(),
 });
 
+// Medal awards table for proper tracking of individual medal awards
+export const medalAwards = pgTable("medal_awards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  medalType: text("medal_type").notNull(), // "gold", "silver", or "bronze"
+  amount: integer("amount").notNull().default(1),
+  reason: text("reason"), // e.g., "attendance", "achievement", "purchase"
+  relatedId: varchar("related_id"), // Reference to attendance, achievement, etc.
+  awardedAt: timestamp("awarded_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   groupStudents: many(groupStudents),
@@ -149,6 +160,13 @@ export const purchasesRelations = relations(purchases, ({ one }) => ({
   }),
 }));
 
+export const medalAwardsRelations = relations(medalAwards, ({ one }) => ({
+  student: one(users, {
+    fields: [medalAwards.studentId],
+    references: [users.id],
+  }),
+}));
+
 // Schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -192,6 +210,11 @@ export const insertPurchaseSchema = createInsertSchema(purchases).omit({
   purchaseDate: true,
 });
 
+export const insertMedalAwardSchema = createInsertSchema(medalAwards).omit({
+  id: true,
+  awardedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -210,3 +233,5 @@ export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Purchase = typeof purchases.$inferSelect;
 export type InsertPurchase = z.infer<typeof insertPurchaseSchema>;
+export type MedalAward = typeof medalAwards.$inferSelect;
+export type InsertMedalAward = z.infer<typeof insertMedalAwardSchema>;
