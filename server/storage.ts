@@ -1,7 +1,7 @@
 import { users, groups, groupStudents, teacherGroups, attendance, payments, products, purchases } from "@shared/schema";
 import type { User, InsertUser, Group, InsertGroup, GroupStudent, InsertGroupStudent, TeacherGroup, InsertTeacherGroup, Attendance, InsertAttendance, Payment, InsertPayment, Product, InsertProduct, Purchase, InsertPurchase } from "@shared/schema";
 import { db, pool } from "./db";
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, and, sql, desc, gte, lte } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import MemoryStore from "memorystore";
@@ -118,6 +118,81 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return user || undefined;
+  }
+
+  // Monthly medal tracking functions
+  async getMonthlyMedalCount(studentId: string, year: number, month: number): Promise<{ gold: number; silver: number; bronze: number }> {
+    // For now, we'll calculate this from current total minus historical totals
+    // In a production system, you'd want a separate medal_awards table to track individual awards
+    
+    // This is a simplified approach - we check attendance history for bronze medals
+    const startOfMonth = new Date(year, month - 1, 1);
+    const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+    
+    // Count bronze medals from attendance this month
+    const monthlyAttendance = await db
+      .select()
+      .from(attendance)
+      .where(
+        and(
+          gte(attendance.date, startOfMonth),
+          lte(attendance.date, endOfMonth)
+        )
+      );
+    
+    let bronzeFromAttendance = 0;
+    for (const record of monthlyAttendance) {
+      const participants = record.participants as Array<{studentId: string, status: string}>;
+      const student = participants.find(p => p.studentId === studentId);
+      if (student && student.status === 'arrived') {
+        bronzeFromAttendance++;
+      }
+    }
+    
+    // For gold and silver, we'll assume they haven't reached the limit yet
+    // In a production system, you'd track these separately
+    return {
+      gold: 0, // Would need proper tracking
+      silver: 0, // Would need proper tracking  
+      bronze: bronzeFromAttendance
+    };
+  }
+
+  async canAwardMedals(studentId: string, medalType: 'gold' | 'silver' | 'bronze', amount: number = 1): Promise<boolean> {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    
+    const monthlyCount = await this.getMonthlyMedalCount(studentId, currentYear, currentMonth);
+    
+    const monthlyLimits = {
+      gold: 2,
+      silver: 2,
+      bronze: 48
+    };
+    
+    return (monthlyCount[medalType] + amount) <= monthlyLimits[medalType];
+  }
+
+  async awardMedalsSafely(studentId: string, medalType: 'gold' | 'silver' | 'bronze', amount: number = 1): Promise<boolean> {
+    const canAward = await this.canAwardMedals(studentId, medalType, amount);
+    if (!canAward) {
+      return false;
+    }
+    
+    const student = await this.getUser(studentId);
+    if (!student) {
+      return false;
+    }
+    
+    const currentMedals = student.medals as { gold: number; silver: number; bronze: number };
+    const newMedals = {
+      ...currentMedals,
+      [medalType]: currentMedals[medalType] + amount
+    };
+    
+    await this.updateUser(studentId, { medals: newMedals });
+    return true;
   }
 
   async deleteUser(id: string): Promise<boolean> {

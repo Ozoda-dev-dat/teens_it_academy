@@ -15,6 +15,25 @@ async function hashPassword(password: string) {
   return `${buf.toString("hex")}.${salt}`;
 }
 
+// Helper function to automatically award bronze medals for attendance
+async function awardBronzeMedalsForAttendance(participants: Array<{studentId: string, status: string}>) {
+  try {
+    for (const participant of participants) {
+      // Only award bronze medals to students who attended (status: 'arrived')
+      if (participant.status === 'arrived') {
+        const success = await storage.awardMedalsSafely(participant.studentId, 'bronze', 1);
+        if (success) {
+          console.log(`🥉 Awarded +1 bronze medal to student ${participant.studentId} for attendance`);
+        } else {
+          console.log(`⚠️ Could not award bronze medal to student ${participant.studentId} - monthly limit reached`);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error awarding bronze medals for attendance:', error);
+  }
+}
+
 export function registerRoutes(app: Express): Server {
   // Setup authentication routes
   setupAuth(app);
@@ -295,6 +314,10 @@ export function registerRoutes(app: Express): Server {
       // Allow admin to create attendance for any group, teachers only for their assigned groups
       if (req.user.role === "admin") {
         const attendance = await storage.createAttendance(attendanceData);
+        
+        // Automatically award +1 bronze medal to students who attended
+        await awardBronzeMedalsForAttendance(attendanceData.participants);
+        
         return res.status(201).json(attendance);
       } else if (req.user.role === "teacher") {
         // Check if teacher is assigned to this group
@@ -306,6 +329,10 @@ export function registerRoutes(app: Express): Server {
         }
         
         const attendance = await storage.createAttendance(attendanceData);
+        
+        // Automatically award +1 bronze medal to students who attended
+        await awardBronzeMedalsForAttendance(attendanceData.participants);
+        
         return res.status(201).json(attendance);
       }
       
