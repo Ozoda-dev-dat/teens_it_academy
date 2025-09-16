@@ -342,7 +342,7 @@ export function registerRoutes(app: Express): Server {
       }
       
       // Check if bronze medals can be awarded BEFORE creating attendance
-      const medalCheck = await canAwardBronzeMedalsForAttendance(attendanceData.participants);
+      const medalCheck = await canAwardBronzeMedalsForAttendance(attendanceData.participants as Array<{studentId: string, status: string}>);
       if (!medalCheck.canAward) {
         return res.status(400).json({ 
           message: "Ba'zi talabalar oylik medal limitiga yetgan. Davomat yaratilmadi.",
@@ -355,7 +355,7 @@ export function registerRoutes(app: Express): Server {
         const attendance = await storage.createAttendance(attendanceData);
         
         // Automatically award +1 bronze medal to students who attended
-        await awardBronzeMedalsForAttendance(attendanceData.participants, attendance.id);
+        await awardBronzeMedalsForAttendance(attendanceData.participants as Array<{studentId: string, status: string}>, attendance.id);
         
         return res.status(201).json(attendance);
       } else if (req.user.role === "teacher") {
@@ -370,7 +370,7 @@ export function registerRoutes(app: Express): Server {
         const attendance = await storage.createAttendance(attendanceData);
         
         // Automatically award +1 bronze medal to students who attended
-        await awardBronzeMedalsForAttendance(attendanceData.participants, attendance.id);
+        await awardBronzeMedalsForAttendance(attendanceData.participants as Array<{studentId: string, status: string}>, attendance.id);
         
         return res.status(201).json(attendance);
       }
