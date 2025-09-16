@@ -66,13 +66,12 @@ export default function AdminLogin() {
 
           {/* Logo Section */}
           <div className="text-center">
-            <div className="mx-auto w-24 h-24 bg-white rounded-2xl shadow-lg flex items-center justify-center mb-6 transform hover:scale-105 transition-transform duration-300">
-              <div className="flex items-center">
-                <div className="relative">
-                  <div className="w-8 h-8 bg-red-600 rounded-l-lg"></div>
-                  <div className="absolute -top-1 -right-1 w-0 h-0 border-l-4 border-l-yellow-500 border-b-4 border-b-transparent border-t-4 border-t-transparent"></div>
-                </div>
-              </div>
+            <div className="mx-auto w-32 h-32 bg-white rounded-2xl shadow-lg flex items-center justify-center mb-6 transform hover:scale-105 transition-transform duration-300 p-4">
+              <img 
+                src="/teens-it-logo.png" 
+                alt="Teens IT School Logo" 
+                className="w-full h-full object-contain"
+              />
             </div>
             <h1 className="text-3xl font-bold text-red-600 mb-2">Administrator</h1>
             <p className="text-gray-600 font-medium">Boshqaruv paneliga kirish</p>

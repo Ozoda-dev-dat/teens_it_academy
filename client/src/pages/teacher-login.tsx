@@ -56,8 +56,12 @@ export default function TeacherLogin() {
         <div className="max-w-md w-full space-y-8">
           {/* Logo Section */}
           <div className="text-center">
-            <div className="mx-auto w-24 h-24 bg-white rounded-2xl shadow-lg flex items-center justify-center mb-6 transform hover:scale-105 transition-transform duration-300">
-              <Users className="w-12 h-12 text-green-600" />
+            <div className="mx-auto w-32 h-32 bg-white rounded-2xl shadow-lg flex items-center justify-center mb-6 transform hover:scale-105 transition-transform duration-300 p-4">
+              <img 
+                src="/teens-it-logo.png" 
+                alt="Teens IT School Logo" 
+                className="w-full h-full object-contain"
+              />
             </div>
             <h2 className="mt-6 text-3xl font-bold text-gray-900">
               O'qituvchi paneli

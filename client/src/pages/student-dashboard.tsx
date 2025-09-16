@@ -106,11 +106,12 @@ export default function StudentDashboard() {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <div className="w-8 h-8 bg-teens-navy rounded-lg flex items-center justify-center mr-3">
-                  <div className="relative">
-                    <div className="w-4 h-4 bg-white rounded-sm"></div>
-                    <div className="absolute -top-0.5 -right-0.5 w-0 h-0 border-l-2 border-l-teens-red border-b-2 border-b-transparent border-t-2 border-t-transparent"></div>
-                  </div>
+                <div className="w-8 h-8 mr-3">
+                  <img 
+                    src="/teens-it-logo.png" 
+                    alt="Teens IT School Logo" 
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <span className="text-xl font-bold text-teens-navy">Teens IT School</span>
               </div>
