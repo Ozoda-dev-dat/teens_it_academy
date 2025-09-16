@@ -618,12 +618,24 @@ export function registerRoutes(app: Express): Server {
     } catch (error: any) {
       console.error("O'qituvchini guruhga tayinlashda xatolik:", error);
       
+      // Check for specific database constraint violations
+      if (error.code === '23503') {
+        // Foreign key constraint violations
+        if (error.constraint?.includes('teacher_id')) {
+          return res.status(400).json({ message: "Tanlangan o'qituvchi topilmadi yoki mavjud emas" });
+        }
+        if (error.constraint?.includes('group_id')) {
+          return res.status(400).json({ message: "Tanlangan guruh topilmadi yoki mavjud emas" });
+        }
+        return res.status(400).json({ message: "Noto'g'ri ma'lumot kiritilgan" });
+      }
+      
       // Check if this is a unique constraint violation (teacher already assigned to group)
-      if (error.code === '23505' && error.constraint === 'teacher_groups_teacher_id_group_id_unique') {
+      if (error.code === '23505' && error.constraint?.includes('teacher_groups_teacher_id_group_id')) {
         return res.status(409).json({ message: "Bu o'qituvchi allaqachon shu guruhga tayinlangan" });
       }
       
-      res.status(400).json({ message: "O'qituvchini guruhga tayinlashda xatolik" });
+      res.status(400).json({ message: "O'qituvchini guruhga tayinlashda xatolik yuz berdi" });
     }
   });
 
