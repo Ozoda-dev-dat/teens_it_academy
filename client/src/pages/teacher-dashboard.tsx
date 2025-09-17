@@ -646,7 +646,7 @@ export default function TeacherDashboard() {
                   <div className="space-y-3">
                     {teacherData?.recentActivity?.length ? (
                       teacherData.recentActivity.map((activity: any, index: number) => (
-                        <div key={index} className="flex items-center space-x-3 p-3 border rounded-lg">
+                        <div key={activity.id || `activity-${index}`} className="flex items-center space-x-3 p-3 border rounded-lg">
                           <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                             <Calendar className="w-4 h-4 text-green-600" />
                           </div>
