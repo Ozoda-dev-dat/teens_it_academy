@@ -44,5 +44,6 @@ export default defineConfig({
       strict: false,
       allow: ['..']
     },
+    allowedHosts: true
   },
 });
