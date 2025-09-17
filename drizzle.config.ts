@@ -4,7 +4,6 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL, ensure the database is provisioned");
 }
 
-console.log("DATABASE_URL:", process.env.DATABASE_URL); // Test uchun
 
 export default defineConfig({
   out: "./migrations",
