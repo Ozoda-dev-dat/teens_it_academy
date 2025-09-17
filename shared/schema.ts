@@ -34,17 +34,28 @@ export const groupStudents = pgTable("group_students", {
   joinedAt: timestamp("joined_at").defaultNow(),
 });
 
+// export const teacherGroups = pgTable("teacher_groups", {
+//   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+//   teacherId: varchar("teacher_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+//   groupId: varchar("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
+//   status: text("status").notNull().default("active"), // "active" or "completed"
+//   assignedAt: timestamp("assigned_at").defaultNow(),
+//   completedAt: timestamp("completed_at"),
+// }, (table) => ({
+//   // Unique constraint to prevent duplicate teacher-group assignments
+//   uniqueTeacherGroup: unique().on(table.teacherId, table.groupId),
+// }));
+
 export const teacherGroups = pgTable("teacher_groups", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   teacherId: varchar("teacher_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   groupId: varchar("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
-  status: text("status").notNull().default("active"), // "active" or "completed"
   assignedAt: timestamp("assigned_at").defaultNow(),
   completedAt: timestamp("completed_at"),
 }, (table) => ({
-  // Unique constraint to prevent duplicate teacher-group assignments
   uniqueTeacherGroup: unique().on(table.teacherId, table.groupId),
 }));
+
 
 export const attendance = pgTable("attendance", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
