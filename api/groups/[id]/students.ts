@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from '../../../lib/storage';
-import { requireSecureAdmin } from '../../../lib/secure-auth';
+import { requireSecureAdmin, requireSecureTeacher, getSecureUserFromSession } from '../../../lib/secure-auth';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { id } = req.query;
@@ -9,9 +9,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
-    // GET /api/groups/[id]/students - Get students in a specific group (admin only)
-    const adminUser = await requireSecureAdmin(req, res);
-    if (!adminUser) return;
+    // GET /api/groups/[id]/students - Get students in a specific group (admin or assigned teachers)
+    const user = await getSecureUserFromSession(req);
+    if (!user) {
+      return res.status(401).json({ message: "Autentifikatsiya talab qilinadi" });
+    }
+
+    // Allow admin access to any group
+    if (user.role === 'admin') {
+      // Admin can access any group - keep existing logic
+    } else if (user.role === 'teacher') {
+      // Check if teacher is assigned to this group
+      const teacherGroups = await storage.getTeacherGroups(user.id);
+      const hasAccess = teacherGroups.some(tg => tg.groupId === id);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Bu guruh uchun o'quvchilarni ko'rish huquqingiz yo'q" });
+      }
+    } else {
+      return res.status(403).json({ message: "Kirish rad etildi" });
+    }
 
     try {
       // First verify the group exists

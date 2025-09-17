@@ -150,16 +150,16 @@ function MedalGivingSection({ teacherData }: { teacherData: any }) {
       
       const students: any[] = [];
       for (const group of teacherData.groups) {
-        const res = await fetch(`/api/groups/${group.id}`, {
+        const res = await fetch(`/api/groups/${group.id}/students`, {
           credentials: "include"
         });
         if (res.ok) {
-          const groupData = await res.json();
-          if (groupData.students) {
-            groupData.students.forEach((student: any) => {
-              if (!students.find(s => s.id === student.id)) {
+          const groupStudents = await res.json();
+          if (groupStudents && Array.isArray(groupStudents)) {
+            groupStudents.forEach((gs: any) => {
+              if (!students.find(s => s.id === gs.student.id)) {
                 students.push({
-                  ...student,
+                  ...gs.student,
                   groupName: group.name
                 });
               }
