@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer } from "ws";
 import { setupAuth } from "./auth";
+import { notificationService } from "./notifications";
 import { storage } from "./storage";
 import { insertUserSchema, insertGroupSchema, insertAttendanceSchema, insertPaymentSchema, insertProductSchema, insertPurchaseSchema, insertGroupStudentSchema, insertTeacherGroupSchema } from "@shared/schema";
 import { z } from "zod";
@@ -883,5 +885,48 @@ export function registerRoutes(app: Express): Server {
   });
 
   const httpServer = createServer(app);
+  
+  // Setup WebSocket server
+  const wss = new WebSocketServer({ 
+    server: httpServer,
+    path: '/ws'
+  });
+  
+  wss.on('connection', (socket, request) => {
+    console.log('New WebSocket connection established');
+    
+    // Extract user information from session if available
+    let userId: string | undefined;
+    let role: string | undefined;
+    
+    // Try to get user info from session
+    // This will be properly authenticated once we handle session parsing
+    try {
+      // For now, we'll handle authentication on the client side
+      // The client will send user info after connecting
+      notificationService.addClient(socket, userId, role);
+    } catch (error) {
+      console.error('Error setting up WebSocket client:', error);
+      notificationService.addClient(socket);
+    }
+    
+    // Handle client messages (like authentication)
+    socket.on('message', (data) => {
+      try {
+        const message = JSON.parse(data.toString());
+        
+        if (message.type === 'authenticate') {
+          // Update client info with authentication data
+          userId = message.userId;
+          role = message.role;
+          console.log(`WebSocket client authenticated: userId=${userId}, role=${role}`);
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
+    });
+  });
+  
+  console.log('WebSocket server initialized on /ws path');
   return httpServer;
 }
