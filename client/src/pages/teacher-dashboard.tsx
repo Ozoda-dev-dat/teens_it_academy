@@ -458,6 +458,61 @@ export default function TeacherDashboard() {
   const { user, logoutMutation } = useAuth();
   const [selectedTab, setSelectedTab] = useState("overview");
   const [, setLocation] = useLocation();
+  const { lastMessage, isConnected } = useRealtimeUpdates();
+  const queryClient = useQueryClient();
+
+  // Real-time updates effect
+  useEffect(() => {
+    if (!lastMessage) return;
+
+    const { type, data } = lastMessage;
+
+    // Handle real-time updates for teacher dashboard
+    switch (type) {
+      case 'attendance_created':
+        // Refresh attendance data for the affected group
+        queryClient.invalidateQueries({ queryKey: ["group-attendance", data.groupId] });
+        queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
+        toast({
+          title: "Davomat yangilandi",
+          description: "Yangi davomat yozuvi qo'shildi",
+        });
+        break;
+
+      case 'attendance_updated':
+        queryClient.invalidateQueries({ queryKey: ["group-attendance", data.groupId] });
+        queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
+        break;
+
+      case 'medal_awarded':
+        // Refresh teacher's student list if it involves their students
+        queryClient.invalidateQueries({ queryKey: ["teacher-students"] });
+        queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
+        if (data.studentId && data.teacherAwarded) {
+          toast({
+            title: "🎉 Medal berildi!",
+            description: `${data.studentName || 'O\'quvchi'}ga ${data.medalType} medal berildi`,
+          });
+        }
+        break;
+
+      case 'user_created':
+        if (data.role === 'student') {
+          queryClient.invalidateQueries({ queryKey: ["teacher-students"] });
+          queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
+        }
+        break;
+
+      case 'group_created':
+      case 'group_updated':
+        queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
+        break;
+
+      case 'stats_updated':
+        queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
+        break;
+    }
+  }, [lastMessage, queryClient]);
 
   // Fetch teacher's assigned groups and data
   const { data: teacherData, isLoading, error } = useQuery({
