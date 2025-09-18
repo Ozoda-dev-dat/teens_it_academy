@@ -4,6 +4,24 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
 
+// Real-time notification types
+export type NotificationType = 
+  | 'user_created' | 'user_updated' | 'user_deleted'
+  | 'group_created' | 'group_updated' | 'group_deleted' 
+  | 'attendance_created' | 'attendance_updated'
+  | 'payment_created' | 'payment_updated'
+  | 'product_created' | 'product_updated' | 'product_deleted'
+  | 'medal_awarded'
+  | 'stats_updated';
+
+export interface RealtimeNotification {
+  type: NotificationType;
+  data: any;
+  timestamp: string;
+  userId?: string;
+  role?: string;
+}
+
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   role: text("role").notNull().default("student"), // "admin", "student", or "teacher"
