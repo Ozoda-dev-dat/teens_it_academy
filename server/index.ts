@@ -1,7 +1,5 @@
-// Fix SSL certificate issues for cloud deployments (development only)
-if (process.env.NODE_ENV === 'development') {
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-}
+// SSL certificate verification should be enabled for security
+// Removed NODE_TLS_REJECT_UNAUTHORIZED override for security compliance
 
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";

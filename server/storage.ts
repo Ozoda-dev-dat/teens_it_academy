@@ -35,7 +35,7 @@ export interface IStorage {
   removeTeacherFromGroup(teacherId: string, groupId: string): Promise<boolean>;
   getTeacherGroups(teacherId: string): Promise<TeacherGroup[]>;
   getGroupTeachers(groupId: string): Promise<TeacherGroup[]>;
-  updateTeacherGroupStatus(teacherGroupId: string, status: string, completedAt: Date | null): Promise<TeacherGroup | undefined>;
+  updateTeacherGroupStatus(teacherGroupId: string, completedAt: Date | null): Promise<TeacherGroup | undefined>;
   getAllTeachers(): Promise<User[]>;
   createTeacher(teacher: InsertUser): Promise<User>;
   getTeacher(id: string): Promise<User | undefined>;
@@ -382,10 +382,10 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  async updateTeacherGroupStatus(teacherGroupId: string, status: string, completedAt: Date | null): Promise<TeacherGroup | undefined> {
+  async updateTeacherGroupStatus(teacherGroupId: string, completedAt: Date | null): Promise<TeacherGroup | undefined> {
     const [updated] = await db
       .update(teacherGroups)
-      .set({ status, completedAt })
+      .set({ completedAt })
       .where(eq(teacherGroups.id, teacherGroupId))
       .returning();
     return updated || undefined;

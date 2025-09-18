@@ -17,10 +17,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const { teacherGroupId, completed } = completeTeacherGroupSchema.parse(req.body);
       
-      const status = completed ? 'completed' : 'active';
       const completedAt = completed ? new Date() : null;
       
-      const updated = await storage.updateTeacherGroupStatus(teacherGroupId, status, completedAt);
+      const updated = await storage.updateTeacherGroupStatus(teacherGroupId, completedAt);
       
       if (!updated) {
         return res.status(404).json({ message: "Tayinlash topilmadi" });

@@ -724,7 +724,7 @@ export function registerRoutes(app: Express): Server {
             name: group?.name,
             description: group?.description,
             schedule: group?.schedule,
-            status: tg.status,
+            status: tg.completedAt ? 'completed' : 'active',
             assignedAt: tg.assignedAt,
             completedAt: tg.completedAt,
             totalStudents: groupStudents.length,
@@ -735,8 +735,8 @@ export function registerRoutes(app: Express): Server {
       );
 
       // Separate active and completed groups
-      const activeGroups = groupsWithDetails.filter(g => g.status === 'active');
-      const completedGroups = groupsWithDetails.filter(g => g.status === 'completed');
+      const activeGroups = groupsWithDetails.filter(g => !g.completedAt);
+      const completedGroups = groupsWithDetails.filter(g => g.completedAt);
 
       // Remove password from teacher response
       const { password, ...teacherWithoutPassword } = teacher;
@@ -771,10 +771,9 @@ export function registerRoutes(app: Express): Server {
     try {
       const { teacherGroupId, completed } = completeTeacherGroupSchema.parse(req.body);
       
-      const status = completed ? 'completed' : 'active';
       const completedAt = completed ? new Date() : null;
       
-      const updated = await storage.updateTeacherGroupStatus(teacherGroupId, status, completedAt);
+      const updated = await storage.updateTeacherGroupStatus(teacherGroupId, completedAt);
       
       if (!updated) {
         return res.status(404).json({ message: "Tayinlash topilmadi" });
