@@ -31,6 +31,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useQuery<SelectUser | undefined, Error>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
+    // Add polling for real-time medal updates - poll every 30 seconds
+    refetchInterval: 30000,
+    refetchIntervalInBackground: true,
+    // Only enable polling when user is authenticated
+    enabled: true,
   });
 
   const loginMutation = useMutation({

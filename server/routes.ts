@@ -810,23 +810,20 @@ export function registerRoutes(app: Express): Server {
     return studentGroups.some(sg => teacherGroupIds.includes(sg.groupId));
   }
 
-  const medalUpdateSchema = z.object({
+  const medalAwardSchema = z.object({
     studentId: z.string(),
-    medals: z.object({
-      gold: z.number().min(0),
-      silver: z.number().min(0),
-      bronze: z.number().min(0),
-    }),
+    medalType: z.enum(['gold', 'silver', 'bronze']),
+    amount: z.number().min(1).max(5).optional().default(1), // Optional amount, default 1
   });
 
-  // Teacher medals route - allows teachers to award medals to their students
-  app.put("/api/teachers/medals", async (req, res) => {
+  // Teacher medals route - allows teachers to award medals to their students atomically
+  app.post("/api/teachers/medals/award", async (req, res) => {
     if (!req.isAuthenticated() || req.user.role !== "teacher") {
       return res.status(403).json({ message: "Faqat o'qituvchilar uchun" });
     }
 
     try {
-      const { studentId, medals } = medalUpdateSchema.parse(req.body);
+      const { studentId, medalType, amount } = medalAwardSchema.parse(req.body);
       
       // Verify teacher can manage this student
       const canManageStudent = await verifyTeacherCanManageStudent(req.user.id, studentId);
@@ -834,16 +831,25 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ message: "Bu o'quvchini boshqarish huquqingiz yo'q" });
       }
 
-      // Get current student data
-      const student = await storage.getUser(studentId);
-      if (!student) {
-        return res.status(404).json({ message: "O'quvchi topilmadi" });
+      // Award medals safely using atomic transaction
+      const success = await storage.awardMedalsSafely(
+        studentId, 
+        medalType, 
+        amount, 
+        'teacher_award', 
+        req.user.id
+      );
+      
+      if (!success) {
+        return res.status(400).json({ 
+          message: "Medal berish imkonsiz - oylik limit yetdi yoki boshqa xatolik" 
+        });
       }
 
-      // Update student medals
-      const updatedStudent = await storage.updateUser(studentId, { medals });
+      // Get updated student data
+      const updatedStudent = await storage.getUser(studentId);
       if (!updatedStudent) {
-        return res.status(500).json({ message: "Medallarni yangilashda xatolik" });
+        return res.status(500).json({ message: "Yangilangan ma'lumotlarni olishda xatolik" });
       }
 
       // Remove password from response
@@ -851,7 +857,7 @@ export function registerRoutes(app: Express): Server {
       
       return res.status(200).json({
         student: studentWithoutPassword,
-        message: "Medallar muvaffaqiyatli yangilandi"
+        message: "Medal muvaffaqiyatli berildi"
       });
     } catch (error) {
       console.error("Medallarni yangilashda xatolik:", error);

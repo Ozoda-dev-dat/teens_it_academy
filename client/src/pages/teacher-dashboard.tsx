@@ -174,22 +174,14 @@ function MedalGivingSection({ teacherData }: { teacherData: any }) {
 
   const awardMedalMutation = useMutation({
     mutationFn: async ({ studentId, medalType }: { studentId: string; medalType: string }) => {
-      const student = allStudents?.find(s => s.id === studentId);
-      if (!student) throw new Error("Student not found");
-
-      const currentMedals = student.medals || { gold: 0, silver: 0, bronze: 0 };
-      const updatedMedals = {
-        ...currentMedals,
-        [medalType]: currentMedals[medalType] + 1
-      };
-
-      const res = await fetch('/api/teachers/medals', {
-        method: 'PUT',
+      const res = await fetch('/api/teachers/medals/award', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           studentId,
-          medals: updatedMedals
+          medalType,
+          amount: 1
         })
       });
 
@@ -218,8 +210,29 @@ function MedalGivingSection({ teacherData }: { teacherData: any }) {
         setAnimatingMedal(null);
       }, 2000);
 
-      // Refresh data
+      // Refresh teacher's student list to show updated medal counts
       queryClient.invalidateQueries({ queryKey: ["teacher-students"] });
+      
+      // Add optimistic update to instantly reflect the change
+      const studentData = allStudents?.find(s => s.id === variables.studentId);
+      if (studentData && teacherData?.groups) {
+        queryClient.setQueryData(["teacher-students", teacherData.groups], (old: any[]) => {
+          if (!old) return old;
+          return old.map(student => {
+            if (student.id === variables.studentId) {
+              const currentMedals = student.medals || { gold: 0, silver: 0, bronze: 0 };
+              return {
+                ...student,
+                medals: {
+                  ...currentMedals,
+                  [variables.medalType]: currentMedals[variables.medalType] + 1
+                }
+              };
+            }
+            return student;
+          });
+        });
+      }
       
       // Reset form
       setSelectedStudent("");
