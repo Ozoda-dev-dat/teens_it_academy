@@ -2,6 +2,7 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
 import { storage } from '../../lib/storage';
 import { insertUserSchema } from '../../shared/schema';
+import { notificationService } from '../../server/notifications';
 import { scrypt, randomBytes } from 'crypto';
 import { promisify } from 'util';
 import { requireSecureAdmin } from '../../lib/secure-auth';
@@ -51,6 +52,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const teacher = await storage.createUser(teacherData);
       // Remove password from response
       const { password, ...teacherWithoutPassword } = teacher;
+      
+      // Broadcast real-time notification
+      notificationService.broadcast({
+        type: 'user_created',
+        data: { ...teacherWithoutPassword, role: 'teacher' },
+        timestamp: new Date().toISOString()
+      });
+      
       return res.status(201).json(teacherWithoutPassword);
     } catch (error) {
       console.error("O'qituvchi yaratishda xatolik:", error);

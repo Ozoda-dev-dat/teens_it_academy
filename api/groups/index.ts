@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from '../../lib/storage';
 import { insertGroupSchema } from '../../shared/schema';
+import { notificationService } from '../../server/notifications';
 import { requireSecureAdmin } from '../../lib/secure-auth';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -23,6 +24,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const groupData = insertGroupSchema.parse(req.body);
       const group = await storage.createGroup(groupData);
+      
+      // Broadcast real-time notification
+      notificationService.broadcast({
+        type: 'group_created',
+        data: group,
+        timestamp: new Date().toISOString()
+      });
+      
       return res.status(201).json(group);
     } catch (error) {
       console.error("Guruh yaratishda xatolik:", error);

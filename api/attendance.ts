@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
 import { storage } from '../lib/storage';
 import { insertAttendanceSchema } from '../shared/schema';
+import { notificationService } from '../server/notifications';
 import { requireSecureAdmin } from '../lib/secure-auth';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -35,6 +36,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       
       const attendance = await storage.createAttendance(attendanceData);
+      
+      // Broadcast real-time notification
+      notificationService.broadcast({
+        type: 'attendance_created',
+        data: { ...attendance, groupId: attendanceData.groupId },
+        timestamp: new Date().toISOString()
+      });
+      
       return res.status(201).json(attendance);
     } catch (error) {
       console.error("Davomat yaratishda xatolik:", error);
