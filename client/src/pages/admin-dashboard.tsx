@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useRealtimeUpdates } from "@/hooks/use-websocket";
 import { 
   Users, 
   UserPlus, 
@@ -50,6 +51,7 @@ import type { User, Group, Product, Attendance, Payment, Purchase } from "@share
 export default function AdminDashboard() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
+  const { lastMessage, isConnected } = useRealtimeUpdates();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [searchTerm, setSearchTerm] = useState("");
   
@@ -203,6 +205,68 @@ export default function AdminDashboard() {
     queryKey: ["/api/groups", selectedGroupForAssignment, "students"],
     enabled: !!user && !!selectedGroupForAssignment,
   });
+
+  // Real-time updates effect
+  useEffect(() => {
+    if (!lastMessage) return;
+
+    const { type, data } = lastMessage;
+
+    // Show toast notification for important updates
+    switch (type) {
+      case 'user_created':
+        if (data.role === 'student') {
+          toast({
+            title: "Yangi o'quvchi qo'shildi",
+            description: `${data.firstName} ${data.lastName} tizimga qo'shildi`,
+          });
+          queryClient.invalidateQueries({ queryKey: ["/api/students"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+        } else if (data.role === 'teacher') {
+          toast({
+            title: "Yangi o'qituvchi qo'shildi", 
+            description: `${data.firstName} ${data.lastName} tizimga qo'shildi`,
+          });
+          queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
+        }
+        break;
+
+      case 'group_created':
+        toast({
+          title: "Yangi guruh yaratildi",
+          description: `"${data.name}" guruhi yaratildi`,
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+        break;
+
+      case 'attendance_created':
+        queryClient.invalidateQueries({ queryKey: ["/api/groups", data.groupId, "attendance"] });
+        break;
+
+      case 'medal_awarded':
+        queryClient.invalidateQueries({ queryKey: ["/api/students"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+        break;
+
+      case 'payment_created':
+        queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+        break;
+
+      case 'product_created':
+        toast({
+          title: "Yangi mahsulot qo'shildi",
+          description: `"${data.name}" mahsuloti qo'shildi`,
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+        break;
+
+      case 'stats_updated':
+        queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+        break;
+    }
+  }, [lastMessage, toast]);
 
   // Student Mutations
   const createStudentMutation = useMutation({
