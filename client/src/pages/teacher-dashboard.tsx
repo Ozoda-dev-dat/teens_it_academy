@@ -139,6 +139,7 @@ function AttendanceGroupCard({ group, onMarkAttendance }: { group: any; onMarkAt
 function MedalGivingSection({ teacherData }: { teacherData: any }) {
   const [selectedStudent, setSelectedStudent] = useState<string>("");
   const [selectedMedalType, setSelectedMedalType] = useState<string>("");
+  const [medalAmount, setMedalAmount] = useState<number>(1);
   const [isAwarding, setIsAwarding] = useState(false);
   const [animatingMedal, setAnimatingMedal] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -174,7 +175,7 @@ function MedalGivingSection({ teacherData }: { teacherData: any }) {
   });
 
   const awardMedalMutation = useMutation({
-    mutationFn: async ({ studentId, medalType }: { studentId: string; medalType: string }) => {
+    mutationFn: async ({ studentId, medalType, amount }: { studentId: string; medalType: string; amount: number }) => {
       const res = await fetch('/api/teachers/medals/award', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -182,7 +183,7 @@ function MedalGivingSection({ teacherData }: { teacherData: any }) {
         body: JSON.stringify({
           studentId,
           medalType,
-          amount: 1
+          amount
         })
       });
 
@@ -203,7 +204,7 @@ function MedalGivingSection({ teacherData }: { teacherData: any }) {
       
       toast({
         title: "🎉 Medal berildi!",
-        description: `${studentName}ga ${medalNames[variables.medalType as keyof typeof medalNames]} medal berildi`,
+        description: `${studentName}ga ${variables.amount} ta ${medalNames[variables.medalType as keyof typeof medalNames]} medal berildi`,
       });
 
       // Clear animation after delay
@@ -226,7 +227,7 @@ function MedalGivingSection({ teacherData }: { teacherData: any }) {
                 ...student,
                 medals: {
                   ...currentMedals,
-                  [variables.medalType]: currentMedals[variables.medalType] + 1
+                  [variables.medalType]: currentMedals[variables.medalType] + variables.amount
                 }
               };
             }
@@ -238,6 +239,7 @@ function MedalGivingSection({ teacherData }: { teacherData: any }) {
       // Reset form
       setSelectedStudent("");
       setSelectedMedalType("");
+      setMedalAmount(1);
       setIsAwarding(false);
     },
     onError: (error: any) => {
@@ -263,7 +265,8 @@ function MedalGivingSection({ teacherData }: { teacherData: any }) {
     setIsAwarding(true);
     awardMedalMutation.mutate({
       studentId: selectedStudent,
-      medalType: selectedMedalType
+      medalType: selectedMedalType,
+      amount: medalAmount
     });
   };
 
@@ -376,6 +379,49 @@ function MedalGivingSection({ teacherData }: { teacherData: any }) {
             </div>
           </div>
 
+          {/* Medal Amount Selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Medal soni</label>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setMedalAmount(Math.max(1, medalAmount - 1))}
+                disabled={medalAmount <= 1}
+                className="h-10 w-10 p-0"
+              >
+                -
+              </Button>
+              <div className="flex-1 text-center">
+                <input
+                  type="number"
+                  value={medalAmount}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    if (value >= 1 && value <= 5) {
+                      setMedalAmount(value);
+                    }
+                  }}
+                  min="1"
+                  max="5"
+                  className="w-full text-center text-lg font-semibold border rounded-lg py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setMedalAmount(Math.min(5, medalAmount + 1))}
+                disabled={medalAmount >= 5}
+                className="h-10 w-10 p-0"
+              >
+                +
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500">1 dan 5 gacha medal berish mumkin</p>
+          </div>
+
           {/* Award Button */}
           <Button
             onClick={handleAwardMedal}
@@ -390,7 +436,7 @@ function MedalGivingSection({ teacherData }: { teacherData: any }) {
             ) : (
               <div className="flex items-center gap-2">
                 <Award className="w-4 h-4" />
-                Medal berish
+                {medalAmount > 1 ? `${medalAmount} ta medal berish` : "Medal berish"}
               </div>
             )}
           </Button>
