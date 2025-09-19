@@ -857,6 +857,21 @@ export function registerRoutes(app: Express): Server {
       // Remove password from response
       const { password, ...studentWithoutPassword } = updatedStudent;
       
+      // Broadcast real-time notification for medal awarded
+      notificationService.broadcast({
+        type: 'medal_awarded',
+        data: {
+          studentId: studentId,
+          studentName: `${updatedStudent.firstName} ${updatedStudent.lastName}`,
+          medalType: medalType,
+          amount: amount,
+          teacherAwarded: true,
+          teacherId: req.user.id,
+          teacherName: `${req.user.firstName} ${req.user.lastName}`
+        },
+        timestamp: new Date().toISOString()
+      });
+      
       return res.status(200).json({
         student: studentWithoutPassword,
         message: "Medal muvaffaqiyatli berildi"
