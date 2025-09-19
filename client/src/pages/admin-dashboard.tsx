@@ -47,6 +47,7 @@ import {
   UserCheck
 } from "lucide-react";
 import type { User, Group, Product, Attendance, Payment, Purchase } from "@shared/schema";
+import MedalManagement from "./medal-management";
 
 export default function AdminDashboard() {
   const { user, logoutMutation } = useAuth();
@@ -880,6 +881,14 @@ export default function AdminDashboard() {
                   >
                     <Calendar className="w-5 h-5 mr-3" />
                     Davomat
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="medals"
+                    className="w-full justify-start data-[state=active]:bg-teens-blue data-[state=active]:text-white"
+                    data-testid="tab-medals"
+                  >
+                    <Medal className="w-5 h-5 mr-3" />
+                    Medallar
                   </TabsTrigger>
                   <TabsTrigger
                     value="fees"
@@ -1934,6 +1943,10 @@ export default function AdminDashboard() {
                   </TabsContent>
 
                   {/* Fees Tab */}
+                  <TabsContent value="medals" className="space-y-6">
+                    <MedalManagement />
+                  </TabsContent>
+
                   <TabsContent value="fees" className="space-y-6">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
                       <div>
