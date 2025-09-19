@@ -267,15 +267,6 @@ function MedalGivingSection({ teacherData }: { teacherData: any }) {
     });
   };
 
-  const getMedalIcon = (type: string) => {
-    switch (type) {
-      case 'gold': return <Trophy className="w-5 h-5 text-yellow-500" />;
-      case 'silver': return <Medal className="w-5 h-5 text-gray-400" />;
-      case 'bronze': return <Star className="w-5 h-5 text-orange-600" />;
-      default: return null;
-    }
-  };
-
   const getMedalColor = (type: string) => {
     switch (type) {
       case 'gold': return 'from-yellow-400 to-yellow-600';
@@ -322,10 +313,16 @@ function MedalGivingSection({ teacherData }: { teacherData: any }) {
                   <SelectItem key={student.id} value={student.id}>
                     <div className="flex items-center justify-between w-full">
                       <span>{student.firstName} {student.lastName}</span>
-                      <div className="flex items-center gap-1 ml-4 text-xs text-gray-500">
-                        {getMedalIcon('gold')} {student.medals?.gold || 0}
-                        {getMedalIcon('silver')} {student.medals?.silver || 0}
-                        {getMedalIcon('bronze')} {student.medals?.bronze || 0}
+                      <div className="flex items-center gap-2 ml-4">
+                        <span className="text-xs font-medium text-yellow-600">
+                          🥇 {student.medals?.gold || 0}
+                        </span>
+                        <span className="text-xs font-medium text-gray-500">
+                          🥈 {student.medals?.silver || 0}
+                        </span>
+                        <span className="text-xs font-medium text-orange-600">
+                          🥉 {student.medals?.bronze || 0}
+                        </span>
                       </div>
                     </div>
                   </SelectItem>
@@ -417,19 +414,16 @@ function MedalGivingSection({ teacherData }: { teacherData: any }) {
                     <div className="font-medium">{student.firstName} {student.lastName}</div>
                     <div className="text-sm text-gray-500">{student.groupName}</div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1">
-                      <Trophy className="w-4 h-4 text-yellow-500" />
-                      <span className="text-sm font-medium">{student.medals?.gold || 0}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Medal className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm font-medium">{student.medals?.silver || 0}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 text-orange-600" />
-                      <span className="text-sm font-medium">{student.medals?.bronze || 0}</span>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-yellow-600">
+                      🥇 {student.medals?.gold || 0}
+                    </span>
+                    <span className="text-xs font-medium text-gray-500">
+                      🥈 {student.medals?.silver || 0}
+                    </span>
+                    <span className="text-xs font-medium text-orange-600">
+                      🥉 {student.medals?.bronze || 0}
+                    </span>
                   </div>
                 </div>
               ))}
