@@ -234,6 +234,84 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  async awardMedalsSafelyWithTotals(studentId: string, medalType: 'gold' | 'silver' | 'bronze', amount: number = 1, reason: string = 'attendance', relatedId?: string): Promise<{ success: boolean; updatedTotals?: { gold: number; silver: number; bronze: number }; reason?: string }> {
+    // Begin transaction to ensure atomicity with proper row locking
+    return await db.transaction(async (tx) => {
+      try {
+        // Lock the student row and get current data
+        const [student] = await tx
+          .select()
+          .from(users)
+          .where(eq(users.id, studentId))
+          .for('update')
+          .then(res => res);
+        
+        if (!student) {
+          return { success: false, reason: 'Student not found' };
+        }
+        
+        // Check monthly limit within the transaction (using locked data)
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+        const startOfMonth = new Date(currentYear, currentMonth - 1, 1);
+        const endOfMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59);
+        
+        const monthlyAwards = await tx
+          .select()
+          .from(medalAwards)
+          .where(
+            and(
+              eq(medalAwards.studentId, studentId),
+              eq(medalAwards.medalType, medalType),
+              gte(medalAwards.awardedAt, startOfMonth),
+              lte(medalAwards.awardedAt, endOfMonth)
+            )
+          );
+        
+        const currentMonthlyCount = monthlyAwards.reduce((sum, award) => sum + award.amount, 0);
+        const monthlyLimits = { gold: 2, silver: 2, bronze: 48 };
+        
+        if ((currentMonthlyCount + amount) > monthlyLimits[medalType]) {
+          return { success: false, reason: 'Monthly medal limit reached' };
+        }
+        
+        // Update the user's total medal count atomically
+        const currentMedals = student.medals as { gold: number; silver: number; bronze: number };
+        const newMedals = {
+          ...currentMedals,
+          [medalType]: currentMedals[medalType] + amount
+        };
+        
+        // Use RETURNING to get the updated totals atomically
+        const [updatedUser] = await tx
+          .update(users)
+          .set({ medals: newMedals })
+          .where(eq(users.id, studentId))
+          .returning({ medals: users.medals });
+        
+        // Create a medal award record for tracking
+        await tx
+          .insert(medalAwards)
+          .values({
+            studentId,
+            medalType,
+            amount,
+            reason,
+            relatedId
+          });
+        
+        return { 
+          success: true, 
+          updatedTotals: updatedUser.medals as { gold: number; silver: number; bronze: number }
+        };
+      } catch (error) {
+        console.error('Error in medal award transaction:', error);
+        return { success: false, reason: 'Database transaction failed' };
+      }
+    });
+  }
+
   async deleteUser(id: string): Promise<boolean> {
     const result = await db.delete(users).where(eq(users.id, id));
     return (result.rowCount ?? 0) > 0;
