@@ -246,7 +246,32 @@ export default function AdminDashboard() {
         break;
 
       case 'medal_awarded':
-        queryClient.invalidateQueries({ queryKey: ["/api/students"] });
+        // Update student data directly with new totals for immediate display
+        if (data.studentId && data.totals) {
+          queryClient.setQueryData(["/api/students"], (old: User[]) => {
+            if (!old) return old;
+            return old.map(student => 
+              student.id === data.studentId 
+                ? { ...student, medals: data.totals }
+                : student
+            );
+          });
+          
+          // Also show a toast notification
+          const medalTypesAwarded = Object.entries(data.delta as {gold: number, silver: number, bronze: number})
+            .filter(([_, count]) => count > 0)
+            .map(([type, count]) => `${count} ${type === 'gold' ? 'oltin' : type === 'silver' ? 'kumush' : 'bronza'}`)
+            .join(', ');
+          
+          if (medalTypesAwarded) {
+            toast({
+              title: "🏆 Medal berildi!",
+              description: `${data.awardedByName || 'Administrator'} tomonidan ${medalTypesAwarded} medal berildi`,
+            });
+          }
+        }
+        
+        // Invalidate stats to refresh totals
         queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
         break;
 
