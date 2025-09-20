@@ -54,11 +54,18 @@ class NotificationService {
     }
   }
   
-  // Broadcast to all clients
+  // Broadcast to all authenticated clients (sensitive notifications)
   broadcast(notification: RealtimeNotification) {
-    console.log(`Broadcasting notification: ${notification.type} to ${this.clients.size} clients`);
+    console.log(`Broadcasting notification: ${notification.type} to authenticated clients`);
+    
+    // Only send sensitive notifications to authenticated clients
+    const isSensitive = ['medal_awarded', 'user_created', 'payment_created', 'attendance_created'].includes(notification.type);
     
     Array.from(this.clients.entries()).forEach(([socket, client]) => {
+      if (isSensitive && !client.userId) {
+        // Skip unauthenticated clients for sensitive notifications
+        return;
+      }
       this.sendToSocket(socket, notification);
     });
   }
