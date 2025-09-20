@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer } from "ws";
 import { setupAuth } from "./auth";
 import { notificationService } from "./notifications";
+import { getSecureUserFromSession } from "../lib/secure-auth";
 import { storage } from "./storage";
 import { insertUserSchema, insertGroupSchema, insertAttendanceSchema, insertPaymentSchema, insertProductSchema, insertPurchaseSchema, insertGroupStudentSchema, insertTeacherGroupSchema } from "@shared/schema";
 import { z } from "zod";
@@ -53,11 +54,26 @@ async function awardBronzeMedalsForAttendance(participants: Array<{studentId: st
     for (const participant of participants) {
       // Only award bronze medals to students who attended (status: 'arrived')
       if (participant.status === 'arrived') {
-        const success = await storage.awardMedalsSafely(participant.studentId, 'bronze', 1, 'attendance', attendanceId);
-        if (success) {
+        const result = await storage.awardMedalsSafelyWithTotals(participant.studentId, 'bronze', 1, 'attendance', attendanceId);
+        if (result.success) {
           console.log(`🥉 Awarded +1 bronze medal to student ${participant.studentId} for attendance`);
+          
+          // Broadcast real-time notification for attendance-based medal award
+          notificationService.broadcast({
+            type: 'medal_awarded',
+            data: {
+              studentId: participant.studentId,
+              delta: { gold: 0, silver: 0, bronze: 1 },
+              totals: result.updatedTotals,
+              awardedBy: 'system',
+              awardedByName: 'System (Attendance)',
+              reason: 'attendance',
+              awardedAt: new Date().toISOString()
+            },
+            timestamp: new Date().toISOString()
+          });
         } else {
-          console.log(`⚠️ Could not award bronze medal to student ${participant.studentId} - monthly limit reached`);
+          console.log(`⚠️ Could not award bronze medal to student ${participant.studentId} - ${result.reason}`);
         }
       }
     }
@@ -907,35 +923,55 @@ export function registerRoutes(app: Express): Server {
     path: '/ws'
   });
   
-  wss.on('connection', (socket, request) => {
+  wss.on('connection', async (socket, request) => {
     console.log('New WebSocket connection established');
     
-    // Extract user information from session if available
-    let userId: string | undefined;
-    let role: string | undefined;
-    
-    // Try to get user info from session
-    // This will be properly authenticated once we handle session parsing
+    // Authenticate WebSocket connection using session
+    let authenticatedUser = null;
     try {
-      // For now, we'll handle authentication on the client side
-      // The client will send user info after connecting
-      notificationService.addClient(socket, userId, role);
+      // Extract session cookie from the WebSocket upgrade request
+      const cookieHeader = request.headers.cookie;
+      if (cookieHeader) {
+        // Create a mock request object for session validation
+        const mockReq = { headers: { cookie: cookieHeader } } as any;
+        authenticatedUser = await getSecureUserFromSession(mockReq);
+      }
     } catch (error) {
-      console.error('Error setting up WebSocket client:', error);
-      notificationService.addClient(socket);
+      console.error('WebSocket authentication error:', error);
     }
     
-    // Handle client messages (like authentication)
+    if (authenticatedUser) {
+      // Add authenticated client
+      notificationService.addClient(socket, authenticatedUser.id, authenticatedUser.role);
+      console.log(`WebSocket client authenticated: userId=${authenticatedUser.id}, role=${authenticatedUser.role}`);
+      
+      // Send authentication confirmation
+      socket.send(JSON.stringify({
+        type: 'auth_confirmed',
+        data: { userId: authenticatedUser.id, role: authenticatedUser.role },
+        timestamp: new Date().toISOString()
+      }));
+    } else {
+      // Add client without authentication (limited access)
+      notificationService.addClient(socket);
+      console.log('WebSocket client connected without authentication');
+      
+      // Send authentication required message
+      socket.send(JSON.stringify({
+        type: 'auth_required',
+        data: { message: 'Please log in to receive real-time updates' },
+        timestamp: new Date().toISOString()
+      }));
+    }
+    
+    // Handle client messages (remove the insecure authenticate handler)
     socket.on('message', (data) => {
       try {
         const message = JSON.parse(data.toString());
+        console.log('Received WebSocket message:', message.type);
         
-        if (message.type === 'authenticate') {
-          // Update client info with authentication data
-          userId = message.userId;
-          role = message.role;
-          console.log(`WebSocket client authenticated: userId=${userId}, role=${role}`);
-        }
+        // Handle other message types here if needed
+        // No longer accepting client-provided authentication
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
       }
