@@ -211,3 +211,72 @@ export async function requireSecureStudentOrOwn(req: VercelRequest, res: VercelR
   res.status(403).json({ message: 'Kirish rad etildi' });
   return null;
 }
+
+/**
+ * Centralized helper to verify if a teacher can access a specific student
+ * Ensures teachers can only access students in their assigned groups
+ */
+export async function requireTeacherAccessToStudent(req: VercelRequest, res: VercelResponse, studentId: string): Promise<User | null> {
+  const user = await getSecureUserFromSession(req);
+  
+  if (!user) {
+    res.status(401).json({ message: 'Autentifikatsiya talab qilinadi' });
+    return null;
+  }
+  
+  // Admin can access any student
+  if (user.role === 'admin') {
+    return user;
+  }
+  
+  // Only teachers should use this function for student access
+  if (user.role !== 'teacher') {
+    res.status(403).json({ message: 'Kirish rad etildi' });
+    return null;
+  }
+  
+  // Verify teacher can manage this student through group assignments
+  try {
+    // Get teacher's groups
+    const teacherGroups = await storage.getTeacherGroups(user.id);
+    const teacherGroupIds = teacherGroups.map(tg => tg.groupId);
+    
+    // Get student's groups
+    const studentGroups = await storage.getStudentGroups(studentId);
+    
+    // Check if student is in any of the teacher's groups
+    const hasAccess = studentGroups.some(sg => teacherGroupIds.includes(sg.groupId));
+    
+    if (!hasAccess) {
+      res.status(403).json({ message: "Bu o'quvchini boshqarish huquqingiz yo'q" });
+      return null;
+    }
+    
+    return user;
+  } catch (error) {
+    console.error('Error verifying teacher access to student:', error);
+    res.status(500).json({ message: 'Ruxsat tekshirishda xatolik' });
+    return null;
+  }
+}
+
+/**
+ * Check if a teacher can access a specific student (without sending responses)
+ * Returns boolean for authorization checks within other functions
+ */
+export async function canTeacherAccessStudent(teacherId: string, studentId: string): Promise<boolean> {
+  try {
+    // Get teacher's groups
+    const teacherGroups = await storage.getTeacherGroups(teacherId);
+    const teacherGroupIds = teacherGroups.map(tg => tg.groupId);
+    
+    // Get student's groups
+    const studentGroups = await storage.getStudentGroups(studentId);
+    
+    // Check if student is in any of the teacher's groups
+    return studentGroups.some(sg => teacherGroupIds.includes(sg.groupId));
+  } catch (error) {
+    console.error('Error checking teacher access to student:', error);
+    return false;
+  }
+}
