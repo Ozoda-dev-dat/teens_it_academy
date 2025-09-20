@@ -176,14 +176,14 @@ function MedalGivingSection({ teacherData }: { teacherData: any }) {
 
   const awardMedalMutation = useMutation({
     mutationFn: async ({ studentId, medalType, amount }: { studentId: string; medalType: string; amount: number }) => {
-      const res = await fetch('/api/teachers/medals/award', {
+      const res = await fetch(`/api/students/${studentId}/medals/award`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          studentId,
           medalType,
-          amount
+          amount,
+          reason: 'teacher_award'
         })
       });
 
@@ -212,13 +212,10 @@ function MedalGivingSection({ teacherData }: { teacherData: any }) {
         setAnimatingMedal(null);
       }, 2000);
 
-      // Refresh teacher's student list to show updated medal counts
-      queryClient.invalidateQueries({ queryKey: ["teacher-students"] });
-      
       // Add optimistic update to instantly reflect the change
       const studentData = allStudents?.find(s => s.id === variables.studentId);
       if (studentData && teacherData?.groups) {
-        queryClient.setQueryData(["teacher-students", teacherData.groups], (old: any[]) => {
+        queryClient.setQueryData(["teacher-students", teacherData?.groups], (old: any[]) => {
           if (!old) return old;
           return old.map(student => {
             if (student.id === variables.studentId) {
@@ -525,15 +522,33 @@ export default function TeacherDashboard() {
         break;
 
       case 'medal_awarded':
-        // Refresh teacher's student list if it involves their students
-        queryClient.invalidateQueries({ queryKey: ["teacher-students"] });
-        queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
-        if (data.studentId && data.teacherAwarded) {
-          toast({
-            title: "🎉 Medal berildi!",
-            description: `${data.studentName || 'O\'quvchi'}ga ${data.medalType} medal berildi`,
+        // Update teacher's student data directly with new totals for immediate display
+        if (data.studentId && data.totals && teacherData?.groups) {
+          queryClient.setQueryData(["teacher-students", teacherData?.groups], (old: any[]) => {
+            if (!old) return old;
+            return old.map(student => 
+              student.id === data.studentId 
+                ? { ...student, medals: data.totals }
+                : student
+            );
           });
+          
+          // Show a toast notification
+          const medalTypesAwarded = Object.entries(data.delta as {gold: number, silver: number, bronze: number})
+            .filter(([_, count]) => count > 0)
+            .map(([type, count]) => `${count} ${type === 'gold' ? 'oltin' : type === 'silver' ? 'kumush' : 'bronza'}`)
+            .join(', ');
+          
+          if (medalTypesAwarded) {
+            toast({
+              title: "🎉 Medal berildi!",
+              description: `${data.awardedByName || 'O\'qituvchi'} tomonidan ${medalTypesAwarded} medal berildi`,
+            });
+          }
         }
+        
+        // Also refresh dashboard data
+        queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
         break;
 
       case 'user_created':
