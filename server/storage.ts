@@ -425,6 +425,7 @@ export class DatabaseStorage implements IStorage {
           lastName: users.lastName,
           email: users.email,
           role: users.role,
+          medals: users.medals,
         }
       })
       .from(groupStudents)
