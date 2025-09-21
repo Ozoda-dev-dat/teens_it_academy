@@ -33,11 +33,27 @@ export function useWebSocket(
   const reconnectTimeouts = useRef<NodeJS.Timeout[]>([]);
   const reconnectCount = useRef(0);
   
-  const defaultUrl = url || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
+  const getWebSocketUrl = () => {
+    // Handle cases where window.location might not be fully available
+    if (typeof window === 'undefined') return '';
+    
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host || 'localhost:5000';
+    
+    return `${protocol}//${host}/ws`;
+  };
+  
+  const defaultUrl = url || getWebSocketUrl();
 
   const connect = useCallback(() => {
     try {
       if (ws.current?.readyState === WebSocket.OPEN) {
+        return;
+      }
+
+      // Skip connection if URL is not available yet
+      if (!defaultUrl || defaultUrl.includes('undefined')) {
+        console.warn('WebSocket URL not ready yet, skipping connection');
         return;
       }
 
