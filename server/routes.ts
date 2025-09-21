@@ -414,7 +414,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Teacher attendance route - allows teachers to get attendance for their assigned groups
+  // Teacher attendance routes - allows teachers to get/create attendance for their assigned groups
   app.get("/api/teachers/attendance", async (req, res) => {
     if (!req.isAuthenticated() || req.user.role !== "teacher") {
       return res.status(403).json({ message: "Faqat o'qituvchilar uchun" });
@@ -440,6 +440,62 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Davomat ma'lumotlarini olishda xatolik:", error);
       res.status(500).json({ message: "Davomat ma'lumotlarini yuklashda xatolik" });
+    }
+  });
+
+  app.post("/api/teachers/attendance", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.role !== "teacher") {
+      return res.status(403).json({ message: "Faqat o'qituvchilar uchun" });
+    }
+
+    try {
+      console.log("Received teacher attendance data:", req.body);
+      
+      // Create a new object with converted date
+      const bodyWithDate = {
+        ...req.body,
+        date: new Date(req.body.date)
+      };
+      
+      const attendanceData = insertAttendanceSchema.parse(bodyWithDate);
+      console.log("Parsed teacher attendance data:", attendanceData);
+      
+      // Verify teacher is assigned to this group
+      const teacherGroups = await storage.getTeacherGroups(req.user.id);
+      const hasAccess = teacherGroups.some(tg => tg.groupId === attendanceData.groupId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Bu guruh uchun davomat yaratish huquqingiz yo'q" });
+      }
+      
+      // Check for duplicate attendance record for same group and date (same day)
+      const existingAttendance = await storage.getAttendanceByDate(attendanceData.groupId, attendanceData.date);
+      if (existingAttendance) {
+        return res.status(400).json({ message: "Bu sana uchun davomat allaqachon mavjud" });
+      }
+      
+      // Check if bronze medals can be awarded BEFORE creating attendance
+      const medalCheck = await canAwardBronzeMedalsForAttendance(attendanceData.participants as Array<{studentId: string, status: string}>);
+      if (!medalCheck.canAward) {
+        return res.status(400).json({ 
+          message: "Ba'zi talabalar oylik medal limitiga yetgan. Davomat yaratilmadi.",
+          issues: medalCheck.issues
+        });
+      }
+      
+      const attendance = await storage.createAttendance(attendanceData);
+      
+      // Automatically award +1 bronze medal to students who attended
+      await awardBronzeMedalsForAttendance(attendanceData.participants as Array<{studentId: string, status: string}>, attendance.id);
+      
+      res.status(201).json(attendance);
+    } catch (error) {
+      console.error("Davomat yaratishda xatolik:", error);
+      if (error instanceof Error) {
+        res.status(400).json({ message: "Davomat yaratishda xatolik: " + error.message });
+      } else {
+        res.status(400).json({ message: "Davomat yaratishda xatolik" });
+      }
     }
   });
 
