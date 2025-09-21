@@ -365,7 +365,7 @@ export default function StudentDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {products.map((product) => {
                     const medalCost = product.medalCost as { gold: number; silver: number; bronze: number };
                     const canAfford = userMedals.gold >= medalCost.gold && 
@@ -375,14 +375,14 @@ export default function StudentDashboard() {
                     return (
                       <div
                         key={product.id}
-                        className="border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-shadow duration-200"
+                        className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow duration-200"
                         data-testid={`product-${product.id}`}
                       >
                         {product.image && (
                           <img 
                             src={product.image} 
                             alt={product.name} 
-                            className="w-full h-32 object-cover rounded-lg mb-3"
+                            className="w-full h-48 object-cover rounded-lg mb-4"
                           />
                         )}
                         <div className="flex items-start justify-between mb-2">
