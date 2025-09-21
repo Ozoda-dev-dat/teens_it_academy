@@ -71,15 +71,63 @@ export default function TeacherAttendance() {
     enabled: !!groupId,
   });
 
+  // Check if attendance has already been marked today for this group
+  const { 
+    data: existingAttendance, 
+    isLoading: isCheckingAttendance, 
+    error: attendanceCheckError,
+    refetch: refetchAttendanceCheck 
+  } = useQuery({
+    queryKey: ["today-attendance", groupId],
+    queryFn: async () => {
+      if (!groupId) return null;
+      
+      const res = await fetch(`/api/teachers/attendance?groupId=${groupId}`);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Failed to fetch attendance data" }));
+        throw new Error(errorData.message || "Failed to fetch attendance data");
+      }
+      const attendanceList = await res.json();
+      
+      // Check if there's attendance for today using local date comparison
+      const today = new Date();
+      const todayYear = today.getFullYear();
+      const todayMonth = today.getMonth();
+      const todayDay = today.getDate();
+      
+      const todayAttendance = attendanceList.find((attendance: any) => {
+        const attendanceDate = new Date(attendance.date);
+        const attendanceYear = attendanceDate.getFullYear();
+        const attendanceMonth = attendanceDate.getMonth();
+        const attendanceDay = attendanceDate.getDate();
+        
+        return attendanceYear === todayYear && 
+               attendanceMonth === todayMonth && 
+               attendanceDay === todayDay;
+      });
+      
+      return todayAttendance || null;
+    },
+    enabled: !!groupId,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
+
+  const hasAttendanceToday = !!existingAttendance;
+  const hasAttendanceCheckError = !!attendanceCheckError;
+
   // Create attendance mutation
   const createAttendanceMutation = useMutation({
     mutationFn: async (attendanceData: { groupId: string; participants: { studentId: string; status: AttendanceStatus }[]; date: Date }) => {
-      const res = await fetch("/api/attendance", {
+      const res = await fetch("/api/teachers/attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(attendanceData),
       });
-      if (!res.ok) throw new Error("Failed to create attendance");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Failed to create attendance" }));
+        throw new Error(errorData.message || "Failed to create attendance");
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -180,7 +228,7 @@ export default function TeacherAttendance() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (isLoading) {
+  if (isLoading || isCheckingAttendance) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-500"></div>
@@ -252,39 +300,128 @@ export default function TeacherAttendance() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {!isSessionActive && !isTimeExpired ? (
-          // Start attendance session
-          <Card className="max-w-2xl mx-auto">
-            <CardHeader className="text-center">
-              <CardTitle className="flex items-center justify-center space-x-2">
-                <Users className="w-6 h-6 text-green-600" />
-                <span>Davomat belgilash</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-center space-y-6">
-              <div>
-                <p className="text-gray-600 mb-4">
-                  Davomat belgilashni boshlash uchun tugmani bosing. Sizda 15 daqiqa vaqt bo'ladi.
-                </p>
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                  <div className="flex items-center space-x-2 text-yellow-800">
-                    <AlertTriangle className="w-5 h-5" />
-                    <span className="font-medium">Diqqat!</span>
-                  </div>
-                  <p className="text-yellow-700 mt-1">
-                    Davomat belgilashni boshlaganingizdan so'ng 15 daqiqa ichida tugatishingiz kerak.
+          hasAttendanceCheckError ? (
+            // Error checking attendance status
+            <Card className="max-w-2xl mx-auto border-red-200 bg-red-50">
+              <CardHeader className="text-center">
+                <CardTitle className="flex items-center justify-center space-x-2">
+                  <AlertTriangle className="w-6 h-6 text-red-600" />
+                  <span className="text-red-900">Davomat holatini tekshirishda xatolik</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center space-y-6">
+                <div>
+                  <p className="text-red-800 mb-4">
+                    Bugungi davomat holatini tekshirib bo'lmadi. Iltimos, qayta urinib ko'ring.
                   </p>
+                  <div className="bg-red-100 border border-red-300 rounded-lg p-4 mb-6">
+                    <div className="flex items-center space-x-2 text-red-900">
+                      <AlertTriangle className="w-5 h-5" />
+                      <span className="font-medium">Xatolik:</span>
+                    </div>
+                    <p className="text-red-800 mt-1 text-sm">
+                      {attendanceCheckError?.message || "Noma'lum xatolik yuz berdi"}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <Button 
-                onClick={startAttendanceSession}
-                size="lg"
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <Clock className="w-5 h-5 mr-2" />
-                Davomatni boshlash
-              </Button>
-            </CardContent>
-          </Card>
+                <div className="flex justify-center space-x-4">
+                  <Button 
+                    onClick={() => refetchAttendanceCheck()}
+                    size="lg"
+                    className="bg-red-600 hover:bg-red-700"
+                    disabled={isCheckingAttendance}
+                  >
+                    <Clock className="w-5 h-5 mr-2" />
+                    {isCheckingAttendance ? "Tekshirilmoqda..." : "Qayta urinish"}
+                  </Button>
+                  <Button 
+                    onClick={() => setLocation("/teacher")}
+                    size="lg"
+                    variant="outline"
+                    className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                  >
+                    <ArrowLeft className="w-5 h-5 mr-2" />
+                    Orqaga
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : hasAttendanceToday ? (
+            // Attendance already marked today
+            <Card className="max-w-2xl mx-auto border-blue-200 bg-blue-50">
+              <CardHeader className="text-center">
+                <CardTitle className="flex items-center justify-center space-x-2">
+                  <Check className="w-6 h-6 text-blue-600" />
+                  <span className="text-blue-900">Davomat allaqachon belgilangan</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center space-y-6">
+                <div>
+                  <p className="text-blue-800 mb-4">
+                    Bu guruh uchun bugungi sana uchun davomat allaqachon belgilangan.
+                  </p>
+                  <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 mb-6">
+                    <div className="flex items-center space-x-2 text-blue-900">
+                      <AlertTriangle className="w-5 h-5" />
+                      <span className="font-medium">Eslatma</span>
+                    </div>
+                    <p className="text-blue-800 mt-1">
+                      Har bir guruh uchun kuniga faqat bir marta davomat belgilash mumkin.
+                    </p>
+                  </div>
+                  {existingAttendance && (
+                    <div className="text-sm text-blue-700">
+                      <p>Davomat vaqti: {new Date(existingAttendance.date).toLocaleString('uz-UZ')}</p>
+                      <p>Ishtirokchilar soni: {Array.isArray(existingAttendance.participants) ? existingAttendance.participants.length : 0}</p>
+                    </div>
+                  )}
+                </div>
+                <Button 
+                  onClick={() => setLocation("/teacher")}
+                  size="lg"
+                  variant="outline"
+                  className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
+                >
+                  <ArrowLeft className="w-5 h-5 mr-2" />
+                  Orqaga
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            // Start attendance session
+            <Card className="max-w-2xl mx-auto">
+              <CardHeader className="text-center">
+                <CardTitle className="flex items-center justify-center space-x-2">
+                  <Users className="w-6 h-6 text-green-600" />
+                  <span>Davomat belgilash</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center space-y-6">
+                <div>
+                  <p className="text-gray-600 mb-4">
+                    Davomat belgilashni boshlash uchun tugmani bosing. Sizda 15 daqiqa vaqt bo'ladi.
+                  </p>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-center space-x-2 text-yellow-800">
+                      <AlertTriangle className="w-5 h-5" />
+                      <span className="font-medium">Diqqat!</span>
+                    </div>
+                    <p className="text-yellow-700 mt-1">
+                      Davomat belgilashni boshlaganingizdan so'ng 15 daqiqa ichida tugatishingiz kerak.
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={startAttendanceSession}
+                  size="lg"
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Clock className="w-5 h-5 mr-2" />
+                  Davomatni boshlash
+                </Button>
+              </CardContent>
+            </Card>
+          )
         ) : (
           // Attendance marking interface
           <div className="space-y-6">
