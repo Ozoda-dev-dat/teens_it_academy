@@ -2271,21 +2271,21 @@ export default function AdminDashboard() {
                                           
                                           if (medals.gold > 0) {
                                             badges.push(
-                                              <Badge key="gold" className="bg-yellow-100 text-yellow-800">
+                                              <Badge key={`${product.id}-gold`} className="bg-yellow-100 text-yellow-800">
                                                 🥇 {medals.gold}
                                               </Badge>
                                             );
                                           }
                                           if (medals.silver > 0) {
                                             badges.push(
-                                              <Badge key="silver" className="bg-gray-100 text-gray-800">
+                                              <Badge key={`${product.id}-silver`} className="bg-gray-100 text-gray-800">
                                                 🥈 {medals.silver}
                                               </Badge>
                                             );
                                           }
                                           if (medals.bronze > 0) {
                                             badges.push(
-                                              <Badge key="bronze" className="bg-orange-100 text-orange-800">
+                                              <Badge key={`${product.id}-bronze`} className="bg-orange-100 text-orange-800">
                                                 🥉 {medals.bronze}
                                               </Badge>
                                             );
