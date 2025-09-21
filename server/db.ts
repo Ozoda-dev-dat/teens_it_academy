@@ -11,9 +11,12 @@ export const pool = new Pool({
   ssl: {
     rejectUnauthorized: false, // 🔑 Neon uchun majburiy
   },
-  connectionTimeoutMillis: 10000, // 10 soniya kutadi
+  connectionTimeoutMillis: 15000, // 10 soniya kutadi
   idleTimeoutMillis: 30000,       // bo‘sh ulanishni yopadi
   max: 10                         // pool ulanishlar soni
+});.on('error', (err, client) => {
+  console.error('Unexpected error on idle client', err);
+  process.exit(-1);
 });
 
 export const db = drizzle(pool, { schema });
