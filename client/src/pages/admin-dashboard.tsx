@@ -114,11 +114,6 @@ export default function AdminDashboard() {
   const [attendanceRecords, setAttendanceRecords] = useState<Attendance[]>([]);
   const [isEditingAttendance, setIsEditingAttendance] = useState(false);
   const [editingAttendanceRecord, setEditingAttendanceRecord] = useState<Attendance | null>(null);
-  const [attendanceFilter, setAttendanceFilter] = useState({ 
-    dateFrom: "", 
-    dateTo: "", 
-    groupId: "" 
-  });
   
   // Group assignment states
   const [selectedGroupForAssignment, setSelectedGroupForAssignment] = useState<string>("");
@@ -205,6 +200,20 @@ export default function AdminDashboard() {
   const { data: assignmentGroupStudents = [] } = useQuery<any[]>({
     queryKey: ["/api/groups", selectedGroupForAssignment, "students"],
     enabled: !!user && !!selectedGroupForAssignment,
+  });
+
+  // Admin attendance data for selected group
+  const { data: adminAttendanceData = [] } = useQuery<Attendance[]>({
+    queryKey: ["/api/groups", selectedGroupForAdmin, "attendance"],
+    enabled: !!user && !!selectedGroupForAdmin && activeTab === "attendance",
+  });
+
+  // Filter attendance data to current month
+  const currentMonthAttendance = adminAttendanceData.filter((record) => {
+    if (!record.date) return false;
+    const recordDate = new Date(record.date);
+    const now = new Date();
+    return recordDate.getMonth() === now.getMonth() && recordDate.getFullYear() === now.getFullYear();
   });
 
   // Real-time updates effect
@@ -1426,7 +1435,7 @@ export default function AdminDashboard() {
                               className="hover:shadow-lg transition-shadow cursor-pointer" 
                               onClick={() => {
                                 setActiveTab("attendance");
-                                setAttendanceFilter(prev => ({ ...prev, groupId: group.id }));
+                                setSelectedGroupForAdmin(group.id);
                               }}
                             >
                               <CardHeader>
@@ -1839,101 +1848,107 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    {/* Attendance Filters */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Filtrlash</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="space-y-2">
-                            <Label>Guruh tanlang</Label>
-                            <Select value={attendanceFilter.groupId} onValueChange={(value) => setAttendanceFilter(prev => ({ ...prev, groupId: value }))}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Barcha guruhlar" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">Barcha guruhlar</SelectItem>
-                                {groups.map((group) => (
-                                  <SelectItem key={group.id} value={group.id}>
-                                    {group.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Boshlanish sanasi</Label>
-                            <Input
-                              type="date"
-                              value={attendanceFilter.dateFrom}
-                              onChange={(e) => setAttendanceFilter(prev => ({ ...prev, dateFrom: e.target.value }))}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Tugash sanasi</Label>
-                            <Input
-                              type="date"
-                              value={attendanceFilter.dateTo}
-                              onChange={(e) => setAttendanceFilter(prev => ({ ...prev, dateTo: e.target.value }))}
-                            />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
 
                     {/* Attendance Records */}
                     <Card>
                       <CardHeader>
-                        <CardTitle>Davomat yozuvlari</CardTitle>
+                        <CardTitle>
+                          {selectedGroupForAdmin ? 
+                            `${groups.find(g => g.id === selectedGroupForAdmin)?.name} - Oylik davomat` : 
+                            "Guruh davomati"
+                          }
+                        </CardTitle>
                         <p className="text-sm text-gray-600">
-                          Adminlar o'tmishdagi davomatni o'zgartirishi mumkin. O'qituvchilar faqat bir kunda bir marta davomat belgilashlari mumkin.
+                          {selectedGroupForAdmin ? 
+                            "Tanlangan guruhning oylik davomat ma'lumotlari. Guruhlar sahifasida boshqa guruhni tanlang." :
+                            "Davomat ko'rish uchun Guruhlar sahifasidan guruhni tanlang."
+                          }
                         </p>
                       </CardHeader>
                       <CardContent>
-                        {groups.length > 0 ? (
+                        {selectedGroupForAdmin ? (
                           <div className="space-y-4">
-                            {groups
-                              .filter(group => !attendanceFilter.groupId || attendanceFilter.groupId === "all" || group.id === attendanceFilter.groupId)
-                              .map((group) => (
-                                <div key={group.id} className="border rounded-lg p-4">
-                                  <div className="flex justify-between items-center mb-4">
-                                    <div>
-                                      <h3 className="font-semibold text-lg">{group.name}</h3>
-                                      <p className="text-sm text-gray-600">{group.description}</p>
-                                    </div>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => {
-                                        setSelectedGroupForAdmin(group.id);
-                                        // Fetch attendance for this group
-                                      }}
-                                    >
-                                      <Eye className="w-4 h-4 mr-2" />
-                                      Davomatni ko'rish
-                                    </Button>
-                                  </div>
-                                  
-                                  {selectedGroupForAdmin === group.id && (
-                                    <div className="mt-4 space-y-3">
-                                      <div className="text-center py-8 bg-gray-50 rounded-lg">
-                                        <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                                        <p className="text-gray-600">Bu guruh uchun davomat yozuvlari bu yerda ko'rinadi</p>
-                                        <p className="text-sm text-gray-500">
-                                          API endpoint: GET /api/groups/{group.id}/attendance
-                                        </p>
-                                      </div>
-                                    </div>
-                                  )}
+                            <div className="border rounded-lg p-4">
+                              <div className="flex justify-between items-center mb-4">
+                                <div>
+                                  <h3 className="font-semibold text-lg">
+                                    {groups.find(g => g.id === selectedGroupForAdmin)?.name}
+                                  </h3>
+                                  <p className="text-sm text-gray-600">
+                                    {groups.find(g => g.id === selectedGroupForAdmin)?.description}
+                                  </p>
                                 </div>
-                              ))}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setSelectedGroupForAdmin("")}
+                                >
+                                  <X className="w-4 h-4 mr-2" />
+                                  Yopish
+                                </Button>
+                              </div>
+                              
+                              <div className="mt-4 space-y-3">
+                                {currentMonthAttendance.length > 0 ? (
+                                  <div className="space-y-3">
+                                    <h4 className="font-medium text-gray-700">
+                                      {new Date().toLocaleDateString('uz-UZ', { month: 'long', year: 'numeric' })} davomat yozuvlari
+                                    </h4>
+                                    <div className="overflow-x-auto">
+                                      <table className="w-full border-collapse border border-gray-300">
+                                        <thead>
+                                          <tr className="bg-gray-50">
+                                            <th className="border border-gray-300 px-4 py-2 text-left">Sana</th>
+                                            <th className="border border-gray-300 px-4 py-2 text-left">Kelgan</th>
+                                            <th className="border border-gray-300 px-4 py-2 text-left">Kech kelgan</th>
+                                            <th className="border border-gray-300 px-4 py-2 text-left">Kelmagan</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {currentMonthAttendance.map((record) => {
+                                            const participants = record.participants as any[] || [];
+                                            const arrived = participants.filter(p => p.status === 'arrived').length;
+                                            const late = participants.filter(p => p.status === 'late').length;
+                                            const absent = participants.filter(p => p.status === 'absent').length;
+                                            
+                                            return (
+                                              <tr key={record.id}>
+                                                <td className="border border-gray-300 px-4 py-2">
+                                                  {new Date(record.date).toLocaleDateString('uz-UZ')}
+                                                </td>
+                                                <td className="border border-gray-300 px-4 py-2 text-green-600">
+                                                  {arrived}
+                                                </td>
+                                                <td className="border border-gray-300 px-4 py-2 text-yellow-600">
+                                                  {late}
+                                                </td>
+                                                <td className="border border-gray-300 px-4 py-2 text-red-600">
+                                                  {absent}
+                                                </td>
+                                              </tr>
+                                            );
+                                          })}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-8 bg-gray-50 rounded-lg">
+                                    <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                                    <p className="text-gray-600">Bu oyda davomat yozuvlari yo'q</p>
+                                    <p className="text-sm text-gray-500">
+                                      {new Date().toLocaleDateString('uz-UZ', { month: 'long', year: 'numeric' })} uchun davomat belgilanmagan
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         ) : (
                           <div className="text-center py-8">
                             <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                            <p className="text-gray-500">Hali guruhlar yo'q</p>
-                            <p className="text-gray-400 text-sm">Avval guruhlar yarating</p>
+                            <p className="text-gray-500">Guruh tanlang</p>
+                            <p className="text-gray-400 text-sm">Davomatni ko'rish uchun Guruhlar sahifasidan guruhni tanlang</p>
                           </div>
                         )}
                       </CardContent>
