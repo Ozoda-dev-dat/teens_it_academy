@@ -2313,14 +2313,14 @@ export default function AdminDashboard() {
                                   <img
                                     src={product.image}
                                     alt={product.name}
-                                    className="w-full h-32 object-cover rounded-lg mb-3"
+                                    className="w-full h-48 object-cover rounded-lg mb-4"
                                     onError={(e) => {
                                       (e.target as HTMLImageElement).style.display = 'none';
                                     }}
                                   />
                                 ) : (
-                                  <div className="w-full h-32 bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
-                                    <Package className="w-12 h-12 text-gray-400" />
+                                  <div className="w-full h-48 bg-gray-100 rounded-lg mb-4 flex items-center justify-center">
+                                    <Package className="w-16 h-16 text-gray-400" />
                                   </div>
                                 )}
                               </CardContent>
