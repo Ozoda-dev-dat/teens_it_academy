@@ -59,7 +59,9 @@ export default function AdminDashboard() {
   // Student states
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [isEditStudentOpen, setIsEditStudentOpen] = useState(false);
+  const [isViewStudentOpen, setIsViewStudentOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<User | null>(null);
+  const [viewingStudent, setViewingStudent] = useState<User | null>(null);
   const [studentForm, setStudentForm] = useState({
     firstName: "",
     lastName: "",
@@ -664,6 +666,11 @@ export default function AdminDashboard() {
       parentPhone2: student.parentPhone2 || ""
     });
     setIsEditStudentOpen(true);
+  };
+
+  const handleViewStudent = (student: User) => {
+    setViewingStudent(student);
+    setIsViewStudentOpen(true);
   };
   
   const handleUpdateStudent = (e: React.FormEvent) => {
@@ -1297,6 +1304,135 @@ export default function AdminDashboard() {
                           </form>
                         </DialogContent>
                       </Dialog>
+                      
+                      {/* View Student Dialog */}
+                      <Dialog open={isViewStudentOpen} onOpenChange={setIsViewStudentOpen}>
+                        <DialogContent className="max-w-2xl">
+                          <DialogHeader>
+                            <DialogTitle>O'quvchi ma'lumotlari</DialogTitle>
+                          </DialogHeader>
+                          {viewingStudent && (
+                            <div className="space-y-6">
+                              <div className="flex items-center space-x-4">
+                                <div className="w-20 h-20 bg-gradient-to-r from-teens-blue to-teens-navy rounded-full flex items-center justify-center text-white font-medium text-xl">
+                                  {viewingStudent.firstName.charAt(0)}{viewingStudent.lastName.charAt(0)}
+                                </div>
+                                <div>
+                                  <h3 className="text-xl font-semibold text-gray-900">
+                                    {viewingStudent.firstName} {viewingStudent.lastName}
+                                  </h3>
+                                  <p className="text-sm text-gray-500">{viewingStudent.email}</p>
+                                  <div className="flex items-center space-x-2 mt-2">
+                                    <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                                      Yaratilgan: {new Date(viewingStudent.createdAt!).toLocaleDateString('uz-UZ')}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                  <div>
+                                    <Label className="text-sm font-medium text-gray-700">Shaxsiy ma'lumotlar</Label>
+                                    <div className="mt-2 space-y-2">
+                                      <div className="flex justify-between">
+                                        <span className="text-sm text-gray-600">Ism:</span>
+                                        <span className="text-sm font-medium">{viewingStudent.firstName}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-sm text-gray-600">Familiya:</span>
+                                        <span className="text-sm font-medium">{viewingStudent.lastName}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-sm text-gray-600">Email:</span>
+                                        <span className="text-sm font-medium">{viewingStudent.email}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-sm text-gray-600">Rol:</span>
+                                        <span className="text-sm font-medium capitalize">{viewingStudent.role}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div>
+                                    <Label className="text-sm font-medium text-gray-700">Telefon raqamlar</Label>
+                                    <div className="mt-2 space-y-2">
+                                      {viewingStudent.phone && (
+                                        <div className="flex items-center space-x-2">
+                                          <span className="text-sm text-gray-600">📱 Shaxsiy:</span>
+                                          <span className="text-sm font-medium">{viewingStudent.phone}</span>
+                                        </div>
+                                      )}
+                                      {viewingStudent.parentPhone1 && (
+                                        <div className="flex items-center space-x-2">
+                                          <span className="text-sm text-gray-600">👨‍👩‍👧‍👦 Ota-ona 1:</span>
+                                          <span className="text-sm font-medium">{viewingStudent.parentPhone1}</span>
+                                        </div>
+                                      )}
+                                      {viewingStudent.parentPhone2 && (
+                                        <div className="flex items-center space-x-2">
+                                          <span className="text-sm text-gray-600">👨‍👩‍👧‍👦 Ota-ona 2:</span>
+                                          <span className="text-sm font-medium">{viewingStudent.parentPhone2}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="space-y-4">
+                                  <div>
+                                    <Label className="text-sm font-medium text-gray-700">Medallar</Label>
+                                    <div className="mt-2 space-y-2">
+                                      {viewingStudent.medals && typeof viewingStudent.medals === 'object' ? (
+                                        <>
+                                          <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                                            <div className="flex items-center space-x-2">
+                                              <span className="text-lg">🥇</span>
+                                              <span className="text-sm font-medium">Oltin</span>
+                                            </div>
+                                            <span className="text-lg font-bold text-yellow-600">
+                                              {((viewingStudent.medals as any)?.gold as number) ?? 0}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                            <div className="flex items-center space-x-2">
+                                              <span className="text-lg">🥈</span>
+                                              <span className="text-sm font-medium">Kumush</span>
+                                            </div>
+                                            <span className="text-lg font-bold text-gray-600">
+                                              {((viewingStudent.medals as any)?.silver as number) ?? 0}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                                            <div className="flex items-center space-x-2">
+                                              <span className="text-lg">🥉</span>
+                                              <span className="text-sm font-medium">Bronza</span>
+                                            </div>
+                                            <span className="text-lg font-bold text-orange-600">
+                                              {((viewingStudent.medals as any)?.bronze as number) ?? 0}
+                                            </span>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <p className="text-sm text-gray-500">Hali medallar yo'q</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex justify-end pt-4 border-t">
+                                <Button 
+                                  onClick={() => setIsViewStudentOpen(false)}
+                                  variant="outline"
+                                >
+                                  Yopish
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </DialogContent>
+                      </Dialog>
                     </div>
 
                     {/* Students Table */}
@@ -1367,6 +1503,15 @@ export default function AdminDashboard() {
                                   </div>
                                 </div>
                                 <div className="flex space-x-2">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    onClick={() => handleViewStudent(student)}
+                                    data-testid={`button-view-student-${student.id}`}
+                                    className="text-blue-600 hover:text-blue-700"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </Button>
                                   <Button 
                                     size="sm" 
                                     variant="outline" 

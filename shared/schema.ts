@@ -203,6 +203,11 @@ export const medalAwardsRelations = relations(medalAwards, ({ one }) => ({
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
+}).extend({
+  // Make parentPhone1 required for students and teachers
+  parentPhone1: z.string().min(1, "Ota-ona telefon raqami talab qilinadi"),
+  // parentPhone2 is optional (already optional in base schema)
+  parentPhone2: z.string().optional(),
 });
 
 // Teachers use the same schema as users with role="teacher"
