@@ -29,6 +29,9 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
+  phone: text("phone"), // Student's own phone number
+  parentPhone1: text("parent_phone1"), // First parent's phone number
+  parentPhone2: text("parent_phone2"), // Second parent's phone number (optional)
   profilePic: text("profile_pic"),
   avatarConfig: jsonb("avatar_config"), // Stores detailed avatar customization data
   medals: jsonb("medals").default(sql`'{"gold": 0, "silver": 0, "bronze": 0}'`),

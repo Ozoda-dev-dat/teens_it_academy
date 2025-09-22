@@ -64,7 +64,10 @@ export default function AdminDashboard() {
     firstName: "",
     lastName: "",
     email: "",
-    password: ""
+    password: "",
+    phone: "",
+    parentPhone1: "",
+    parentPhone2: ""
   });
   
   // Group states
@@ -128,7 +131,10 @@ export default function AdminDashboard() {
     firstName: "",
     lastName: "",
     email: "",
-    password: ""
+    password: "",
+    phone: "",
+    parentPhone1: "",
+    parentPhone2: ""
   });
   
   // Teacher-group assignment states
@@ -313,7 +319,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       setIsAddStudentOpen(false);
-      setStudentForm({ firstName: "", lastName: "", email: "", password: "" });
+      setStudentForm({ firstName: "", lastName: "", email: "", password: "", phone: "", parentPhone1: "", parentPhone2: "" });
       toast({
         title: "Muvaffaqiyat",
         description: "Yangi o'quvchi muvaffaqiyatli yaratildi",
@@ -368,7 +374,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       setIsAddTeacherOpen(false);
-      setTeacherForm({ firstName: "", lastName: "", email: "", password: "" });
+      setTeacherForm({ firstName: "", lastName: "", email: "", password: "", phone: "", parentPhone1: "", parentPhone2: "" });
       toast({
         title: "Muvaffaqiyat",
         description: "Yangi o'qituvchi muvaffaqiyatli yaratildi",
@@ -652,7 +658,10 @@ export default function AdminDashboard() {
       firstName: student.firstName,
       lastName: student.lastName,
       email: student.email,
-      password: ""
+      password: "",
+      phone: student.phone || "",
+      parentPhone1: student.parentPhone1 || "",
+      parentPhone2: student.parentPhone2 || ""
     });
     setIsEditStudentOpen(true);
   };
@@ -1122,6 +1131,36 @@ export default function AdminDashboard() {
                                 </Button>
                               </div>
                             </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="phone">Telefon raqam</Label>
+                              <Input
+                                id="phone"
+                                value={studentForm.phone}
+                                onChange={(e) => setStudentForm(prev => ({ ...prev, phone: e.target.value }))}
+                                placeholder="+998901234567"
+                                data-testid="input-student-phone"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="parentPhone1">Ota-ona telefon 1</Label>
+                              <Input
+                                id="parentPhone1"
+                                value={studentForm.parentPhone1}
+                                onChange={(e) => setStudentForm(prev => ({ ...prev, parentPhone1: e.target.value }))}
+                                placeholder="+998901234567"
+                                data-testid="input-student-parent-phone1"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="parentPhone2">Ota-ona telefon 2</Label>
+                              <Input
+                                id="parentPhone2"
+                                value={studentForm.parentPhone2}
+                                onChange={(e) => setStudentForm(prev => ({ ...prev, parentPhone2: e.target.value }))}
+                                placeholder="+998901234567 (ixtiyoriy)"
+                                data-testid="input-student-parent-phone2"
+                              />
+                            </div>
                             <div className="flex justify-end space-x-3">
                               <Button 
                                 type="button" 
@@ -1200,6 +1239,36 @@ export default function AdminDashboard() {
                                 data-testid="input-edit-student-password"
                               />
                             </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="edit-phone">Telefon raqam</Label>
+                              <Input
+                                id="edit-phone"
+                                value={studentForm.phone}
+                                onChange={(e) => setStudentForm(prev => ({ ...prev, phone: e.target.value }))}
+                                placeholder="+998901234567"
+                                data-testid="input-edit-student-phone"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="edit-parentPhone1">Ota-ona telefon 1</Label>
+                              <Input
+                                id="edit-parentPhone1"
+                                value={studentForm.parentPhone1}
+                                onChange={(e) => setStudentForm(prev => ({ ...prev, parentPhone1: e.target.value }))}
+                                placeholder="+998901234567"
+                                data-testid="input-edit-student-parent-phone1"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="edit-parentPhone2">Ota-ona telefon 2</Label>
+                              <Input
+                                id="edit-parentPhone2"
+                                value={studentForm.parentPhone2}
+                                onChange={(e) => setStudentForm(prev => ({ ...prev, parentPhone2: e.target.value }))}
+                                placeholder="+998901234567 (ixtiyoriy)"
+                                data-testid="input-edit-student-parent-phone2"
+                              />
+                            </div>
                             <div className="flex justify-end space-x-3">
                               <Button 
                                 type="button" 
@@ -1263,6 +1332,15 @@ export default function AdminDashboard() {
                                     {student.firstName} {student.lastName}
                                   </h3>
                                   <p className="text-sm text-gray-500">{student.email}</p>
+                                  {student.phone && (
+                                    <p className="text-xs text-gray-600">📱 {student.phone}</p>
+                                  )}
+                                  {student.parentPhone1 && (
+                                    <p className="text-xs text-gray-600">👨‍👩‍👧‍👦 Ota-ona 1: {student.parentPhone1}</p>
+                                  )}
+                                  {student.parentPhone2 && (
+                                    <p className="text-xs text-gray-600">👨‍👩‍👧‍👦 Ota-ona 2: {student.parentPhone2}</p>
+                                  )}
                                   <div className="flex items-center space-x-2 mt-1">
                                     <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                                       Yaratilgan: {new Date(student.createdAt!).toLocaleDateString('uz-UZ')}

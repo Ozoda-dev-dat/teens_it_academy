@@ -1,4 +1,4 @@
-modules = ["nodejs-18", "web"]
+modules = ["nodejs-18", "web", "postgresql-16"]
 
 [nix]
 channel = "stable-25_05"
@@ -33,10 +33,6 @@ outputType = "webview"
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 41237
-externalPort = 3000
 
 [deployment]
 deploymentTarget = "vm"
