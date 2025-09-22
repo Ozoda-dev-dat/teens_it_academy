@@ -147,6 +147,41 @@ export default function TeacherAttendance() {
     },
   });
 
+  // Update attendance mutation
+  const updateAttendanceMutation = useMutation({
+    mutationFn: async (attendanceData: { attendanceId: string; groupId: string; participants: { studentId: string; status: AttendanceStatus }[]; date: Date }) => {
+      const res = await fetch(`/api/teachers/attendance?attendanceId=${attendanceData.attendanceId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          groupId: attendanceData.groupId,
+          participants: attendanceData.participants,
+          date: attendanceData.date
+        }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Failed to update attendance" }));
+        throw new Error(errorData.message || "Failed to update attendance");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Davomat yangilandi",
+        description: "O'quvchilar davomati muvaffaqiyatli yangilandi",
+        variant: "default",
+      });
+      setLocation("/teacher");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Xatolik yuz berdi",
+        description: error.message || "Davomat yangilanmadi",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Timer countdown effect
   useEffect(() => {
     if (!isSessionActive) return;
@@ -165,7 +200,7 @@ export default function TeacherAttendance() {
     return () => clearInterval(interval);
   }, [isSessionActive]);
 
-  // Initialize attendance session
+  // Initialize attendance session (for new or editing existing)
   const startAttendanceSession = () => {
     const now = new Date();
     setSessionStartTime(now);
@@ -173,15 +208,30 @@ export default function TeacherAttendance() {
     setTimeRemaining(15 * 60); // Reset to 15 minutes
     setIsTimeExpired(false);
     
-    // Initialize all students as absent by default
+    // Initialize attendance record
     const initialRecord: AttendanceRecord = {};
-    group?.students.forEach((gs) => {
-      initialRecord[gs.student.id] = "absent";
-    });
+    if (existingAttendance && existingAttendance.participants) {
+      // Pre-populate with existing attendance data
+      const participants = existingAttendance.participants as Array<{studentId: string, status: AttendanceStatus}>;
+      participants.forEach((participant) => {
+        initialRecord[participant.studentId] = participant.status;
+      });
+      // For students not in existing attendance, mark as absent
+      group?.students.forEach((gs) => {
+        if (!(gs.student.id in initialRecord)) {
+          initialRecord[gs.student.id] = "absent";
+        }
+      });
+    } else {
+      // Initialize all students as absent by default for new attendance
+      group?.students.forEach((gs) => {
+        initialRecord[gs.student.id] = "absent";
+      });
+    }
     setAttendanceRecord(initialRecord);
 
     toast({
-      title: "Davomat boshlandi",
+      title: hasAttendanceToday ? "Davomat tahrirlash" : "Davomat boshlandi",
       description: "Sizda 15 daqiqa vaqt bor",
       variant: "default",
     });
@@ -204,7 +254,7 @@ export default function TeacherAttendance() {
     }));
   };
 
-  // Save attendance
+  // Save attendance (create new or update existing)
   const saveAttendance = () => {
     if (!group || !sessionStartTime) return;
 
@@ -214,11 +264,22 @@ export default function TeacherAttendance() {
       status
     }));
 
-    createAttendanceMutation.mutate({
-      groupId: group.id,
-      participants,
-      date: sessionStartTime,
-    });
+    if (hasAttendanceToday && existingAttendance) {
+      // Update existing attendance
+      updateAttendanceMutation.mutate({
+        attendanceId: existingAttendance.id,
+        groupId: group.id,
+        participants,
+        date: sessionStartTime,
+      });
+    } else {
+      // Create new attendance
+      createAttendanceMutation.mutate({
+        groupId: group.id,
+        participants,
+        date: sessionStartTime,
+      });
+    }
   };
 
   // Format time remaining
@@ -347,44 +408,63 @@ export default function TeacherAttendance() {
               </CardContent>
             </Card>
           ) : hasAttendanceToday ? (
-            // Attendance already marked today
+            // Edit existing attendance for today
             <Card className="max-w-2xl mx-auto border-blue-200 bg-blue-50">
               <CardHeader className="text-center">
                 <CardTitle className="flex items-center justify-center space-x-2">
                   <Check className="w-6 h-6 text-blue-600" />
-                  <span className="text-blue-900">Davomat allaqachon belgilangan</span>
+                  <span className="text-blue-900">Bugungi davomat tahrirlash</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-center space-y-6">
                 <div>
                   <p className="text-blue-800 mb-4">
-                    Bu guruh uchun bugungi sana uchun davomat allaqachon belgilangan.
+                    Bu guruh uchun bugungi sana uchun davomat allaqachon belgilangan. Uni o'zgartirishingiz mumkin.
                   </p>
-                  <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 mb-6">
-                    <div className="flex items-center space-x-2 text-blue-900">
-                      <AlertTriangle className="w-5 h-5" />
-                      <span className="font-medium">Eslatma</span>
-                    </div>
-                    <p className="text-blue-800 mt-1">
-                      Har bir guruh uchun kuniga faqat bir marta davomat belgilash mumkin.
-                    </p>
-                  </div>
                   {existingAttendance && (
-                    <div className="text-sm text-blue-700">
-                      <p>Davomat vaqti: {new Date(existingAttendance.date).toLocaleString('uz-UZ')}</p>
-                      <p>Ishtirokchilar soni: {Array.isArray(existingAttendance.participants) ? existingAttendance.participants.length : 0}</p>
+                    <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 mb-6">
+                      <div className="text-sm text-blue-700 space-y-1">
+                        <p><span className="font-medium">Davomat vaqti:</span> {new Date(existingAttendance.date).toLocaleString('uz-UZ')}</p>
+                        <p><span className="font-medium">Ishtirokchilar soni:</span> {Array.isArray(existingAttendance.participants) ? existingAttendance.participants.length : 0}</p>
+                        {Array.isArray(existingAttendance.participants) && (
+                          <div className="mt-2 text-xs">
+                            <span>Keldi: {existingAttendance.participants.filter((p: any) => p.status === 'arrived').length} | </span>
+                            <span>Kech keldi: {existingAttendance.participants.filter((p: any) => p.status === 'late').length} | </span>
+                            <span>Yo'q: {existingAttendance.participants.filter((p: any) => p.status === 'absent').length}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-center space-x-2 text-yellow-800">
+                      <AlertTriangle className="w-5 h-5" />
+                      <span className="font-medium">Diqqat!</span>
+                    </div>
+                    <p className="text-yellow-700 mt-1">
+                      Davomat tahrirlashni boshlaganingizdan so'ng 15 daqiqa ichida tugatishingiz kerak.
+                    </p>
+                  </div>
                 </div>
-                <Button 
-                  onClick={() => setLocation("/teacher")}
-                  size="lg"
-                  variant="outline"
-                  className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
-                >
-                  <ArrowLeft className="w-5 h-5 mr-2" />
-                  Orqaga
-                </Button>
+                <div className="flex justify-center space-x-4">
+                  <Button 
+                    onClick={startAttendanceSession}
+                    size="lg"
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Clock className="w-5 h-5 mr-2" />
+                    Davomatni tahrirlash
+                  </Button>
+                  <Button 
+                    onClick={() => setLocation("/teacher")}
+                    size="lg"
+                    variant="outline"
+                    className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
+                  >
+                    <ArrowLeft className="w-5 h-5 mr-2" />
+                    Orqaga
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ) : (
@@ -438,11 +518,11 @@ export default function TeacherAttendance() {
                     {isSessionActive && (
                       <Button 
                         onClick={saveAttendance}
-                        disabled={createAttendanceMutation.isPending}
+                        disabled={createAttendanceMutation.isPending || updateAttendanceMutation.isPending}
                         className="bg-green-600 hover:bg-green-700"
                       >
                         <Save className="w-4 h-4 mr-2" />
-                        Saqlash
+                        {hasAttendanceToday ? "Yangilash" : "Saqlash"}
                       </Button>
                     )}
                   </div>

@@ -60,6 +60,82 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
+  if (req.method === 'PUT') {
+    // PUT /api/teachers/attendance?attendanceId=... - Update attendance record (teachers can modify their own records)
+    const user = await requireSecureTeacher(req, res);
+    if (!user) return;
+
+    const { attendanceId } = req.query;
+    
+    if (!attendanceId || typeof attendanceId !== 'string') {
+      return res.status(400).json({ message: "Davomat ID talab qilinadi" });
+    }
+
+    try {
+      // First verify the attendance record exists and get it
+      const existingAttendance = await storage.getAttendance(attendanceId);
+      if (!existingAttendance) {
+        return res.status(404).json({ message: "Davomat yozuvi topilmadi" });
+      }
+
+      // Verify teacher is assigned to this group
+      const canManageGroup = await verifyTeacherGroup(user.id, existingAttendance.groupId);
+      if (!canManageGroup) {
+        return res.status(403).json({ message: "Bu guruhni boshqarish huquqingiz yo'q" });
+      }
+
+      // RESTRICTION: Teachers can only modify attendance for TODAY'S date (not past or future dates)
+      const today = new Date();
+      const attendanceDate = new Date(existingAttendance.date);
+      
+      // Normalize dates to compare only year, month, day (ignore time)
+      const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const attendanceDateOnly = new Date(attendanceDate.getFullYear(), attendanceDate.getMonth(), attendanceDate.getDate());
+      
+      if (attendanceDateOnly.getTime() !== todayDateOnly.getTime()) {
+        return res.status(403).json({ 
+          message: "O'qituvchilar faqat bugungi sana uchun davomat o'zgartirishi mumkin. O'tmish yoki kelajak sanalar uchun davomat o'zgartirib bo'lmaydi." 
+        });
+      }
+
+      // Parse and validate the updated attendance data
+      const attendanceData = insertAttendanceSchema.parse({
+        ...req.body,
+        date: new Date(req.body.date)
+      });
+      
+      // Verify the group exists and teacher is still assigned
+      const group = await storage.getGroup(attendanceData.groupId);
+      if (!group) {
+        return res.status(404).json({ message: "Guruh topilmadi" });
+      }
+
+      // Ensure the group ID matches the existing attendance record
+      if (attendanceData.groupId !== existingAttendance.groupId) {
+        return res.status(400).json({ message: "Guruh ID o'zgartirib bo'lmaydi" });
+      }
+      
+      const updatedAttendance = await storage.updateAttendance(attendanceId, attendanceData);
+      if (!updatedAttendance) {
+        return res.status(404).json({ message: "Davomat yozuvini yangilashda xatolik" });
+      }
+      
+      return res.status(200).json(updatedAttendance);
+    } catch (error) {
+      console.error("Davomat yangilashda xatolik:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Ma'lumotlarni to'g'ri kiriting",
+          errors: error.errors
+        });
+      }
+      if (error instanceof Error) {
+        return res.status(400).json({ message: "Davomat yangilashda xatolik: " + error.message });
+      }
+      return res.status(400).json({ message: "Davomat yangilashda xatolik" });
+    }
+  }
+
   if (req.method === 'GET') {
     // GET /api/teachers/attendance?groupId=... - Get attendance for a group
     const user = await requireSecureTeacher(req, res);
