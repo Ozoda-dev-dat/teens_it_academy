@@ -176,14 +176,14 @@ function MedalGivingSection({ teacherData }: { teacherData: any }) {
 
   const awardMedalMutation = useMutation({
     mutationFn: async ({ studentId, medalType, amount }: { studentId: string; medalType: string; amount: number }) => {
-      const res = await fetch(`/api/students/${studentId}/medals`, {
+      const res = await fetch('/api/teachers/medals/award', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
+          studentId,
           medalType,
-          amount,
-          reason: 'teacher_award'
+          amount
         })
       });
 
