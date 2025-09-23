@@ -414,6 +414,137 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin-only attendance edit/delete routes
+  app.put("/api/attendance/:id", requireAdmin, async (req, res) => {
+    try {
+      // First verify the attendance record exists
+      const existingAttendance = await storage.getAttendance(req.params.id);
+      if (!existingAttendance) {
+        return res.status(404).json({ message: "Davomat yozuvi topilmadi" });
+      }
+
+      console.log("Received attendance update data:", req.body);
+      
+      // Create a new object with converted date
+      const bodyWithDate = {
+        ...req.body,
+        date: new Date(req.body.date)
+      };
+      
+      const attendanceData = insertAttendanceSchema.parse(bodyWithDate);
+      console.log("Parsed attendance update data:", attendanceData);
+      
+      // Verify the group exists
+      const group = await storage.getGroup(attendanceData.groupId);
+      if (!group) {
+        return res.status(404).json({ message: "Guruh topilmadi" });
+      }
+      
+      // Check for duplicate attendance record for same group and date (excluding current record)
+      const duplicateAttendance = await storage.getAttendanceByDate(attendanceData.groupId, attendanceData.date);
+      if (duplicateAttendance && duplicateAttendance.id !== req.params.id) {
+        return res.status(400).json({ message: "Bu sana uchun davomat allaqachon mavjud" });
+      }
+
+      // Handle medal logic for attendance updates
+      const oldParticipants = existingAttendance.participants as Array<{studentId: string, status: string}>;
+      const newParticipants = attendanceData.participants as Array<{studentId: string, status: string}>;
+      
+      // Check if bronze medals can be awarded for new arrivals BEFORE updating
+      const newArrivals = newParticipants.filter(np => 
+        np.status === 'arrived' && 
+        (!oldParticipants.find(op => op.studentId === np.studentId) || 
+         oldParticipants.find(op => op.studentId === np.studentId)?.status !== 'arrived')
+      );
+      
+      if (newArrivals.length > 0) {
+        const medalCheck = await canAwardBronzeMedalsForAttendance(newArrivals);
+        if (!medalCheck.canAward) {
+          return res.status(400).json({ 
+            message: "Ba'zi talabalar oylik medal limitiga yetgan. Davomat yangilanmadi.",
+            issues: medalCheck.issues
+          });
+        }
+      }
+      
+      const updatedAttendance = await storage.updateAttendance(req.params.id, attendanceData);
+      if (!updatedAttendance) {
+        return res.status(404).json({ message: "Davomat yozuvini yangilashda xatolik" });
+      }
+
+      // Award/revoke medals based on status changes
+      for (const newParticipant of newParticipants) {
+        const oldParticipant = oldParticipants.find(op => op.studentId === newParticipant.studentId);
+        
+        // If student changed from not-arrived to arrived, award bronze medal
+        if (newParticipant.status === 'arrived' && 
+            (!oldParticipant || oldParticipant.status !== 'arrived')) {
+          await storage.awardMedalsSafelyWithTotals(newParticipant.studentId, 'bronze', 1, 'attendance', req.params.id);
+          console.log(`🥉 Awarded +1 bronze medal to student ${newParticipant.studentId} for attendance update`);
+        }
+        
+        // If student changed from arrived to not-arrived, revoke bronze medal
+        if (newParticipant.status !== 'arrived' && 
+            oldParticipant && oldParticipant.status === 'arrived') {
+          const revokeResult = await storage.revokeMedalsSafely(newParticipant.studentId, 'bronze', 1, 'attendance', req.params.id);
+          if (revokeResult.success) {
+            console.log(`🥉 Revoked 1 bronze medal from student ${newParticipant.studentId} for attendance status change`);
+          } else {
+            console.log(`⚠️ Could not revoke bronze medal from student ${newParticipant.studentId}: ${revokeResult.reason}`);
+          }
+        }
+      }
+      
+      res.status(200).json(updatedAttendance);
+    } catch (error) {
+      console.error("Davomat yangilashda xatolik:", error);
+      if (error instanceof Error) {
+        res.status(400).json({ message: "Davomat yangilashda xatolik: " + error.message });
+      } else {
+        res.status(400).json({ message: "Davomat yangilashda xatolik" });
+      }
+    }
+  });
+
+  app.delete("/api/attendance/:id", requireAdmin, async (req, res) => {
+    try {
+      // First verify the attendance record exists
+      const existingAttendance = await storage.getAttendance(req.params.id);
+      if (!existingAttendance) {
+        return res.status(404).json({ message: "Davomat yozuvi topilmadi" });
+      }
+
+      // Handle medal revocation for students who were marked as arrived
+      const participants = existingAttendance.participants as Array<{studentId: string, status: string}>;
+      const arrivedStudents = participants.filter(p => p.status === 'arrived');
+      
+      // Revoke medals for all students who were marked as arrived
+      for (const student of arrivedStudents) {
+        const revokeResult = await storage.revokeMedalsSafely(student.studentId, 'bronze', 1, 'attendance', req.params.id);
+        if (revokeResult.success) {
+          console.log(`🥉 Revoked 1 bronze medal from student ${student.studentId} for attendance deletion`);
+        } else {
+          console.log(`⚠️ Could not revoke bronze medal from student ${student.studentId}: ${revokeResult.reason}`);
+        }
+      }
+
+      const deleted = await storage.deleteAttendance(req.params.id);
+      if (!deleted) {
+        return res.status(500).json({ message: "Davomat yozuvini o'chirishda xatolik" });
+      }
+
+      console.log(`✅ Deleted attendance record ${req.params.id} with ${arrivedStudents.length} students who need medal revocation`);
+      res.status(200).json({ message: "Davomat yozuvi muvaffaqiyatli o'chirildi" });
+    } catch (error) {
+      console.error("Davomat o'chirishda xatolik:", error);
+      if (error instanceof Error) {
+        res.status(500).json({ message: "Davomat o'chirishda xatolik: " + error.message });
+      } else {
+        res.status(500).json({ message: "Davomat o'chirishda xatolik" });
+      }
+    }
+  });
+
   // Teacher attendance routes - allows teachers to get/create attendance for their assigned groups
   app.get("/api/teachers/attendance", async (req, res) => {
     if (!req.isAuthenticated() || req.user.role !== "teacher") {

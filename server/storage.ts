@@ -47,6 +47,9 @@ export interface IStorage {
   createAttendance(attendance: InsertAttendance): Promise<Attendance>;
   getGroupAttendance(groupId: string): Promise<Attendance[]>;
   getAttendanceByDate(groupId: string, date: Date): Promise<Attendance | undefined>;
+  getAttendance(id: string): Promise<Attendance | undefined>;
+  updateAttendance(id: string, updates: Partial<InsertAttendance>): Promise<Attendance | undefined>;
+  deleteAttendance(id: string): Promise<boolean>;
 
   // Payment methods
   createPayment(payment: InsertPayment): Promise<Payment>;
@@ -231,6 +234,65 @@ export class DatabaseStorage implements IStorage {
         });
       
       return true;
+    });
+  }
+
+  async revokeMedalsSafely(studentId: string, medalType: 'gold' | 'silver' | 'bronze', amount: number = 1, reason: string = 'attendance', relatedId?: string): Promise<{success: boolean, reason?: string}> {
+    return await db.transaction(async (tx) => {
+      const student = await tx.select().from(users).where(eq(users.id, studentId)).then(res => res[0]);
+      if (!student) {
+        return { success: false, reason: 'Student not found' };
+      }
+
+      // Check if student has enough medals to revoke
+      const currentMedals = student.medals as { gold: number; silver: number; bronze: number };
+      if (currentMedals[medalType] < amount) {
+        return { success: false, reason: `Student only has ${currentMedals[medalType]} ${medalType} medals, cannot revoke ${amount}` };
+      }
+
+      // Find specific medal awards to revoke if relatedId is provided
+      if (relatedId) {
+        const existingAwards = await tx
+          .select()
+          .from(medalAwards)
+          .where(
+            and(
+              eq(medalAwards.studentId, studentId),
+              eq(medalAwards.medalType, medalType),
+              eq(medalAwards.reason, reason),
+              eq(medalAwards.relatedId, relatedId)
+            )
+          );
+
+        if (existingAwards.length === 0) {
+          return { success: false, reason: 'No matching medal awards found to revoke' };
+        }
+
+        // Delete the specific medal award record(s)
+        await tx
+          .delete(medalAwards)
+          .where(
+            and(
+              eq(medalAwards.studentId, studentId),
+              eq(medalAwards.medalType, medalType),
+              eq(medalAwards.reason, reason),
+              eq(medalAwards.relatedId, relatedId)
+            )
+          );
+      }
+
+      // Update the user's total medal count
+      const newMedals = {
+        ...currentMedals,
+        [medalType]: currentMedals[medalType] - amount
+      };
+
+      await tx
+        .update(users)
+        .set({ medals: newMedals })
+        .where(eq(users.id, studentId));
+
+      return { success: true };
     });
   }
 
@@ -523,6 +585,31 @@ export class DatabaseStorage implements IStorage {
         sql`${attendance.date} < ${nextDay}`
       ));
     return attendanceRecord || undefined;
+  }
+
+  async getAttendance(id: string): Promise<Attendance | undefined> {
+    const [attendanceRecord] = await db
+      .select()
+      .from(attendance)
+      .where(eq(attendance.id, id));
+    return attendanceRecord || undefined;
+  }
+
+  async updateAttendance(id: string, updates: Partial<InsertAttendance>): Promise<Attendance | undefined> {
+    const [updatedAttendance] = await db
+      .update(attendance)
+      .set(updates)
+      .where(eq(attendance.id, id))
+      .returning();
+    return updatedAttendance || undefined;
+  }
+
+  async deleteAttendance(id: string): Promise<boolean> {
+    const result = await db
+      .delete(attendance)
+      .where(eq(attendance.id, id))
+      .returning({ id: attendance.id });
+    return result.length > 0;
   }
 
   // Payment methods

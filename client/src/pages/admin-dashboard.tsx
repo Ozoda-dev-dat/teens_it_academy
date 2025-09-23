@@ -120,6 +120,13 @@ export default function AdminDashboard() {
   const [isEditingAttendance, setIsEditingAttendance] = useState(false);
   const [editingAttendanceRecord, setEditingAttendanceRecord] = useState<Attendance | null>(null);
   
+  // New attendance management states
+  const [isCreateAttendanceOpen, setIsCreateAttendanceOpen] = useState(false);
+  const [isEditAttendanceOpen, setIsEditAttendanceOpen] = useState(false);
+  const [isDeleteAttendanceOpen, setIsDeleteAttendanceOpen] = useState(false);
+  const [editingAttendance, setEditingAttendance] = useState<Attendance | null>(null);
+  const [deletingAttendance, setDeletingAttendance] = useState<Attendance | null>(null);
+  
   // Group assignment states
   const [selectedGroupForAssignment, setSelectedGroupForAssignment] = useState<string>("");
   const [isAddStudentToGroupOpen, setIsAddStudentToGroupOpen] = useState(false);
@@ -2067,115 +2074,146 @@ export default function AdminDashboard() {
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
                       <div>
                         <h1 className="text-2xl font-bold text-gray-900 mb-2">Davomat boshqaruvi</h1>
-                        <p className="text-gray-600">Barcha guruhlar davomatini ko'rish va o'zgartirish</p>
+                        <p className="text-gray-600">Barcha guruhlar davomatini yaratish, ko'rish va o'zgartirish</p>
                       </div>
+                      {selectedGroupForAdmin && (
+                        <Button 
+                          onClick={() => setIsCreateAttendanceOpen(true)}
+                          className="bg-teens-blue hover:bg-blue-600"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Davomat yaratish
+                        </Button>
+                      )}
                     </div>
 
-
-                    {/* Attendance Records */}
+                    {/* Group Selection */}
                     <Card>
                       <CardHeader>
-                        <CardTitle>
-                          {selectedGroupForAdmin ? 
-                            `${groups.find(g => g.id === selectedGroupForAdmin)?.name} - Oylik davomat` : 
-                            "Guruh davomati"
-                          }
-                        </CardTitle>
+                        <CardTitle>Guruh tanlash</CardTitle>
                         <p className="text-sm text-gray-600">
-                          {selectedGroupForAdmin ? 
-                            "Tanlangan guruhning oylik davomat ma'lumotlari. Guruhlar sahifasida boshqa guruhni tanlang." :
-                            "Davomat ko'rish uchun Guruhlar sahifasidan guruhni tanlang."
-                          }
+                          Davomat boshqarish uchun guruhni tanlang
                         </p>
                       </CardHeader>
                       <CardContent>
-                        {selectedGroupForAdmin ? (
-                          <div className="space-y-4">
-                            <div className="border rounded-lg p-4">
-                              <div className="flex justify-between items-center mb-4">
-                                <div>
-                                  <h3 className="font-semibold text-lg">
-                                    {groups.find(g => g.id === selectedGroupForAdmin)?.name}
-                                  </h3>
-                                  <p className="text-sm text-gray-600">
-                                    {groups.find(g => g.id === selectedGroupForAdmin)?.description}
-                                  </p>
-                                </div>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setSelectedGroupForAdmin("")}
-                                >
-                                  <X className="w-4 h-4 mr-2" />
-                                  Yopish
-                                </Button>
-                              </div>
-                              
-                              <div className="mt-4 space-y-3">
-                                {currentMonthAttendance.length > 0 ? (
-                                  <div className="space-y-3">
-                                    <h4 className="font-medium text-gray-700">
-                                      {new Date().toLocaleDateString('uz-UZ', { month: 'long', year: 'numeric' })} davomat yozuvlari
-                                    </h4>
-                                    <div className="overflow-x-auto">
-                                      <table className="w-full border-collapse border border-gray-300">
-                                        <thead>
-                                          <tr className="bg-gray-50">
-                                            <th className="border border-gray-300 px-4 py-2 text-left">Sana</th>
-                                            <th className="border border-gray-300 px-4 py-2 text-left">Kelgan</th>
-                                            <th className="border border-gray-300 px-4 py-2 text-left">Kech kelgan</th>
-                                            <th className="border border-gray-300 px-4 py-2 text-left">Kelmagan</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {currentMonthAttendance.map((record) => {
-                                            const participants = record.participants as any[] || [];
-                                            const arrived = participants.filter(p => p.status === 'arrived').length;
-                                            const late = participants.filter(p => p.status === 'late').length;
-                                            const absent = participants.filter(p => p.status === 'absent').length;
-                                            
-                                            return (
-                                              <tr key={record.id}>
-                                                <td className="border border-gray-300 px-4 py-2">
-                                                  {new Date(record.date).toLocaleDateString('uz-UZ')}
-                                                </td>
-                                                <td className="border border-gray-300 px-4 py-2 text-green-600">
-                                                  {arrived}
-                                                </td>
-                                                <td className="border border-gray-300 px-4 py-2 text-yellow-600">
-                                                  {late}
-                                                </td>
-                                                <td className="border border-gray-300 px-4 py-2 text-red-600">
-                                                  {absent}
-                                                </td>
-                                              </tr>
-                                            );
-                                          })}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="text-center py-8 bg-gray-50 rounded-lg">
-                                    <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                                    <p className="text-gray-600">Bu oyda davomat yozuvlari yo'q</p>
-                                    <p className="text-sm text-gray-500">
-                                      {new Date().toLocaleDateString('uz-UZ', { month: 'long', year: 'numeric' })} uchun davomat belgilanmagan
-                                    </p>
-                                  </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {groups.map((group) => (
+                            <Card 
+                              key={group.id} 
+                              className={`cursor-pointer border-2 transition-colors ${
+                                selectedGroupForAdmin === group.id 
+                                  ? 'border-teens-blue bg-blue-50' 
+                                  : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                              onClick={() => setSelectedGroupForAdmin(group.id)}
+                            >
+                              <CardContent className="p-4">
+                                <h3 className="font-semibold">{group.name}</h3>
+                                <p className="text-sm text-gray-600 mt-1">{group.description}</p>
+                                {selectedGroupForAdmin === group.id && (
+                                  <Badge className="mt-2 bg-teens-blue">Tanlangan</Badge>
                                 )}
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-center py-8">
-                            <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                            <p className="text-gray-500">Guruh tanlang</p>
-                            <p className="text-gray-400 text-sm">Davomatni ko'rish uchun Guruhlar sahifasidan guruhni tanlang</p>
-                          </div>
-                        )}
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
                       </CardContent>
                     </Card>
+
+                    {/* Attendance Records */}
+                    {selectedGroupForAdmin && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>
+                            {groups.find(g => g.id === selectedGroupForAdmin)?.name} - Davomat yozuvlari
+                          </CardTitle>
+                          <p className="text-sm text-gray-600">
+                            Tanlangan guruhning barcha davomat ma'lumotlari. Admin sifatida siz istalgan yozuvni o'zgartira olasiz.
+                          </p>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            {currentMonthAttendance.length > 0 ? (
+                              <div className="space-y-3">
+                                <h4 className="font-medium text-gray-700">
+                                  {new Date().toLocaleDateString('uz-UZ', { month: 'long', year: 'numeric' })} davomat yozuvlari
+                                </h4>
+                                <div className="overflow-x-auto">
+                                  <table className="w-full border-collapse border border-gray-300">
+                                    <thead>
+                                      <tr className="bg-gray-50">
+                                        <th className="border border-gray-300 px-4 py-2 text-left">Sana</th>
+                                        <th className="border border-gray-300 px-4 py-2 text-left">Kelgan</th>
+                                        <th className="border border-gray-300 px-4 py-2 text-left">Kech kelgan</th>
+                                        <th className="border border-gray-300 px-4 py-2 text-left">Kelmagan</th>
+                                        <th className="border border-gray-300 px-4 py-2 text-left">Amallar</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {currentMonthAttendance.map((record) => {
+                                        const participants = record.participants as any[] || [];
+                                        const arrived = participants.filter(p => p.status === 'arrived').length;
+                                        const late = participants.filter(p => p.status === 'late').length;
+                                        const absent = participants.filter(p => p.status === 'absent').length;
+                                        
+                                        return (
+                                          <tr key={record.id}>
+                                            <td className="border border-gray-300 px-4 py-2">
+                                              {new Date(record.date).toLocaleDateString('uz-UZ')}
+                                            </td>
+                                            <td className="border border-gray-300 px-4 py-2 text-green-600">
+                                              {arrived}
+                                            </td>
+                                            <td className="border border-gray-300 px-4 py-2 text-yellow-600">
+                                              {late}
+                                            </td>
+                                            <td className="border border-gray-300 px-4 py-2 text-red-600">
+                                              {absent}
+                                            </td>
+                                            <td className="border border-gray-300 px-4 py-2">
+                                              <div className="flex space-x-2">
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={() => {
+                                                    setEditingAttendance(record);
+                                                    setIsEditAttendanceOpen(true);
+                                                  }}
+                                                >
+                                                  <Edit className="w-4 h-4" />
+                                                </Button>
+                                                <Button
+                                                  size="sm"
+                                                  variant="destructive"
+                                                  onClick={() => {
+                                                    setDeletingAttendance(record);
+                                                    setIsDeleteAttendanceOpen(true);
+                                                  }}
+                                                >
+                                                  <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-center py-8 bg-gray-50 rounded-lg">
+                                <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                                <p className="text-gray-600">Bu oyda davomat yozuvlari yo'q</p>
+                                <p className="text-sm text-gray-500">
+                                  Yangi davomat yaratish uchun yuqoridagi "Davomat yaratish" tugmasini bosing
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
 
                     {/* Attendance Rules */}
                     <Card>
@@ -2949,6 +2987,482 @@ export default function AdminDashboard() {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      {/* Create Attendance Dialog */}
+      <Dialog open={isCreateAttendanceOpen} onOpenChange={setIsCreateAttendanceOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Yangi davomat yaratish</DialogTitle>
+            <p className="text-sm text-gray-600">
+              {selectedGroupForAdmin && groups.find(g => g.id === selectedGroupForAdmin)?.name} guruhiga davomat yarating
+            </p>
+          </DialogHeader>
+          <AdminAttendanceCreateForm 
+            groupId={selectedGroupForAdmin}
+            onClose={() => setIsCreateAttendanceOpen(false)}
+            onSuccess={() => {
+              setIsCreateAttendanceOpen(false);
+              queryClient.invalidateQueries({ queryKey: ["/api/groups", selectedGroupForAdmin, "attendance"] });
+              toast({
+                title: "Muvaffaqiyat",
+                description: "Davomat yaratildi",
+              });
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Attendance Dialog */}
+      <Dialog open={isEditAttendanceOpen} onOpenChange={setIsEditAttendanceOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Davomatni tahrirlash</DialogTitle>
+            <p className="text-sm text-gray-600">
+              {editingAttendance && `${new Date(editingAttendance.date).toLocaleDateString('uz-UZ')} sanasidagi davomatni o'zgartiring`}
+            </p>
+          </DialogHeader>
+          {editingAttendance && (
+            <AdminAttendanceEditForm 
+              attendance={editingAttendance}
+              onClose={() => {
+                setIsEditAttendanceOpen(false);
+                setEditingAttendance(null);
+              }}
+              onSuccess={() => {
+                setIsEditAttendanceOpen(false);
+                setEditingAttendance(null);
+                queryClient.invalidateQueries({ queryKey: ["/api/groups", selectedGroupForAdmin, "attendance"] });
+                toast({
+                  title: "Muvaffaqiyat",
+                  description: "Davomat yangilandi",
+                });
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Attendance Confirmation Dialog */}
+      <Dialog open={isDeleteAttendanceOpen} onOpenChange={setIsDeleteAttendanceOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Davomatni o'chirish</DialogTitle>
+            <p className="text-sm text-gray-600">
+              Haqiqatan ham bu davomat yozuvini o'chirmoqchimisiz? Bu amal qaytarilmaydi.
+            </p>
+          </DialogHeader>
+          {deletingAttendance && (
+            <div className="space-y-4">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="font-medium">
+                  Sana: {new Date(deletingAttendance.date).toLocaleDateString('uz-UZ')}
+                </p>
+                <p className="text-sm text-gray-600">
+                  Guruh: {groups.find(g => g.id === selectedGroupForAdmin)?.name}
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsDeleteAttendanceOpen(false);
+                    setDeletingAttendance(null);
+                  }}
+                >
+                  Bekor qilish
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(`/api/attendance/${deletingAttendance.id}`, {
+                        method: 'DELETE',
+                      });
+                      if (!response.ok) {
+                        throw new Error('Failed to delete attendance');
+                      }
+                      toast({
+                        title: "Muvaffaqiyat",
+                        description: "Davomat yozuvi o'chirildi",
+                      });
+                      setIsDeleteAttendanceOpen(false);
+                      setDeletingAttendance(null);
+                      // Refresh attendance data
+                      queryClient.invalidateQueries({ queryKey: ["/api/groups", selectedGroupForAdmin, "attendance"] });
+                    } catch (error) {
+                      toast({
+                        title: "Xatolik",
+                        description: "Davomatni o'chirishda xatolik yuz berdi",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
+                  O'chirish
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// Admin Attendance Create Form Component
+interface AdminAttendanceCreateFormProps {
+  groupId: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function AdminAttendanceCreateForm({ groupId, onClose, onSuccess }: AdminAttendanceCreateFormProps) {
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [attendanceRecord, setAttendanceRecord] = useState<Record<string, AttendanceStatus>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  // Get group details and students
+  const { data: group } = useQuery({
+    queryKey: ['group', groupId],
+    queryFn: async () => {
+      const response = await fetch(`/api/groups/${groupId}`);
+      if (!response.ok) throw new Error('Failed to fetch group');
+      return response.json();
+    },
+    enabled: !!groupId,
+  });
+
+  // Initialize attendance record when group data loads
+  useEffect(() => {
+    if (group?.students) {
+      const initialRecord: Record<string, AttendanceStatus> = {};
+      group.students.forEach((gs: any) => {
+        initialRecord[gs.student.id] = 'absent';
+      });
+      setAttendanceRecord(initialRecord);
+    }
+  }, [group]);
+
+  const updateAttendance = (studentId: string, status: AttendanceStatus) => {
+    setAttendanceRecord(prev => ({
+      ...prev,
+      [studentId]: status
+    }));
+  };
+
+  const handleSubmit = async () => {
+    if (!group) return;
+    
+    setIsSubmitting(true);
+    try {
+      const participants = Object.entries(attendanceRecord).map(([studentId, status]) => ({
+        studentId,
+        status
+      }));
+
+      const response = await fetch(`/api/groups/${groupId}/attendance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          date: selectedDate.toISOString(),
+          participants
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        // Enhanced error handling for medal limit issues
+        if (error.issues && Array.isArray(error.issues)) {
+          const issueDetails = error.issues.map((issue: any) => `• ${issue}`).join('\n');
+          throw new Error(`${error.message}\n\nTafsilotlar:\n${issueDetails}`);
+        }
+        throw new Error(error.message || 'Failed to create attendance');
+      }
+
+      onSuccess();
+    } catch (error) {
+      toast({
+        title: "Xatolik",
+        description: error instanceof Error ? error.message : "Davomat yaratishda xatolik",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!group) {
+    return <div className="flex justify-center p-4">Yuklanmoqda...</div>;
+  }
+
+  return (
+    <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+      {/* Date Selection */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Sana</label>
+        <input
+          type="date"
+          value={selectedDate.toISOString().split('T')[0]}
+          onChange={(e) => setSelectedDate(new Date(e.target.value))}
+          className="w-full p-2 border rounded-lg"
+        />
+      </div>
+
+      {/* Students List */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium">O'quvchilar</label>
+          <div className="text-sm text-gray-500">
+            Keldi: {Object.values(attendanceRecord).filter(s => s === "arrived").length} | 
+            Kech: {Object.values(attendanceRecord).filter(s => s === "late").length} | 
+            Yo'q: {Object.values(attendanceRecord).filter(s => s === "absent").length}
+          </div>
+        </div>
+        
+        <div className="space-y-2 max-h-60 overflow-y-auto">
+          {group.students.map((groupStudent: any) => {
+            const student = groupStudent.student;
+            const status = attendanceRecord[student.id] || "absent";
+            
+            return (
+              <div 
+                key={student.id}
+                className="flex items-center justify-between p-3 border rounded-lg bg-white"
+              >
+                <div>
+                  <h3 className="font-medium text-gray-900">
+                    {student.firstName} {student.lastName}
+                  </h3>
+                  <p className="text-sm text-gray-500">{student.email}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    size="sm"
+                    variant={status === "arrived" ? "default" : "outline"}
+                    onClick={() => updateAttendance(student.id, "arrived")}
+                    className={status === "arrived" ? "bg-green-600 hover:bg-green-700" : ""}
+                  >
+                    <Check className="w-4 h-4 mr-1" />
+                    Keldi
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={status === "late" ? "default" : "outline"}
+                    onClick={() => updateAttendance(student.id, "late")}
+                    className={status === "late" ? "bg-yellow-600 hover:bg-yellow-700" : ""}
+                  >
+                    <Clock className="w-4 h-4 mr-1" />
+                    Kech
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={status === "absent" ? "default" : "outline"}
+                    onClick={() => updateAttendance(student.id, "absent")}
+                    className={status === "absent" ? "bg-red-600 hover:bg-red-700" : ""}
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    Yo'q
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Form Actions */}
+      <div className="flex justify-end space-x-2 pt-4">
+        <Button variant="outline" onClick={onClose}>
+          Bekor qilish
+        </Button>
+        <Button 
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          {isSubmitting ? "Saqlanmoqda..." : "Saqlash"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// Admin Attendance Edit Form Component
+interface AdminAttendanceEditFormProps {
+  attendance: any;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function AdminAttendanceEditForm({ attendance, onClose, onSuccess }: AdminAttendanceEditFormProps) {
+  const [attendanceRecord, setAttendanceRecord] = useState<Record<string, AttendanceStatus>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  // Get group details
+  const { data: group } = useQuery({
+    queryKey: ['group', attendance.groupId],
+    queryFn: async () => {
+      const response = await fetch(`/api/groups/${attendance.groupId}`);
+      if (!response.ok) throw new Error('Failed to fetch group');
+      return response.json();
+    },
+  });
+
+  // Initialize attendance record with existing data
+  useEffect(() => {
+    if (attendance.participants) {
+      const record: Record<string, AttendanceStatus> = {};
+      attendance.participants.forEach((p: any) => {
+        record[p.studentId] = p.status;
+      });
+      setAttendanceRecord(record);
+    }
+  }, [attendance]);
+
+  const updateAttendance = (studentId: string, status: AttendanceStatus) => {
+    setAttendanceRecord(prev => ({
+      ...prev,
+      [studentId]: status
+    }));
+  };
+
+  const handleSubmit = async () => {
+    if (!group) return;
+    
+    setIsSubmitting(true);
+    try {
+      const participants = Object.entries(attendanceRecord).map(([studentId, status]) => ({
+        studentId,
+        status
+      }));
+
+      const response = await fetch(`/api/attendance/${attendance.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          groupId: attendance.groupId,
+          date: attendance.date,
+          participants
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        // Enhanced error handling for medal limit issues
+        if (error.issues && Array.isArray(error.issues)) {
+          const issueDetails = error.issues.map((issue: any) => `• ${issue}`).join('\n');
+          throw new Error(`${error.message}\n\nTafsilotlar:\n${issueDetails}`);
+        }
+        throw new Error(error.message || 'Failed to update attendance');
+      }
+
+      onSuccess();
+    } catch (error) {
+      toast({
+        title: "Xatolik",
+        description: error instanceof Error ? error.message : "Davomatni yangilashda xatolik",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!group) {
+    return <div className="flex justify-center p-4">Yuklanmoqda...</div>;
+  }
+
+  return (
+    <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+      {/* Date Display */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Sana</label>
+        <div className="p-2 border rounded-lg bg-gray-50">
+          {new Date(attendance.date).toLocaleDateString('uz-UZ')}
+        </div>
+      </div>
+
+      {/* Students List */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium">O'quvchilar</label>
+          <div className="text-sm text-gray-500">
+            Keldi: {Object.values(attendanceRecord).filter(s => s === "arrived").length} | 
+            Kech: {Object.values(attendanceRecord).filter(s => s === "late").length} | 
+            Yo'q: {Object.values(attendanceRecord).filter(s => s === "absent").length}
+          </div>
+        </div>
+        
+        <div className="space-y-2 max-h-60 overflow-y-auto">
+          {group.students.map((groupStudent: any) => {
+            const student = groupStudent.student;
+            const status = attendanceRecord[student.id] || "absent";
+            
+            return (
+              <div 
+                key={student.id}
+                className="flex items-center justify-between p-3 border rounded-lg bg-white"
+              >
+                <div>
+                  <h3 className="font-medium text-gray-900">
+                    {student.firstName} {student.lastName}
+                  </h3>
+                  <p className="text-sm text-gray-500">{student.email}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    size="sm"
+                    variant={status === "arrived" ? "default" : "outline"}
+                    onClick={() => updateAttendance(student.id, "arrived")}
+                    className={status === "arrived" ? "bg-green-600 hover:bg-green-700" : ""}
+                  >
+                    <Check className="w-4 h-4 mr-1" />
+                    Keldi
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={status === "late" ? "default" : "outline"}
+                    onClick={() => updateAttendance(student.id, "late")}
+                    className={status === "late" ? "bg-yellow-600 hover:bg-yellow-700" : ""}
+                  >
+                    <Clock className="w-4 h-4 mr-1" />
+                    Kech
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={status === "absent" ? "default" : "outline"}
+                    onClick={() => updateAttendance(student.id, "absent")}
+                    className={status === "absent" ? "bg-red-600 hover:bg-red-700" : ""}
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    Yo'q
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Form Actions */}
+      <div className="flex justify-end space-x-2 pt-4">
+        <Button variant="outline" onClick={onClose}>
+          Bekor qilish
+        </Button>
+        <Button 
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          {isSubmitting ? "Yangilanmoqda..." : "Yangilash"}
+        </Button>
+      </div>
     </div>
   );
 }
