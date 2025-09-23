@@ -44,10 +44,14 @@ import {
   Medal,
   Package,
   CreditCard,
-  UserCheck
+  UserCheck,
+  Check
 } from "lucide-react";
 import type { User, Group, Product, Attendance, Payment, Purchase } from "@shared/schema";
 import MedalManagement from "./medal-management";
+
+// Define AttendanceStatus type
+type AttendanceStatus = 'arrived' | 'absent' | 'late';
 
 export default function AdminDashboard() {
   const { user, logoutMutation } = useAuth();
