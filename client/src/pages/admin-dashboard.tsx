@@ -73,7 +73,8 @@ export default function AdminDashboard() {
     password: "",
     phone: "",
     parentPhone1: "",
-    parentPhone2: ""
+    parentName1: "",
+    parentName2: ""
   });
   
   // Group states
@@ -147,7 +148,8 @@ export default function AdminDashboard() {
     password: "",
     phone: "",
     parentPhone1: "",
-    parentPhone2: ""
+    parentName1: "",
+    parentName2: ""
   });
   
   // Teacher-group assignment states
@@ -332,7 +334,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       setIsAddStudentOpen(false);
-      setStudentForm({ firstName: "", lastName: "", email: "", password: "", phone: "", parentPhone1: "", parentPhone2: "" });
+      setStudentForm({ firstName: "", lastName: "", email: "", password: "", phone: "", parentPhone1: "", parentName1: "", parentName2: "" });
       toast({
         title: "Muvaffaqiyat",
         description: "Yangi o'quvchi muvaffaqiyatli yaratildi",
@@ -387,7 +389,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       setIsAddTeacherOpen(false);
-      setTeacherForm({ firstName: "", lastName: "", email: "", password: "", phone: "", parentPhone1: "", parentPhone2: "" });
+      setTeacherForm({ firstName: "", lastName: "", email: "", password: "", phone: "", parentPhone1: "", parentName1: "", parentName2: "" });
       toast({
         title: "Muvaffaqiyat",
         description: "Yangi o'qituvchi muvaffaqiyatli yaratildi",
@@ -674,7 +676,8 @@ export default function AdminDashboard() {
       password: "",
       phone: student.phone || "",
       parentPhone1: student.parentPhone1 || "",
-      parentPhone2: student.parentPhone2 || ""
+      parentName1: student.parentName1 || "",
+      parentName2: student.parentName2 || ""
     });
     setIsEditStudentOpen(true);
   };
@@ -1170,13 +1173,23 @@ export default function AdminDashboard() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="parentPhone2">Ota-ona telefon 2</Label>
+                              <Label htmlFor="parentName1">Birinchi ota-ona ismi</Label>
                               <Input
-                                id="parentPhone2"
-                                value={studentForm.parentPhone2}
-                                onChange={(e) => setStudentForm(prev => ({ ...prev, parentPhone2: e.target.value }))}
-                                placeholder="+998901234567 (ixtiyoriy)"
-                                data-testid="input-student-parent-phone2"
+                                id="parentName1"
+                                value={studentForm.parentName1}
+                                onChange={(e) => setStudentForm(prev => ({ ...prev, parentName1: e.target.value }))}
+                                placeholder="Masalan: Aziz Rahimov"
+                                data-testid="input-student-parent-name1"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="parentName2">Ikkinchi ota-ona ismi</Label>
+                              <Input
+                                id="parentName2"
+                                value={studentForm.parentName2}
+                                onChange={(e) => setStudentForm(prev => ({ ...prev, parentName2: e.target.value }))}
+                                placeholder="Masalan: Gulnara Rahimova (ixtiyoriy)"
+                                data-testid="input-student-parent-name2"
                               />
                             </div>
                             <div className="flex justify-end space-x-3">
@@ -1278,13 +1291,23 @@ export default function AdminDashboard() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="edit-parentPhone2">Ota-ona telefon 2</Label>
+                              <Label htmlFor="edit-parentName1">Birinchi ota-ona ismi</Label>
                               <Input
-                                id="edit-parentPhone2"
-                                value={studentForm.parentPhone2}
-                                onChange={(e) => setStudentForm(prev => ({ ...prev, parentPhone2: e.target.value }))}
-                                placeholder="+998901234567 (ixtiyoriy)"
-                                data-testid="input-edit-student-parent-phone2"
+                                id="edit-parentName1"
+                                value={studentForm.parentName1}
+                                onChange={(e) => setStudentForm(prev => ({ ...prev, parentName1: e.target.value }))}
+                                placeholder="Masalan: Aziz Rahimov"
+                                data-testid="input-edit-student-parent-name1"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="edit-parentName2">Ikkinchi ota-ona ismi</Label>
+                              <Input
+                                id="edit-parentName2"
+                                value={studentForm.parentName2}
+                                onChange={(e) => setStudentForm(prev => ({ ...prev, parentName2: e.target.value }))}
+                                placeholder="Masalan: Gulnara Rahimova (ixtiyoriy)"
+                                data-testid="input-edit-student-parent-name2"
                               />
                             </div>
                             <div className="flex justify-end space-x-3">
@@ -1380,10 +1403,16 @@ export default function AdminDashboard() {
                                           <span className="text-sm font-medium">{viewingStudent.parentPhone1}</span>
                                         </div>
                                       )}
-                                      {viewingStudent.parentPhone2 && (
+                                      {viewingStudent.parentName1 && (
                                         <div className="flex items-center space-x-2">
-                                          <span className="text-sm text-gray-600">👨‍👩‍👧‍👦 Ota-ona 2:</span>
-                                          <span className="text-sm font-medium">{viewingStudent.parentPhone2}</span>
+                                          <span className="text-sm text-gray-600">👨‍👩‍👧‍👦 Birinchi ota-ona:</span>
+                                          <span className="text-sm font-medium">{viewingStudent.parentName1}</span>
+                                        </div>
+                                      )}
+                                      {viewingStudent.parentName2 && (
+                                        <div className="flex items-center space-x-2">
+                                          <span className="text-sm text-gray-600">👨‍👩‍👧‍👦 Ikkinchi ota-ona:</span>
+                                          <span className="text-sm font-medium">{viewingStudent.parentName2}</span>
                                         </div>
                                       )}
                                     </div>
@@ -1485,8 +1514,11 @@ export default function AdminDashboard() {
                                   {student.parentPhone1 && (
                                     <p className="text-xs text-gray-600">👨‍👩‍👧‍👦 Ota-ona 1: {student.parentPhone1}</p>
                                   )}
-                                  {student.parentPhone2 && (
-                                    <p className="text-xs text-gray-600">👨‍👩‍👧‍👦 Ota-ona 2: {student.parentPhone2}</p>
+                                  {student.parentName1 && (
+                                    <p className="text-xs text-gray-600">👨‍👩‍👧‍👦 Birinchi ota-ona: {student.parentName1}</p>
+                                  )}
+                                  {student.parentName2 && (
+                                    <p className="text-xs text-gray-600">👨‍👩‍👧‍👦 Ikkinchi ota-ona: {student.parentName2}</p>
                                   )}
                                   <div className="flex items-center space-x-2 mt-1">
                                     <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">

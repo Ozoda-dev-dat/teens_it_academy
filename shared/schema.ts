@@ -31,7 +31,8 @@ export const users = pgTable("users", {
   lastName: text("last_name").notNull(),
   phone: text("phone"), // Student's own phone number
   parentPhone1: text("parent_phone1"), // First parent's phone number
-  parentPhone2: text("parent_phone2"), // Second parent's phone number (optional)
+  parentName1: text("parent_name1"), // First parent's name
+  parentName2: text("parent_name2"), // Second parent's name (optional)
   profilePic: text("profile_pic"),
   avatarConfig: jsonb("avatar_config"), // Stores detailed avatar customization data
   medals: jsonb("medals").default(sql`'{"gold": 0, "silver": 0, "bronze": 0}'`),
@@ -206,8 +207,9 @@ export const insertUserSchema = createInsertSchema(users).omit({
 }).extend({
   // Make parentPhone1 required for students and teachers
   parentPhone1: z.string().min(1, "Ota-ona telefon raqami talab qilinadi"),
-  // parentPhone2 is optional (already optional in base schema)
-  parentPhone2: z.string().optional(),
+  // Parent names for better identification
+  parentName1: z.string().min(1, "Birinchi ota-ona ismi talab qilinadi"),
+  parentName2: z.string().optional(),
 });
 
 // Teachers use the same schema as users with role="teacher"
