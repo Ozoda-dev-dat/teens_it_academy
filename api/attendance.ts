@@ -35,7 +35,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ message: "Bu sana uchun davomat allaqachon mavjud" });
       }
       
-      const attendance = await storage.createAttendance(attendanceData);
+      // Add creator tracking information
+      const attendanceWithTracking = {
+        ...attendanceData,
+        createdById: adminUser.id,
+        createdByRole: adminUser.role,
+      };
+      
+      const attendance = await storage.createAttendance(attendanceWithTracking);
       
       // Broadcast real-time notification
       notificationService.broadcast({
