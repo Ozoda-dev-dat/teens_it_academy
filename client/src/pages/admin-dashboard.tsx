@@ -49,6 +49,7 @@ import {
 } from "lucide-react";
 import type { User, Group, Product, Attendance, Payment, Purchase } from "@shared/schema";
 import MedalManagement from "./medal-management";
+import MonthlyAttendanceView from "../components/monthly-attendance-view";
 
 // Define AttendanceStatus type
 type AttendanceStatus = 'arrived' | 'absent' | 'late';
@@ -2155,6 +2156,14 @@ export default function AdminDashboard() {
                         </div>
                       </CardContent>
                     </Card>
+
+                    {/* Enhanced Monthly Attendance View */}
+                    {selectedGroupForAdmin && (
+                      <MonthlyAttendanceView 
+                        groupId={selectedGroupForAdmin}
+                        initialDate={new Date()}
+                      />
+                    )}
 
                     {/* Attendance Records */}
                     {selectedGroupForAdmin && (
