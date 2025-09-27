@@ -85,6 +85,11 @@ export const attendance = pgTable("attendance", {
   date: timestamp("date").notNull(),
   participants: jsonb("participants").notNull(), // array of {studentId: string, status: 'arrived' | 'late' | 'absent'}
   createdAt: timestamp("created_at").defaultNow(),
+  createdById: varchar("created_by_id").references(() => users.id),
+  createdByRole: varchar("created_by_role").notNull().default("admin"),
+  updatedAt: timestamp("updated_at"),
+  updatedById: varchar("updated_by_id").references(() => users.id),
+  updatedByRole: varchar("updated_by_role"),
 });
 
 export const payments = pgTable("payments", {
