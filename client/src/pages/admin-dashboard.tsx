@@ -49,7 +49,7 @@ import {
 } from "lucide-react";
 import type { User, Group, Product, Attendance, Payment, Purchase } from "@shared/schema";
 import MedalManagement from "./medal-management";
-import MonthlyAttendanceView from "../components/monthly-attendance-view";
+import MonthlyAttendanceView from "@/components/monthly-attendance-view";
 
 // Define AttendanceStatus type
 type AttendanceStatus = 'arrived' | 'absent' | 'late';
