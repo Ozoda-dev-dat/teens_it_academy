@@ -46,7 +46,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
       
-      const attendance = await storage.createAttendance(attendanceData);
+      // Add creator tracking information
+      const attendanceWithTracking = {
+        ...attendanceData,
+        createdById: user.id,
+        createdByRole: user.role,
+      };
+      
+      const attendance = await storage.createAttendance(attendanceWithTracking);
       return res.status(201).json(attendance);
     } catch (error) {
       console.error("Davomat belgilashda xatolik:", error);
@@ -115,7 +122,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ message: "Guruh ID o'zgartirib bo'lmaydi" });
       }
       
-      const updatedAttendance = await storage.updateAttendance(attendanceId, attendanceData);
+      // Add update tracking information
+      const attendanceWithTracking = {
+        ...attendanceData,
+        updatedAt: new Date(),
+        updatedById: user.id,
+        updatedByRole: user.role,
+      };
+      
+      const updatedAttendance = await storage.updateAttendance(attendanceId, attendanceWithTracking);
       if (!updatedAttendance) {
         return res.status(404).json({ message: "Davomat yozuvini yangilashda xatolik" });
       }
