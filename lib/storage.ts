@@ -38,6 +38,7 @@ export interface IStorage {
   getGroupAttendance(groupId: string): Promise<Attendance[]>;
   getAttendance(id: string): Promise<Attendance | undefined>;
   getAttendanceByDate(groupId: string, date: Date): Promise<Attendance | undefined>;
+  getAttendanceByDateRange(groupId: string, startDate: Date, endDate: Date): Promise<Attendance[]>;
   updateAttendance(id: string, updates: Partial<InsertAttendance>): Promise<Attendance | undefined>;
   deleteAttendance(id: string): Promise<boolean>;
 
@@ -260,6 +261,18 @@ export class ServerlessStorage implements IStorage {
         eq(attendance.date, date)
       ));
     return attendanceRecord || undefined;
+  }
+
+  async getAttendanceByDateRange(groupId: string, startDate: Date, endDate: Date): Promise<Attendance[]> {
+    return await db
+      .select()
+      .from(attendance)
+      .where(and(
+        eq(attendance.groupId, groupId),
+        sql`${attendance.date} >= ${startDate}`,
+        sql`${attendance.date} <= ${endDate}`
+      ))
+      .orderBy(desc(attendance.date));
   }
 
   async updateAttendance(id: string, updates: Partial<InsertAttendance>): Promise<Attendance | undefined> {
