@@ -27,6 +27,7 @@ async function seedDatabase() {
           lastName: 'Teens IT',
           role: 'admin' as const,
           parentPhone1: 'N/A',
+          parentName1: 'Admin Parent',
           medals: { gold: 0, silver: 0, bronze: 0 }
         };
 
