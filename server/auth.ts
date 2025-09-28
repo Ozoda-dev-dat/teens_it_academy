@@ -34,6 +34,12 @@ export function setupAuth(app: Express) {
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
+    cookie: {
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      httpOnly: true,
+      secure: false, // Set to false for Replit environment
+      sameSite: 'lax' // Allow cross-site requests in iframe
+    }
   };
 
   app.set("trust proxy", 1);
