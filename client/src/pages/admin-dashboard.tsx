@@ -3423,6 +3423,10 @@ function AdminAttendanceEditForm({ attendance, onClose, onSuccess }: AdminAttend
     return <div className="flex justify-center p-4">Yuklanmoqda...</div>;
   }
 
+  if (!group.students || !Array.isArray(group.students)) {
+    return <div className="flex justify-center p-4">Bu guruhda talabalar topilmadi</div>;
+  }
+
   return (
     <div className="space-y-4 max-h-[70vh] overflow-y-auto">
       {/* Date Display */}
