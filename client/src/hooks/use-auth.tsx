@@ -38,6 +38,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     enabled: true,
   });
 
+  // Note: WebSocket authentication is handled server-side via session cookies
+  // No need to sync user data to localStorage for WebSocket auth
+
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       const res = await apiRequest("POST", "/api/login", credentials);
@@ -45,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      // localStorage sync is handled by useEffect above
       toast({
         title: "Muvaffaqiyat",
         description: "Tizimga muvaffaqiyatli kirdingiz",
@@ -66,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
+      // localStorage cleanup is handled by useEffect above
       toast({
         title: "Chiqish",
         description: "Tizimdan muvaffaqiyatli chiqdingiz",

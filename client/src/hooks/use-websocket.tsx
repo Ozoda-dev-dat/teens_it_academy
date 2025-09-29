@@ -30,7 +30,7 @@ export function useWebSocket(
   const [readyState, setReadyState] = useState<WebSocketReadyState>(WebSocket.CONNECTING);
   
   const ws = useRef<WebSocket | null>(null);
-  const reconnectTimeouts = useRef<NodeJS.Timeout[]>([]);
+  const reconnectTimeouts = useRef<number[]>([]);
   const reconnectCount = useRef(0);
   
   const getWebSocketUrl = () => {
@@ -38,7 +38,10 @@ export function useWebSocket(
     if (typeof window === 'undefined') return '';
     
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host || 'localhost:5000';
+    
+    // Use same-origin connection for proper proxy/hosted support
+    // Only use localhost fallback in explicit development
+    const host = window.location.host || (process.env.NODE_ENV === 'development' ? 'localhost:5000' : 'localhost');
     
     return `${protocol}//${host}/ws`;
   };
@@ -65,21 +68,23 @@ export function useWebSocket(
         setReadyState(WebSocket.OPEN);
         reconnectCount.current = 0;
         
-        // Send authentication info if available
-        const user = JSON.parse(localStorage.getItem('user') || 'null');
-        if (user && ws.current) {
-          ws.current.send(JSON.stringify({
-            type: 'authenticate',
-            userId: user.id,
-            role: user.role
-          }));
-        }
+        // Authentication is handled automatically by server via session cookies
+        // No client-side authentication message needed
       };
       
       ws.current.onmessage = (event) => {
         try {
-          const notification: RealtimeNotification = JSON.parse(event.data);
-          console.log('Received WebSocket message:', notification);
+          const message = JSON.parse(event.data);
+          console.log('Received WebSocket message:', message);
+          
+          // Filter control messages from regular notifications
+          if (message.type === 'auth_required' || message.type === 'auth_confirmed') {
+            console.log('WebSocket auth status:', message.type);
+            return;
+          }
+          
+          // Only set domain messages as notifications
+          const notification: RealtimeNotification = message;
           setLastMessage(notification);
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);
@@ -98,7 +103,7 @@ export function useWebSocket(
             connect();
           }, reconnectInterval);
           
-          reconnectTimeouts.current.push(timeout);
+          reconnectTimeouts.current.push(timeout as number);
         }
       };
       
