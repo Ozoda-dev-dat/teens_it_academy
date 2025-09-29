@@ -39,9 +39,13 @@ export function useWebSocket(
     
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     
-    // Use same-origin connection for proper proxy/hosted support
-    // Only use localhost fallback in explicit development
-    const host = window.location.host || (process.env.NODE_ENV === 'development' ? 'localhost:5000' : 'localhost');
+    // For Replit environment, always use the current host
+    // Fall back to localhost:5000 only in development if host is not available
+    let host = window.location.host;
+    if (!host) {
+      // If host is not available (which shouldn't happen in browser), use fallback
+      host = process.env.NODE_ENV === 'development' ? 'localhost:5000' : window.location.hostname + ':5000';
+    }
     
     return `${protocol}//${host}/ws`;
   };
@@ -103,7 +107,7 @@ export function useWebSocket(
             connect();
           }, reconnectInterval);
           
-          reconnectTimeouts.current.push(timeout as number);
+          reconnectTimeouts.current.push(timeout as any);
         }
       };
       
