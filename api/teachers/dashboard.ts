@@ -43,7 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         })
       );
 
-      // Calculate today's attendance (students who attended today)
+      // Calculate today's attendance (count of attendance records made today)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
@@ -58,11 +58,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           return recordDate >= today && recordDate < tomorrow;
         });
         
-        for (const record of todayRecords) {
-          const participants = record.participants as any[] || [];
-          const arrivedCount = participants.filter((p: any) => p.status === 'arrived').length;
-          todayAttendance += arrivedCount;
-        }
+        // Count the number of attendance records created today
+        todayAttendance += todayRecords.length;
       }
 
       // Calculate total medals of all students in teacher's groups (deduplicated)
