@@ -65,21 +65,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      // Calculate total medals given by this teacher
-      // Get all medal awards from all students in teacher's groups (deduplicated)
-      const uniqueStudentIds = new Set<string>();
+      // Calculate total medals of all students in teacher's groups (deduplicated)
+      const uniqueStudents = new Map<string, any>();
       for (const group of groupsWithDetails) {
         for (const student of group.students) {
-          uniqueStudentIds.add(student.id);
+          if (!uniqueStudents.has(student.id)) {
+            uniqueStudents.set(student.id, student);
+          }
         }
       }
       
       let medalsGiven = 0;
-      for (const studentId of uniqueStudentIds) {
-        const student = await storage.getUser(studentId);
-        if (student && student.medals) {
-          const medals = student.medals as { gold?: number; silver?: number; bronze?: number };
-          medalsGiven += (medals.gold || 0) + (medals.silver || 0) + (medals.bronze || 0);
+      for (const student of uniqueStudents.values()) {
+        if (student.medals) {
+          medalsGiven += (student.medals.gold || 0) + (student.medals.silver || 0) + (student.medals.bronze || 0);
         }
       }
 
