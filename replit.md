@@ -67,7 +67,12 @@ The project uses PostgreSQL with the following environment variables already con
 - **Attendance Tracking**: Mark student attendance (arrived/late/absent)
 - **Payment Tracking**: Student payment records
 - **Medal System**: Gold/silver/bronze medals as rewards
-- **Product Store**: Students can purchase items with medals
+- **Product Store with Approval Workflow**: 
+  - Students can request to purchase items with medals (purchases are pending)
+  - Admins view pending purchases and can approve/reject them
+  - Medals are only deducted when admin approves the purchase
+  - Students receive real-time notifications about purchase status
+  - Rejection reasons are displayed to students
 - **Real-time Updates**: WebSocket notifications for live data sync
 
 ## Configuration
@@ -90,3 +95,11 @@ Configured for autoscale deployment with:
 - Configured development workflow on port 5000
 - Set up deployment configuration for production
 - Verified application runs successfully
+- **Implemented Purchase Approval Workflow**:
+  - Modified purchases table schema to include status (pending/approved/rejected), approvedById, approvedAt, and rejectionReason fields
+  - Updated purchase API to create pending requests instead of immediate purchases
+  - Added admin API endpoints for viewing, approving, and rejecting purchase requests
+  - Implemented medal deduction only on approval (not on purchase creation)
+  - Enhanced student dashboard to display purchase status with color-coded badges
+  - Added pending purchases section in admin marketplace with approve/reject functionality
+  - Integrated real-time WebSocket notifications for purchase status updates
