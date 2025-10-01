@@ -66,6 +66,10 @@ export interface IStorage {
   // Purchase methods
   createPurchase(purchase: InsertPurchase): Promise<Purchase>;
   getStudentPurchases(studentId: string): Promise<Purchase[]>;
+  getPendingPurchases(): Promise<Purchase[]>;
+  getPurchase(id: string): Promise<Purchase | undefined>;
+  approvePurchase(id: string, adminId: string): Promise<Purchase>;
+  rejectPurchase(id: string, adminId: string, reason?: string): Promise<Purchase>;
 
   // Medal Award methods
   createMedalAward(medalAward: InsertMedalAward): Promise<MedalAward>;
@@ -696,6 +700,50 @@ export class DatabaseStorage implements IStorage {
       .where(eq(purchases.studentId, studentId))
       .orderBy(desc(purchases.purchaseDate));
     return result || [];
+  }
+
+  async getPendingPurchases(): Promise<Purchase[]> {
+    const result = await db
+      .select()
+      .from(purchases)
+      .where(eq(purchases.status, "pending"))
+      .orderBy(desc(purchases.purchaseDate));
+    return result || [];
+  }
+
+  async getPurchase(id: string): Promise<Purchase | undefined> {
+    const [purchase] = await db
+      .select()
+      .from(purchases)
+      .where(eq(purchases.id, id));
+    return purchase || undefined;
+  }
+
+  async approvePurchase(id: string, adminId: string): Promise<Purchase> {
+    const [updated] = await db
+      .update(purchases)
+      .set({
+        status: "approved",
+        approvedById: adminId,
+        approvedAt: new Date(),
+      })
+      .where(eq(purchases.id, id))
+      .returning();
+    return updated;
+  }
+
+  async rejectPurchase(id: string, adminId: string, reason?: string): Promise<Purchase> {
+    const [updated] = await db
+      .update(purchases)
+      .set({
+        status: "rejected",
+        approvedById: adminId,
+        approvedAt: new Date(),
+        rejectionReason: reason || null,
+      })
+      .where(eq(purchases.id, id))
+      .returning();
+    return updated;
   }
 
   // Stats methods

@@ -32,12 +32,12 @@ export default function StudentDashboard() {
       const res = await apiRequest("POST", "/api/purchases", { productId });
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/students", user?.id, "purchases"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
-        title: "Muvaffaqiyat! 🎉",
-        description: "Mahsulot muvaffaqiyatli sotib olindi",
+        title: "So'rov yuborildi! ⏳",
+        description: data.message || "Xarid so'rovingiz administratorga yuborildi. Tasdiqlashni kuting.",
       });
     },
     onError: (error: any) => {
@@ -459,24 +459,67 @@ export default function StudentDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {purchases.map((purchase) => (
-                    <div
-                      key={purchase.id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
-                      data-testid={`purchase-${purchase.id}`}
-                    >
-                      <div>
-                        <h4 className="font-medium text-gray-900">Mahsulot xarid qilindi</h4>
-                        <p className="text-sm text-gray-500">
-                          {new Date(purchase.purchaseDate!).toLocaleDateString('uz-UZ')}
-                        </p>
+                  {purchases.map((purchase) => {
+                    const status = (purchase as any).status || "approved";
+                    const medalsPaid = purchase.medalsPaid as { gold: number; silver: number; bronze: number };
+                    
+                    return (
+                      <div
+                        key={purchase.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                        data-testid={`purchase-${purchase.id}`}
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <h4 className="font-medium text-gray-900">Mahsulot xaridi</h4>
+                            {status === "pending" && (
+                              <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                                ⏳ Kutilmoqda
+                              </span>
+                            )}
+                            {status === "approved" && (
+                              <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                                ✅ Tasdiqlandi
+                              </span>
+                            )}
+                            {status === "rejected" && (
+                              <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
+                                ❌ Rad etildi
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-500">
+                            {new Date(purchase.purchaseDate!).toLocaleDateString('uz-UZ')}
+                          </p>
+                          {status === "rejected" && (purchase as any).rejectionReason && (
+                            <p className="text-xs text-red-600 mt-1">
+                              Sabab: {(purchase as any).rejectionReason}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {medalsPaid.gold > 0 && (
+                            <div className="flex items-center space-x-1">
+                              <span className="text-yellow-500">🥇</span>
+                              <span className="text-sm font-medium">{medalsPaid.gold}</span>
+                            </div>
+                          )}
+                          {medalsPaid.silver > 0 && (
+                            <div className="flex items-center space-x-1">
+                              <span className="text-gray-500">🥈</span>
+                              <span className="text-sm font-medium">{medalsPaid.silver}</span>
+                            </div>
+                          )}
+                          {medalsPaid.bronze > 0 && (
+                            <div className="flex items-center space-x-1">
+                              <span className="text-orange-500">🥉</span>
+                              <span className="text-sm font-medium">{medalsPaid.bronze}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Star className="w-4 h-4 text-teens-yellow" />
-                        <span className="text-sm font-medium">Medal bilan to'landi</span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   
                   {purchases.length === 0 && (
                     <div className="text-center py-8">

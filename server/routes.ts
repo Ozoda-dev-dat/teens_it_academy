@@ -719,7 +719,7 @@ export function registerRoutes(app: Express): Server {
       }
       
       // Create input validation schema that excludes medalsPaid (server computes this)
-      const purchaseInputSchema = insertPurchaseSchema.omit({ medalsPaid: true });
+      const purchaseInputSchema = insertPurchaseSchema.omit({ medalsPaid: true, status: true });
       const purchaseData = purchaseInputSchema.parse({
         ...req.body,
         studentId: req.user.id // Ensure student can only purchase for themselves
@@ -747,22 +747,33 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Yetarli medallaringiz yo'q" });
       }
       
-      // Calculate new medal counts
-      const newMedals = {
-        gold: studentMedals.gold - productCost.gold,
-        silver: studentMedals.silver - productCost.silver,
-        bronze: studentMedals.bronze - productCost.bronze
-      };
-      
-      // Create purchase and update student medals
+      // Create PENDING purchase request (medals not deducted yet)
+      // Medals will be deducted only when admin approves
       const purchase = await storage.createPurchase({
         ...purchaseData,
-        medalsPaid: productCost
+        medalsPaid: productCost,
+        status: "pending" // Purchase waits for admin approval
       });
       
-      await storage.updateUser(req.user.id, { medals: newMedals });
+      // Broadcast notification to admins about new purchase request
+      notificationService.broadcast({
+        type: 'product_created',
+        data: {
+          purchaseId: purchase.id,
+          studentId: req.user.id,
+          studentName: `${student.firstName} ${student.lastName}`,
+          productId: product.id,
+          productName: product.name,
+          status: 'pending'
+        },
+        timestamp: new Date().toISOString(),
+        role: 'admin'
+      });
       
-      res.status(201).json(purchase);
+      res.status(201).json({ 
+        ...purchase, 
+        message: "So'rovingiz administratorga yuborildi. Tasdiqlangandan keyin mahsulot sizga beriladi." 
+      });
     } catch (error) {
       console.error("Xarid qilishda xatolik:", error);
       res.status(400).json({ message: "Xarid qilishda xatolik" });
@@ -776,6 +787,138 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Xaridlar tarixini olishda xatolik:", error);
       res.status(500).json({ message: "Xaridlar tarixini yuklashda xatolik" });
+    }
+  });
+
+  // Admin purchase management routes
+  app.get("/api/admin/purchases/pending", requireAdmin, async (req, res) => {
+    try {
+      const pendingPurchases = await storage.getPendingPurchases();
+      res.json(pendingPurchases);
+    } catch (error) {
+      console.error("Kutilayotgan xaridlarni olishda xatolik:", error);
+      res.status(500).json({ message: "Kutilayotgan xaridlarni yuklashda xatolik" });
+    }
+  });
+
+  app.post("/api/admin/purchases/:id/approve", requireAdmin, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Autentifikatsiya talab qilinadi" });
+      }
+
+      const purchase = await storage.getPurchase(req.params.id);
+      if (!purchase) {
+        return res.status(404).json({ message: "Xarid topilmadi" });
+      }
+
+      if (purchase.status !== "pending") {
+        return res.status(400).json({ message: "Bu xarid allaqachon tasdiqlangan yoki rad etilgan" });
+      }
+
+      // Get student and product details
+      const student = await storage.getUser(purchase.studentId);
+      if (!student) {
+        return res.status(404).json({ message: "Talaba topilmadi" });
+      }
+
+      const product = await storage.getProduct(purchase.productId);
+      if (!product) {
+        return res.status(404).json({ message: "Mahsulot topilmadi" });
+      }
+
+      const studentMedals = student.medals as { gold: number; silver: number; bronze: number };
+      const productCost = purchase.medalsPaid as { gold: number; silver: number; bronze: number };
+
+      // Verify student still has enough medals
+      if (studentMedals.gold < productCost.gold || 
+          studentMedals.silver < productCost.silver || 
+          studentMedals.bronze < productCost.bronze) {
+        return res.status(400).json({ message: "Talabada yetarli medallar yo'q" });
+      }
+
+      // Deduct medals from student
+      const newMedals = {
+        gold: studentMedals.gold - productCost.gold,
+        silver: studentMedals.silver - productCost.silver,
+        bronze: studentMedals.bronze - productCost.bronze
+      };
+
+      await storage.updateUser(purchase.studentId, { medals: newMedals });
+
+      // Update purchase status
+      const updatedPurchase = await storage.approvePurchase(req.params.id, req.user.id);
+
+      // Broadcast notification to student
+      notificationService.broadcast({
+        type: 'product_updated',
+        data: {
+          purchaseId: updatedPurchase.id,
+          studentId: purchase.studentId,
+          productName: product.name,
+          status: 'approved',
+          message: `${product.name} xaridingiz tasdiqlandi! 🎉`
+        },
+        timestamp: new Date().toISOString(),
+        userId: purchase.studentId
+      });
+
+      res.json({ 
+        ...updatedPurchase, 
+        message: "Xarid tasdiqlandi va medallar yechildi" 
+      });
+    } catch (error) {
+      console.error("Xaridni tasdiqlashda xatolik:", error);
+      res.status(500).json({ message: "Xaridni tasdiqlashda xatolik" });
+    }
+  });
+
+  app.post("/api/admin/purchases/:id/reject", requireAdmin, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Autentifikatsiya talab qilinadi" });
+      }
+
+      const purchase = await storage.getPurchase(req.params.id);
+      if (!purchase) {
+        return res.status(404).json({ message: "Xarid topilmadi" });
+      }
+
+      if (purchase.status !== "pending") {
+        return res.status(400).json({ message: "Bu xarid allaqachon tasdiqlangan yoki rad etilgan" });
+      }
+
+      const { reason } = req.body;
+
+      // Update purchase status to rejected
+      const updatedPurchase = await storage.rejectPurchase(req.params.id, req.user.id, reason);
+
+      // Get product for notification
+      const product = await storage.getProduct(purchase.productId);
+      const productName = product?.name || "Mahsulot";
+
+      // Broadcast notification to student
+      notificationService.broadcast({
+        type: 'product_updated',
+        data: {
+          purchaseId: updatedPurchase.id,
+          studentId: purchase.studentId,
+          productName: productName,
+          status: 'rejected',
+          reason: reason || "Sabab ko'rsatilmagan",
+          message: `${productName} xaridingiz rad etildi. ${reason ? `Sabab: ${reason}` : ''}`
+        },
+        timestamp: new Date().toISOString(),
+        userId: purchase.studentId
+      });
+
+      res.json({ 
+        ...updatedPurchase, 
+        message: "Xarid rad etildi" 
+      });
+    } catch (error) {
+      console.error("Xaridni rad etishda xatolik:", error);
+      res.status(500).json({ message: "Xaridni rad etishda xatolik" });
     }
   });
 

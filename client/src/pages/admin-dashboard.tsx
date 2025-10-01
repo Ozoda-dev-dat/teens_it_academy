@@ -230,6 +230,12 @@ export default function AdminDashboard() {
     enabled: !!user && !!selectedGroupForAdmin && activeTab === "attendance",
   });
 
+  // Pending purchases query
+  const { data: pendingPurchases = [] } = useQuery<Purchase[]>({
+    queryKey: ["/api/admin/purchases/pending"],
+    enabled: !!user && activeTab === "marketplace",
+  });
+
   // Filter attendance data to current month
   const currentMonthAttendance = adminAttendanceData.filter((record) => {
     if (!record.date) return false;
@@ -614,6 +620,51 @@ export default function AdminDashboard() {
     },
     onError: (error: any) => {
       toast({ title: "Xatolik", description: error.message || "Davomat saqlashda xatolik", variant: "destructive" });
+    },
+  });
+
+  // Purchase Approval Mutations
+  const approvePurchaseMutation = useMutation({
+    mutationFn: async (purchaseId: string) => {
+      const res = await apiRequest("POST", `/api/admin/purchases/${purchaseId}/approve`, {});
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/purchases/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/students"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      toast({ 
+        title: "✅ Tasdiqlandi", 
+        description: "Xarid tasdiqlandi va o'quvchidan medallar yechildi" 
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Xatolik", 
+        description: error.message || "Xaridni tasdiqlashda xatolik", 
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const rejectPurchaseMutation = useMutation({
+    mutationFn: async ({ purchaseId, reason }: { purchaseId: string; reason?: string }) => {
+      const res = await apiRequest("POST", `/api/admin/purchases/${purchaseId}/reject`, { reason });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/purchases/pending"] });
+      toast({ 
+        title: "❌ Rad etildi", 
+        description: "Xarid so'rovi rad etildi" 
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Xatolik", 
+        description: error.message || "Xaridni rad etishda xatolik", 
+        variant: "destructive" 
+      });
     },
   });
   
@@ -2552,6 +2603,102 @@ export default function AdminDashboard() {
                         </DialogContent>
                       </Dialog>
                     </div>
+
+                    {/* Pending Purchases Section */}
+                    {pendingPurchases.length > 0 && (
+                      <Card className="border-yellow-200 bg-yellow-50">
+                        <CardHeader>
+                          <CardTitle className="flex items-center">
+                            <Clock className="w-5 h-5 mr-2 text-yellow-600" />
+                            Kutilayotgan xaridlar ({pendingPurchases.length})
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            {pendingPurchases.map((purchase: any) => {
+                              const student = students.find(s => s.id === purchase.studentId);
+                              const product = products.find(p => p.id === purchase.productId);
+                              const medalsPaid = purchase.medalsPaid as { gold: number; silver: number; bronze: number };
+                              
+                              return (
+                                <div
+                                  key={purchase.id}
+                                  className="bg-white p-4 rounded-lg border border-yellow-200 hover:shadow-md transition-shadow"
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <div className="flex items-center space-x-2 mb-2">
+                                        <h4 className="font-semibold text-gray-900">
+                                          {student?.firstName} {student?.lastName}
+                                        </h4>
+                                        <Badge className="bg-yellow-100 text-yellow-800">
+                                          Kutilmoqda
+                                        </Badge>
+                                      </div>
+                                      <p className="text-sm text-gray-600 mb-2">
+                                        Mahsulot: <span className="font-medium">{product?.name || "Noma'lum"}</span>
+                                      </p>
+                                      <div className="flex items-center space-x-3 text-sm">
+                                        {medalsPaid.gold > 0 && (
+                                          <div className="flex items-center space-x-1">
+                                            <span className="text-yellow-500">🥇</span>
+                                            <span className="font-medium">{medalsPaid.gold}</span>
+                                          </div>
+                                        )}
+                                        {medalsPaid.silver > 0 && (
+                                          <div className="flex items-center space-x-1">
+                                            <span className="text-gray-500">🥈</span>
+                                            <span className="font-medium">{medalsPaid.silver}</span>
+                                          </div>
+                                        )}
+                                        {medalsPaid.bronze > 0 && (
+                                          <div className="flex items-center space-x-1">
+                                            <span className="text-orange-500">🥉</span>
+                                            <span className="font-medium">{medalsPaid.bronze}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        {new Date(purchase.purchaseDate).toLocaleString('uz-UZ')}
+                                      </p>
+                                    </div>
+                                    <div className="flex space-x-2 ml-4">
+                                      <Button
+                                        size="sm"
+                                        className="bg-green-600 hover:bg-green-700"
+                                        onClick={() => approvePurchaseMutation.mutate(purchase.id)}
+                                        disabled={approvePurchaseMutation.isPending || rejectPurchaseMutation.isPending}
+                                      >
+                                        {approvePurchaseMutation.isPending ? (
+                                          <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                          <>
+                                            <Check className="w-4 h-4 mr-1" />
+                                            Tasdiqlash
+                                          </>
+                                        )}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() => {
+                                          const reason = prompt("Rad etish sababi (ixtiyoriy):");
+                                          rejectPurchaseMutation.mutate({ purchaseId: purchase.id, reason: reason || undefined });
+                                        }}
+                                        disabled={approvePurchaseMutation.isPending || rejectPurchaseMutation.isPending}
+                                      >
+                                        <X className="w-4 h-4 mr-1" />
+                                        Rad etish
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
                     
                     <Card>
                       <CardHeader>

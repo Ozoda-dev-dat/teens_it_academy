@@ -118,7 +118,11 @@ export const purchases = pgTable("purchases", {
   studentId: varchar("student_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   productId: varchar("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
   medalsPaid: jsonb("medals_paid").notNull(),
+  status: text("status").notNull().default("pending"), // "pending", "approved", or "rejected"
   purchaseDate: timestamp("purchase_date").defaultNow(),
+  approvedById: varchar("approved_by_id").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  rejectionReason: text("rejection_reason"),
 });
 
 // Medal awards table for proper tracking of individual medal awards
