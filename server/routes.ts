@@ -18,6 +18,19 @@ async function hashPassword(password: string) {
   return `${buf.toString("hex")}.${salt}`;
 }
 
+// Auto-generate login: 5 digits + 1 letter (6 characters total)
+function generateLogin(): string {
+  const digits = Math.floor(10000 + Math.random() * 90000).toString();
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const letter = letters.charAt(Math.floor(Math.random() * letters.length));
+  return digits + letter;
+}
+
+// Auto-generate password: 6 digits
+function generatePassword(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 // Helper function to check if bronze medals can be awarded for attendance participants
 async function canAwardBronzeMedalsForAttendance(participants: Array<{studentId: string, status: string}>): Promise<{canAward: boolean, issues: string[]}> {
   const issues: string[] = [];
@@ -116,21 +129,47 @@ export function registerRoutes(app: Express): Server {
   // Student management routes (Admin only)
   app.post("/api/students", requireAdmin, async (req, res) => {
     try {
+      // Auto-generate login and password
+      let login = generateLogin();
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      // Ensure unique login by checking if email already exists
+      while (attempts < maxAttempts) {
+        const existingUser = await storage.getUserByEmail(login);
+        if (!existingUser) break;
+        login = generateLogin();
+        attempts++;
+      }
+      
+      if (attempts >= maxAttempts) {
+        return res.status(500).json({ message: "Login yaratishda xatolik yuz berdi" });
+      }
+      
+      const plainPassword = generatePassword();
+      
       const studentData = insertUserSchema.parse({
         ...req.body,
+        email: login,
+        password: plainPassword,
         role: "student",
         medals: { gold: 0, silver: 0, bronze: 0 }
       });
       
       // Hash the password before storing
-      if (studentData.password) {
-        studentData.password = await hashPassword(studentData.password);
-      }
+      studentData.password = await hashPassword(plainPassword);
       
       const student = await storage.createUser(studentData);
-      // Remove password from response
+      
+      // Return student data with generated credentials (plain password for admin to see)
       const { password, ...studentWithoutPassword } = student;
-      res.status(201).json(studentWithoutPassword);
+      res.status(201).json({
+        ...studentWithoutPassword,
+        generatedCredentials: {
+          login: login,
+          password: plainPassword
+        }
+      });
     } catch (error) {
       console.error("Talaba yaratishda xatolik:", error);
       res.status(400).json({ message: "Talaba yaratishda xatolik yuz berdi" });

@@ -78,6 +78,10 @@ export default function AdminDashboard() {
     parentName2: ""
   });
   
+  // Generated credentials state
+  const [generatedCredentials, setGeneratedCredentials] = useState<{login: string, password: string} | null>(null);
+  const [showCredentialsDialog, setShowCredentialsDialog] = useState(false);
+  
   // Group states
   const [isAddGroupOpen, setIsAddGroupOpen] = useState(false);
   const [isEditGroupOpen, setIsEditGroupOpen] = useState(false);
@@ -337,11 +341,18 @@ export default function AdminDashboard() {
       const res = await apiRequest("POST", "/api/students", studentData);
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       setIsAddStudentOpen(false);
       setStudentForm({ firstName: "", lastName: "", email: "", password: "", phone: "", parentPhone1: "", parentName1: "", parentName2: "" });
+      
+      // Show generated credentials
+      if (data.generatedCredentials) {
+        setGeneratedCredentials(data.generatedCredentials);
+        setShowCredentialsDialog(true);
+      }
+      
       toast({
         title: "Muvaffaqiyat",
         description: "Yangi o'quvchi muvaffaqiyatli yaratildi",
@@ -1169,40 +1180,6 @@ export default function AdminDashboard() {
                                 required
                                 data-testid="input-student-lastname"
                               />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="email">Email manzil</Label>
-                              <Input
-                                id="email"
-                                type="email"
-                                value={studentForm.email}
-                                onChange={(e) => setStudentForm(prev => ({ ...prev, email: e.target.value }))}
-                                placeholder="alisher.k@email.com"
-                                required
-                                data-testid="input-student-email"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="password">Parol</Label>
-                              <div className="flex">
-                                <Input
-                                  id="password"
-                                  value={studentForm.password}
-                                  onChange={(e) => setStudentForm(prev => ({ ...prev, password: e.target.value }))}
-                                  placeholder="Avtomatik yaratiladi"
-                                  className="rounded-r-none"
-                                  required
-                                  data-testid="input-student-password"
-                                />
-                                <Button
-                                  type="button"
-                                  onClick={generatePassword}
-                                  className="rounded-l-none bg-teens-blue hover:bg-blue-600"
-                                  data-testid="button-generate-password"
-                                >
-                                  Yaratish
-                                </Button>
-                              </div>
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="phone">Telefon raqam</Label>
@@ -3295,6 +3272,49 @@ export default function AdminDashboard() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Generated Credentials Dialog */}
+      <Dialog open={showCredentialsDialog} onOpenChange={setShowCredentialsDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-center">O'quvchi yaratildi!</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <p className="text-sm text-green-800 mb-3 text-center font-medium">
+                Login va parol avtomatik yaratildi
+              </p>
+              <div className="space-y-3">
+                <div className="bg-white p-3 rounded border border-gray-200">
+                  <p className="text-xs text-gray-600 mb-1">Login:</p>
+                  <p className="text-lg font-mono font-bold text-gray-900">
+                    {generatedCredentials?.login}
+                  </p>
+                </div>
+                <div className="bg-white p-3 rounded border border-gray-200">
+                  <p className="text-xs text-gray-600 mb-1">Parol:</p>
+                  <p className="text-lg font-mono font-bold text-gray-900">
+                    {generatedCredentials?.password}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <p className="text-sm text-yellow-800 text-center">
+                ⚠️ Bu ma'lumotlarni saqlang! Ular qayta ko'rsatilmaydi.
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-center">
+            <Button 
+              onClick={() => setShowCredentialsDialog(false)}
+              className="bg-teens-blue hover:bg-blue-600 w-full"
+            >
+              Yopish
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
