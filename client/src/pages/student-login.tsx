@@ -89,13 +89,13 @@ export default function StudentLogin() {
 
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="student-email">Email manzil</Label>
+                    <Label htmlFor="student-email">Login</Label>
                     <div className="relative">
                       <Input
                         id="student-email"
                         name="email"
-                        type="email"
-                        placeholder="talaba@email.com"
+                        type="text"
+                        placeholder="20685T"
                         className="pl-11"
                         required
                         data-testid="input-student-email"
@@ -152,7 +152,7 @@ export default function StudentLogin() {
                 <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
                   <h3 className="text-sm font-medium text-blue-700 mb-2">O'quvchi hisobi:</h3>
                   <div className="space-y-1 text-sm text-blue-600">
-                    <div>Administrator tomonidan sizga berilgan email va parolni kiriting</div>
+                    <div>Administrator tomonidan sizga berilgan login va parolni kiriting</div>
                   </div>
                 </div>
               </div>
