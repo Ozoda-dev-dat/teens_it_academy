@@ -22,7 +22,7 @@ export default function StudentLogin() {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
+    const email = (formData.get("email") as string).toUpperCase().trim();
     const password = formData.get("password") as string;
 
     try {
@@ -33,7 +33,7 @@ export default function StudentLogin() {
     } catch (error: any) {
       toast({
         title: "Kirish xatosi",
-        description: error.message || "Email yoki parol noto'g'ri",
+        description: error.message || "Login yoki parol noto'g'ri",
         variant: "destructive",
       });
     }

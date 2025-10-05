@@ -22,7 +22,7 @@ export default function TeacherLogin() {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
+    const email = (formData.get("email") as string).toUpperCase().trim();
     const password = formData.get("password") as string;
 
     try {
@@ -33,7 +33,7 @@ export default function TeacherLogin() {
     } catch (error: any) {
       toast({
         title: "Kirish xatosi",
-        description: error.message || "Email yoki parol noto'g'ri",
+        description: error.message || "Login yoki parol noto'g'ri",
         variant: "destructive",
       });
     }
@@ -77,7 +77,7 @@ export default function TeacherLogin() {
               <form onSubmit={handleLogin} className="space-y-6">
                 <div>
                   <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                    Email manzil
+                    Login
                   </Label>
                   <div className="mt-1 relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -86,10 +86,10 @@ export default function TeacherLogin() {
                     <Input
                       id="email"
                       name="email"
-                      type="email"
-                      autoComplete="email"
+                      type="text"
+                      autoComplete="username"
                       required
-                      placeholder="o'qituvchi@email.com"
+                      placeholder="223246G"
                       className="block w-full pl-10 bg-white/70 border-gray-200 focus:ring-green-500 focus:border-green-500"
                     />
                   </div>
