@@ -3,7 +3,13 @@
 ## Overview
 A comprehensive web application for managing an IT school with features for administrators, teachers, and students. Built with React, Express, PostgreSQL, and real-time WebSocket notifications.
 
-## Recent Changes (Oct 4, 2025)
+## Recent Changes (Oct 5, 2025)
+- Fixed teacher and student login forms to accept auto-generated credentials
+- Auto-generated logins are 5 digits + 1 letter (e.g., "223246G")
+- Added case-insensitive login normalization (converts to uppercase)
+- Updated UI labels from "Email" to "Login" for clarity
+
+## Previous Changes (Oct 4, 2025)
 - Initial project setup in Replit environment
 - Created PostgreSQL database and applied schema migrations
 - Seeded database with initial admin user and sample data
