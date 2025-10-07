@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useRealtimeUpdates } from "@/hooks/use-websocket";
 import { 
@@ -88,7 +89,8 @@ export default function AdminDashboard() {
   const [groupForm, setGroupForm] = useState({
     name: "",
     description: "",
-    schedule: [] as string[]
+    daySchedule: "" as "mon-wed-fri" | "tue-thu-sat" | "",
+    timeSlots: [] as string[]
   });
   
   // Product states
@@ -478,7 +480,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       setIsAddGroupOpen(false);
-      setGroupForm({ name: "", description: "", schedule: [] });
+      setGroupForm({ name: "", description: "", daySchedule: "", timeSlots: [] });
       toast({ title: "Muvaffaqiyat", description: "Yangi guruh yaratildi" });
     },
     onError: (error: any) => {
@@ -777,15 +779,57 @@ export default function AdminDashboard() {
   
   const handleCreateGroup = (e: React.FormEvent) => {
     e.preventDefault();
-    createGroupMutation.mutate(groupForm);
+    
+    // Transform daySchedule and timeSlots into schedule array
+    const schedule: string[] = [];
+    if (groupForm.daySchedule && groupForm.timeSlots.length > 0) {
+      const days = groupForm.daySchedule === "mon-wed-fri" 
+        ? ["Dushanba", "Chorshanba", "Juma"] 
+        : ["Seshanba", "Payshanba", "Shanba"];
+      
+      groupForm.timeSlots.forEach(timeSlot => {
+        days.forEach(day => {
+          schedule.push(`${day} ${timeSlot}`);
+        });
+      });
+    }
+    
+    createGroupMutation.mutate({
+      name: groupForm.name,
+      description: groupForm.description,
+      schedule
+    });
   };
   
   const handleEditGroup = (group: Group) => {
     setEditingGroup(group);
+    
+    // Parse schedule back to daySchedule and timeSlots
+    let daySchedule: "mon-wed-fri" | "tue-thu-sat" | "" = "";
+    let timeSlots: string[] = [];
+    
+    if (Array.isArray(group.schedule) && group.schedule.length > 0) {
+      const firstSchedule = group.schedule[0];
+      if (firstSchedule.includes("Dushanba") || firstSchedule.includes("Chorshanba") || firstSchedule.includes("Juma")) {
+        daySchedule = "mon-wed-fri";
+      } else if (firstSchedule.includes("Seshanba") || firstSchedule.includes("Payshanba") || firstSchedule.includes("Shanba")) {
+        daySchedule = "tue-thu-sat";
+      }
+      
+      // Extract unique time slots
+      const times = new Set<string>();
+      group.schedule.forEach(scheduleItem => {
+        const timePart = scheduleItem.split(' ').slice(1).join(' ');
+        if (timePart) times.add(timePart);
+      });
+      timeSlots = Array.from(times);
+    }
+    
     setGroupForm({
       name: group.name,
       description: group.description || "",
-      schedule: Array.isArray(group.schedule) ? group.schedule : []
+      daySchedule,
+      timeSlots
     });
     setIsEditGroupOpen(true);
   };
@@ -793,7 +837,26 @@ export default function AdminDashboard() {
   const handleUpdateGroup = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingGroup) {
-      updateGroupMutation.mutate({ id: editingGroup.id, ...groupForm });
+      // Transform daySchedule and timeSlots into schedule array
+      const schedule: string[] = [];
+      if (groupForm.daySchedule && groupForm.timeSlots.length > 0) {
+        const days = groupForm.daySchedule === "mon-wed-fri" 
+          ? ["Dushanba", "Chorshanba", "Juma"] 
+          : ["Seshanba", "Payshanba", "Shanba"];
+        
+        groupForm.timeSlots.forEach(timeSlot => {
+          days.forEach(day => {
+            schedule.push(`${day} ${timeSlot}`);
+          });
+        });
+      }
+      
+      updateGroupMutation.mutate({ 
+        id: editingGroup.id, 
+        name: groupForm.name,
+        description: groupForm.description,
+        schedule
+      });
     }
   };
   
@@ -881,21 +944,25 @@ export default function AdminDashboard() {
     }
   };
   
-  const addScheduleTime = () => {
-    setGroupForm(prev => ({ ...prev, schedule: [...prev.schedule, ""] }));
-  };
+  // Day schedule and time slot options
+  const dayScheduleOptions = [
+    { value: "mon-wed-fri" as const, label: "Dushanba-Chorshanba-Juma (Monday-Wednesday-Friday)" },
+    { value: "tue-thu-sat" as const, label: "Seshanba-Payshanba-Shanba (Tuesday-Thursday-Saturday)" }
+  ];
   
-  const removeScheduleTime = (index: number) => {
+  const timeSlotOptions = [
+    "09:00-11:00",
+    "11:00-13:00",
+    "14:00-16:00",
+    "16:00-18:00"
+  ];
+  
+  const toggleTimeSlot = (timeSlot: string) => {
     setGroupForm(prev => ({
       ...prev,
-      schedule: prev.schedule.filter((_, i) => i !== index)
-    }));
-  };
-  
-  const updateScheduleTime = (index: number, value: string) => {
-    setGroupForm(prev => ({
-      ...prev,
-      schedule: prev.schedule.map((time, i) => i === index ? value : time)
+      timeSlots: prev.timeSlots.includes(timeSlot)
+        ? prev.timeSlots.filter(t => t !== timeSlot)
+        : [...prev.timeSlots, timeSlot]
     }));
   };
   
@@ -1628,34 +1695,52 @@ export default function AdminDashboard() {
                                 data-testid="input-group-description"
                               />
                             </div>
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <Label>Dars jadvali</Label>
-                                <Button type="button" onClick={addScheduleTime} variant="outline" size="sm">
-                                  <Plus className="w-4 h-4 mr-1" />
-                                  Vaqt qo'shish
-                                </Button>
+                            <div className="space-y-4">
+                              <div className="space-y-3">
+                                <Label>Hafta kunlari</Label>
+                                <div className="space-y-2">
+                                  {dayScheduleOptions.map((option) => (
+                                    <div key={option.value} className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`day-${option.value}`}
+                                        checked={groupForm.daySchedule === option.value}
+                                        onCheckedChange={(checked) => {
+                                          setGroupForm(prev => ({
+                                            ...prev,
+                                            daySchedule: checked ? option.value : ""
+                                          }));
+                                        }}
+                                      />
+                                      <Label
+                                        htmlFor={`day-${option.value}`}
+                                        className="text-sm font-normal cursor-pointer"
+                                      >
+                                        {option.label}
+                                      </Label>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
-                              <div className="space-y-2">
-                                {groupForm.schedule.map((time, index) => (
-                                  <div key={index} className="flex items-center space-x-2">
-                                    <Input
-                                      value={time}
-                                      onChange={(e) => updateScheduleTime(index, e.target.value)}
-                                      placeholder="Dushanba 14:00"
-                                      className="flex-1"
-                                    />
-                                    <Button
-                                      type="button"
-                                      onClick={() => removeScheduleTime(index)}
-                                      variant="outline"
-                                      size="sm"
-                                      className="text-red-600"
-                                    >
-                                      <X className="w-4 h-4" />
-                                    </Button>
-                                  </div>
-                                ))}
+                              
+                              <div className="space-y-3">
+                                <Label>Dars vaqtlari</Label>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {timeSlotOptions.map((timeSlot) => (
+                                    <div key={timeSlot} className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`time-${timeSlot}`}
+                                        checked={groupForm.timeSlots.includes(timeSlot)}
+                                        onCheckedChange={() => toggleTimeSlot(timeSlot)}
+                                      />
+                                      <Label
+                                        htmlFor={`time-${timeSlot}`}
+                                        className="text-sm font-normal cursor-pointer"
+                                      >
+                                        {timeSlot}
+                                      </Label>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
                             </div>
                             <div className="flex justify-end space-x-3">
@@ -2781,34 +2866,52 @@ export default function AdminDashboard() {
                 onChange={(e) => setGroupForm(prev => ({ ...prev, description: e.target.value }))}
               />
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Dars jadvali</Label>
-                <Button type="button" onClick={addScheduleTime} variant="outline" size="sm">
-                  <Plus className="w-4 h-4 mr-1" />
-                  Vaqt qo'shish
-                </Button>
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <Label>Hafta kunlari</Label>
+                <div className="space-y-2">
+                  {dayScheduleOptions.map((option) => (
+                    <div key={option.value} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`edit-day-${option.value}`}
+                        checked={groupForm.daySchedule === option.value}
+                        onCheckedChange={(checked) => {
+                          setGroupForm(prev => ({
+                            ...prev,
+                            daySchedule: checked ? option.value : ""
+                          }));
+                        }}
+                      />
+                      <Label
+                        htmlFor={`edit-day-${option.value}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {option.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="space-y-2">
-                {groupForm.schedule.map((time, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <Input
-                      value={time}
-                      onChange={(e) => updateScheduleTime(index, e.target.value)}
-                      placeholder="Dushanba 14:00"
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      onClick={() => removeScheduleTime(index)}
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
+              
+              <div className="space-y-3">
+                <Label>Dars vaqtlari</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {timeSlotOptions.map((timeSlot) => (
+                    <div key={timeSlot} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`edit-time-${timeSlot}`}
+                        checked={groupForm.timeSlots.includes(timeSlot)}
+                        onCheckedChange={() => toggleTimeSlot(timeSlot)}
+                      />
+                      <Label
+                        htmlFor={`edit-time-${timeSlot}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {timeSlot}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="flex justify-end space-x-3">
