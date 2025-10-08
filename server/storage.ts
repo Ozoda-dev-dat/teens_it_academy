@@ -185,12 +185,9 @@ export class DatabaseStorage implements IStorage {
         id: users.id,
         role: users.role,
         email: users.email,
-        password: users.password,
         firstName: users.firstName,
         lastName: users.lastName,
         phone: users.phone,
-        parentPhone: users.parentPhone,
-        parentName: users.parentName,
         profilePic: users.profilePic,
         avatarConfig: users.avatarConfig,
         medals: users.medals,
@@ -213,12 +210,12 @@ export class DatabaseStorage implements IStorage {
       id: row.id,
       role: row.role,
       email: row.email,
-      password: row.password,
+      password: '', // Never expose password
       firstName: row.firstName,
       lastName: row.lastName,
       phone: row.phone,
-      parentPhone: row.parentPhone,
-      parentName: row.parentName,
+      parentPhone: null, // Don't expose parent contact info in rankings
+      parentName: null, // Don't expose parent name in rankings
       profilePic: row.profilePic,
       avatarConfig: row.avatarConfig,
       medals: row.medals,
@@ -240,12 +237,9 @@ export class DatabaseStorage implements IStorage {
         id: users.id,
         role: users.role,
         email: users.email,
-        password: users.password,
         firstName: users.firstName,
         lastName: users.lastName,
         phone: users.phone,
-        parentPhone: users.parentPhone,
-        parentName: users.parentName,
         profilePic: users.profilePic,
         avatarConfig: users.avatarConfig,
         medals: users.medals,
@@ -268,12 +262,12 @@ export class DatabaseStorage implements IStorage {
       id: row.id,
       role: row.role,
       email: row.email,
-      password: row.password,
+      password: '', // Never expose password
       firstName: row.firstName,
       lastName: row.lastName,
       phone: row.phone,
-      parentPhone: row.parentPhone,
-      parentName: row.parentName,
+      parentPhone: null, // Don't expose parent contact info in rankings
+      parentName: null, // Don't expose parent name in rankings
       profilePic: row.profilePic,
       avatarConfig: row.avatarConfig,
       medals: row.medals,
@@ -288,13 +282,38 @@ export class DatabaseStorage implements IStorage {
 
   async getTopStudentsByMedalsAllTime(limit: number): Promise<User[]> {
     const result = await db
-      .select()
+      .select({
+        id: users.id,
+        role: users.role,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        phone: users.phone,
+        profilePic: users.profilePic,
+        avatarConfig: users.avatarConfig,
+        medals: users.medals,
+        createdAt: users.createdAt,
+      })
       .from(users)
       .where(eq(users.role, 'student'))
       .orderBy(desc(sql`(CAST(${users.medals}->>'gold' AS INTEGER) * 3 + CAST(${users.medals}->>'silver' AS INTEGER) * 2 + CAST(${users.medals}->>'bronze' AS INTEGER))`))
       .limit(limit);
 
-    return result;
+    return result.map(row => ({
+      id: row.id,
+      role: row.role,
+      email: row.email,
+      password: '', // Never expose password
+      firstName: row.firstName,
+      lastName: row.lastName,
+      phone: row.phone,
+      parentPhone: null, // Don't expose parent contact info in rankings
+      parentName: null, // Don't expose parent name in rankings
+      profilePic: row.profilePic,
+      avatarConfig: row.avatarConfig,
+      medals: row.medals,
+      createdAt: row.createdAt,
+    }));
   }
 
   // Monthly medal tracking using the new medal_awards table
