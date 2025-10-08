@@ -1135,6 +1135,36 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Teacher Rankings route - Get top students by medals
+  app.get("/api/teachers/rankings", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.role !== "teacher") {
+      return res.status(403).json({ message: "Faqat o'qituvchilar uchun" });
+    }
+
+    try {
+      const [weeklyTop, monthlyTop, allTimeTop] = await Promise.all([
+        storage.getTopStudentsByMedalsThisWeek(5),
+        storage.getTopStudentsByMedalsThisMonth(5),
+        storage.getTopStudentsByMedalsAllTime(5)
+      ]);
+
+      // Remove passwords from all responses
+      const sanitizeUser = (user: any) => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      };
+
+      res.json({
+        weeklyTop: weeklyTop.map(sanitizeUser),
+        monthlyTop: monthlyTop.map(sanitizeUser),
+        allTimeTop: allTimeTop.map(sanitizeUser)
+      });
+    } catch (error) {
+      console.error("O'quvchilar reytingini olishda xatolik:", error);
+      res.status(500).json({ message: "Ma'lumotlarni yuklashda xatolik" });
+    }
+  });
+
   // Teacher Profile routes (Admin only)
   app.get("/api/teachers/:id", requireAdmin, async (req, res) => {
     try {
