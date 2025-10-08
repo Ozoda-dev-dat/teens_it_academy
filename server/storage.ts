@@ -75,6 +75,11 @@ export interface IStorage {
   createMedalAward(medalAward: InsertMedalAward): Promise<MedalAward>;
   getStudentMedalAwards(studentId: string): Promise<MedalAward[]>;
   getMonthlyMedalAwards(studentId: string, year: number, month: number): Promise<MedalAward[]>;
+  
+  // Student Rankings methods
+  getTopStudentsByMedalsThisWeek(limit: number): Promise<Array<User & { weeklyMedals: { gold: number; silver: number; bronze: number } }>>;
+  getTopStudentsByMedalsThisMonth(limit: number): Promise<Array<User & { monthlyMedals: { gold: number; silver: number; bronze: number } }>>;
+  getTopStudentsByMedalsAllTime(limit: number): Promise<User[]>;
 
   // Stats methods
   getStats(): Promise<{
@@ -166,6 +171,130 @@ export class DatabaseStorage implements IStorage {
       )
       .orderBy(desc(medalAwards.awardedAt));
     return result || [];
+  }
+
+  // Student Rankings methods
+  async getTopStudentsByMedalsThisWeek(limit: number): Promise<Array<User & { weeklyMedals: { gold: number; silver: number; bronze: number } }>> {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const result = await db
+      .select({
+        id: users.id,
+        role: users.role,
+        email: users.email,
+        password: users.password,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        phone: users.phone,
+        parentPhone: users.parentPhone,
+        parentName: users.parentName,
+        profilePic: users.profilePic,
+        avatarConfig: users.avatarConfig,
+        medals: users.medals,
+        createdAt: users.createdAt,
+        goldCount: sql<number>`COALESCE(SUM(CASE WHEN ${medalAwards.medalType} = 'gold' THEN ${medalAwards.amount} ELSE 0 END), 0)`,
+        silverCount: sql<number>`COALESCE(SUM(CASE WHEN ${medalAwards.medalType} = 'silver' THEN ${medalAwards.amount} ELSE 0 END), 0)`,
+        bronzeCount: sql<number>`COALESCE(SUM(CASE WHEN ${medalAwards.medalType} = 'bronze' THEN ${medalAwards.amount} ELSE 0 END), 0)`,
+      })
+      .from(users)
+      .leftJoin(medalAwards, and(
+        eq(medalAwards.studentId, users.id),
+        gte(medalAwards.awardedAt, startOfWeek)
+      ))
+      .where(eq(users.role, 'student'))
+      .groupBy(users.id)
+      .orderBy(desc(sql`COALESCE(SUM(CASE WHEN ${medalAwards.medalType} = 'gold' THEN ${medalAwards.amount} ELSE 0 END), 0) * 3 + COALESCE(SUM(CASE WHEN ${medalAwards.medalType} = 'silver' THEN ${medalAwards.amount} ELSE 0 END), 0) * 2 + COALESCE(SUM(CASE WHEN ${medalAwards.medalType} = 'bronze' THEN ${medalAwards.amount} ELSE 0 END), 0)`))
+      .limit(limit);
+
+    return result.map(row => ({
+      id: row.id,
+      role: row.role,
+      email: row.email,
+      password: row.password,
+      firstName: row.firstName,
+      lastName: row.lastName,
+      phone: row.phone,
+      parentPhone: row.parentPhone,
+      parentName: row.parentName,
+      profilePic: row.profilePic,
+      avatarConfig: row.avatarConfig,
+      medals: row.medals,
+      createdAt: row.createdAt,
+      weeklyMedals: {
+        gold: Number(row.goldCount) || 0,
+        silver: Number(row.silverCount) || 0,
+        bronze: Number(row.bronzeCount) || 0,
+      }
+    }));
+  }
+
+  async getTopStudentsByMedalsThisMonth(limit: number): Promise<Array<User & { monthlyMedals: { gold: number; silver: number; bronze: number } }>> {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const result = await db
+      .select({
+        id: users.id,
+        role: users.role,
+        email: users.email,
+        password: users.password,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        phone: users.phone,
+        parentPhone: users.parentPhone,
+        parentName: users.parentName,
+        profilePic: users.profilePic,
+        avatarConfig: users.avatarConfig,
+        medals: users.medals,
+        createdAt: users.createdAt,
+        goldCount: sql<number>`COALESCE(SUM(CASE WHEN ${medalAwards.medalType} = 'gold' THEN ${medalAwards.amount} ELSE 0 END), 0)`,
+        silverCount: sql<number>`COALESCE(SUM(CASE WHEN ${medalAwards.medalType} = 'silver' THEN ${medalAwards.amount} ELSE 0 END), 0)`,
+        bronzeCount: sql<number>`COALESCE(SUM(CASE WHEN ${medalAwards.medalType} = 'bronze' THEN ${medalAwards.amount} ELSE 0 END), 0)`,
+      })
+      .from(users)
+      .leftJoin(medalAwards, and(
+        eq(medalAwards.studentId, users.id),
+        gte(medalAwards.awardedAt, startOfMonth)
+      ))
+      .where(eq(users.role, 'student'))
+      .groupBy(users.id)
+      .orderBy(desc(sql`COALESCE(SUM(CASE WHEN ${medalAwards.medalType} = 'gold' THEN ${medalAwards.amount} ELSE 0 END), 0) * 3 + COALESCE(SUM(CASE WHEN ${medalAwards.medalType} = 'silver' THEN ${medalAwards.amount} ELSE 0 END), 0) * 2 + COALESCE(SUM(CASE WHEN ${medalAwards.medalType} = 'bronze' THEN ${medalAwards.amount} ELSE 0 END), 0)`))
+      .limit(limit);
+
+    return result.map(row => ({
+      id: row.id,
+      role: row.role,
+      email: row.email,
+      password: row.password,
+      firstName: row.firstName,
+      lastName: row.lastName,
+      phone: row.phone,
+      parentPhone: row.parentPhone,
+      parentName: row.parentName,
+      profilePic: row.profilePic,
+      avatarConfig: row.avatarConfig,
+      medals: row.medals,
+      createdAt: row.createdAt,
+      monthlyMedals: {
+        gold: Number(row.goldCount) || 0,
+        silver: Number(row.silverCount) || 0,
+        bronze: Number(row.bronzeCount) || 0,
+      }
+    }));
+  }
+
+  async getTopStudentsByMedalsAllTime(limit: number): Promise<User[]> {
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.role, 'student'))
+      .orderBy(desc(sql`(CAST(${users.medals}->>'gold' AS INTEGER) * 3 + CAST(${users.medals}->>'silver' AS INTEGER) * 2 + CAST(${users.medals}->>'bronze' AS INTEGER))`))
+      .limit(limit);
+
+    return result;
   }
 
   // Monthly medal tracking using the new medal_awards table
