@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Users, Calendar, Award, BookOpen, LogOut, User, ClipboardCheck, ArrowRight, UserCheck, UserX, Clock, Medal, Trophy, Star } from "lucide-react";
+import { Users, Calendar, Award, BookOpen, LogOut, User, ClipboardCheck, ArrowRight, UserCheck, UserX, Clock, Medal, Trophy, Star, TrendingUp } from "lucide-react";
 import { useLocation } from "wouter";
 
 interface AttendanceRecord {
@@ -491,6 +491,163 @@ function MedalGivingSection({ teacherData }: { teacherData: any }) {
   );
 }
 
+// Student Rankings Component
+function StudentRankings() {
+  const { data: rankings, isLoading, error } = useQuery({
+    queryKey: ["teacher-rankings"],
+    queryFn: async () => {
+      const res = await fetch("/api/teachers/rankings", {
+        credentials: "include"
+      });
+      if (!res.ok) {
+        throw new Error("Failed to fetch rankings");
+      }
+      return res.json();
+    },
+  });
+
+  const getMedalScore = (medals: { gold?: number; silver?: number; bronze?: number }) => {
+    return (medals?.gold || 0) * 3 + (medals?.silver || 0) * 2 + (medals?.bronze || 0);
+  };
+
+  const RankingCard = ({ title, students, periodKey }: { 
+    title: string; 
+    students: any[]; 
+    periodKey: 'weeklyMedals' | 'monthlyMedals' | 'medals';
+  }) => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <TrendingUp className="w-5 h-5 text-blue-600" />
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {students && students.length > 0 ? (
+          <div className="space-y-3">
+            {students.map((student, index) => {
+              const medals = student[periodKey] || student.medals || { gold: 0, silver: 0, bronze: 0 };
+              const totalScore = getMedalScore(medals);
+              
+              return (
+                <div
+                  key={student.id}
+                  className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                    index === 0 
+                      ? 'bg-gradient-to-r from-yellow-50 to-yellow-100 border border-yellow-200'
+                      : index === 1
+                      ? 'bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200'
+                      : index === 2
+                      ? 'bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200'
+                      : 'bg-gray-50 border border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold ${
+                      index === 0 
+                        ? 'bg-yellow-500 text-white'
+                        : index === 1
+                        ? 'bg-gray-400 text-white'
+                        : index === 2
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-gray-300 text-gray-700'
+                    }`}>
+                      {index + 1}
+                    </div>
+                    <div>
+                      <div className="font-medium">
+                        {student.firstName} {student.lastName}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Jami ball: {totalScore}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {medals.gold > 0 && (
+                      <span className="text-xs font-medium text-yellow-600 flex items-center gap-1">
+                        <Trophy className="w-3 h-3" />
+                        {medals.gold}
+                      </span>
+                    )}
+                    {medals.silver > 0 && (
+                      <span className="text-xs font-medium text-gray-500 flex items-center gap-1">
+                        <Medal className="w-3 h-3" />
+                        {medals.silver}
+                      </span>
+                    )}
+                    {medals.bronze > 0 && (
+                      <span className="text-xs font-medium text-orange-600 flex items-center gap-1">
+                        <Star className="w-3 h-3" />
+                        {medals.bronze}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-6">
+            <p className="text-sm text-gray-500">Hali ma'lumot yo'q</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {[1, 2, 3].map((i) => (
+          <Card key={i}>
+            <CardHeader>
+              <div className="h-6 bg-gray-200 rounded animate-pulse w-3/4"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[1, 2, 3].map((j) => (
+                  <div key={j} className="h-16 bg-gray-100 rounded animate-pulse"></div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="text-center py-6">
+          <p className="text-red-500">Reytingni yuklashda xatolik</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <RankingCard 
+        title="Bu hafta eng yaxshi o'quvchilar" 
+        students={rankings?.weeklyTop || []}
+        periodKey="weeklyMedals"
+      />
+      <RankingCard 
+        title="Bu oy eng yaxshi o'quvchilar" 
+        students={rankings?.monthlyTop || []}
+        periodKey="monthlyMedals"
+      />
+      <RankingCard 
+        title="Barcha vaqt bo'yicha eng yaxshilar" 
+        students={rankings?.allTimeTop || []}
+        periodKey="medals"
+      />
+    </div>
+  );
+}
+
 export default function TeacherDashboard() {
   const { user, logoutMutation } = useAuth();
   const [selectedTab, setSelectedTab] = useState("overview");
@@ -789,6 +946,12 @@ export default function TeacherDashboard() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+
+            {/* Student Rankings Section */}
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold mb-4">O'quvchilar reytingi</h2>
+              <StudentRankings />
             </div>
           </TabsContent>
 
