@@ -20,25 +20,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
-    // GET /api/students/[id] - Get student by ID
-    // Use centralized authorization: admin, student accessing own data, or teacher accessing student in their groups
     const { getSecureUserFromSession } = await import('../../lib/secure-auth');
     const user = await getSecureUserFromSession(req);
     
     if (!user) {
       return res.status(401).json({ message: 'Autentifikatsiya talab qilinadi' });
     }
-    
-    // Check authorization based on role
     if (user.role === 'admin') {
-      // Admin can access any student
     } else if (user.role === 'student') {
-      // Student can only access their own data
       if (user.id !== id) {
         return res.status(403).json({ message: "Faqat o'z ma'lumotlaringizga kirish mumkin" });
       }
     } else if (user.role === 'teacher') {
-      // Teacher can only access students in their assigned groups - use centralized helper
       const hasAccess = await canTeacherAccessStudent(user.id, id);
       if (!hasAccess) {
         return res.status(403).json({ message: "Bu o'quvchini boshqarish huquqingiz yo'q" });
@@ -53,7 +46,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(404).json({ message: "Talaba topilmadi" });
       }
       
-      // Remove password from response for security
       const { password, ...studentWithoutPassword } = student;
       return res.status(200).json(studentWithoutPassword);
     } catch (error) {
@@ -63,14 +55,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'PUT') {
-    // PUT /api/students/[id] - Update student
     const user = await requireSecureStudentOrOwn(req, res, id);
     if (!user) return;
 
     try {
       const updates = insertUserSchema.partial().parse(req.body);
-      
-      // Hash the password if it's being updated
+    
       if (updates.password) {
         updates.password = await hashPassword(updates.password);
       }
@@ -87,7 +77,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'DELETE') {
-    // DELETE /api/students/[id] - Delete student (admin only)
     const user = await requireSecureAdmin(req, res);
     if (!user) return;
 
