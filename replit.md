@@ -92,6 +92,21 @@ Configured for Replit autoscale deployment:
 - Run command: `npm start`
 - Serves static files from `dist/public` in production
 
+## Demo Accounts
+
+### Administrator
+- **Email**: admin@mail.com
+- **Password**: admin2233
+- Access: Full system administration
+
+### Teacher (Test Account)
+- **Login**: 223246G
+- **Password**: teacher123
+- Access: Teacher dashboard, attendance, medal awards
+
+### Creating New Teachers
+Teachers can only be created by administrators through the admin panel at `/api/teachers` endpoint.
+
 ## Recent Changes (October 2025)
 - Imported from GitHub and configured for Replit environment
 - Fixed Vite HMR configuration for middleware mode
@@ -99,6 +114,8 @@ Configured for Replit autoscale deployment:
 - Configured development workflow on port 5000
 - Added deployment configuration for autoscale
 - Created .gitignore for proper version control
+- Fixed teacher login issue by creating test teacher account
+- Added demo account documentation
 
 ## Notes
 - The application uses session-based authentication with PostgreSQL session store
