@@ -100,7 +100,7 @@ Configured for Replit autoscale deployment:
 - Access: Full system administration
 
 ### Teacher (Test Account)
-- **Login**: 223246G
+- **Email**: teacher@teensit.uz
 - **Password**: teacher123
 - Access: Teacher dashboard, attendance, medal awards
 
