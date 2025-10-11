@@ -9,7 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [
     react(),
-    ...(process.env.NODE_ENV !== "production" 
+    ...(process.env.NODE_ENV !== "production"
       ? [runtimeErrorOverlay()]
       : []),
     ...(process.env.NODE_ENV !== "production" &&
@@ -36,6 +36,8 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     port: 5000,
+    // 🔥 USHBU QATORNI QO'SHING 🔥
+    allowedHosts: ['crm-teens.onrender.com'], 
     fs: {
       strict: false,
       allow: ['..']
