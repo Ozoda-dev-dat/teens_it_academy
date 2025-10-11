@@ -133,10 +133,13 @@ This is a comprehensive web application for managing an IT school. The platform 
 - Admin oversight and approval system
 
 ## Recent Changes
-- December 2024: Initial setup for Replit environment
-- Configured Vite for Replit proxy compatibility
+- October 2025: Initial setup for Replit environment
+- Configured Vite for Replit proxy compatibility with `allowedHosts: true`
+- Fixed server/vite.ts to properly merge server configuration
 - Set up PostgreSQL database with Drizzle ORM
 - Installed missing TypeScript definitions (@types/cors)
+- Fixed CORS configuration to support both development and production domains
+- Added support for Render deployment (crm-teens.onrender.com)
 
 ## User Preferences
 None specified yet.

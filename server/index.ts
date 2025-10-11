@@ -13,7 +13,10 @@ if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
 }
 app.use(cors({
-  origin: 'http://localhost:5000', // Frontend URL-ingizni ko'rsating (agar kerak bo'lsa, 'crm-teens.onrender.com' ni ham qo'shish mumkin)
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://crm-teens.onrender.com', 'http://localhost:5000']
+    : 'http://localhost:5000',
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept']
 }));
