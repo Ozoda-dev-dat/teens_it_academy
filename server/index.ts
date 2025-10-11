@@ -4,6 +4,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import cors from 'cors';
 
 const app = express();
 
@@ -11,6 +12,11 @@ const app = express();
 if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
 }
+app.use(cors({
+  origin: 'http://localhost:5000', // Frontend URL-ingizni ko'rsating (agar kerak bo'lsa, 'crm-teens.onrender.com' ni ham qo'shish mumkin)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept']
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
