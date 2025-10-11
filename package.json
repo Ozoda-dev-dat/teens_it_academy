@@ -49,6 +49,7 @@
     "@sendgrid/mail": "^8.1.5",
     "@tanstack/react-query": "^5.60.5",
     "@types/cookie-signature": "^1.1.2",
+    "@types/cors": "^2.8.19",
     "@vercel/node": "^5.3.13",
     "chart.js": "^4.5.0",
     "class-variance-authority": "^0.7.1",

@@ -40,6 +40,8 @@ export default defineConfig({
       strict: false,
       allow: ['..']
     },
-    allowedHosts: ['crm-teens.onrender.com'] 
+    hmr: {
+      clientPort: 443,
+    }, 
   },
 });
