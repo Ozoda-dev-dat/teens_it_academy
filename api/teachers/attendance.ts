@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { storage } from '../../lib/storage';
 import { insertAttendanceSchema } from '../../shared/schema';
 import { requireSecureTeacher } from '../../lib/secure-auth';
+import { isScheduledClassDay, getUzbekDayName } from '../../shared/utils';
 
 async function verifyTeacherGroup(teacherId: string, groupId: string): Promise<boolean> {
   const teacherGroups = await storage.getTeacherGroups(teacherId);
@@ -35,6 +36,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (attendanceDateOnly.getTime() !== todayDateOnly.getTime()) {
         return res.status(403).json({ 
           message: "O'qituvchilar faqat bugungi sana uchun davomat belgilashi mumkin. O'tmish yoki kelajak sanalar uchun davomat belgilab bo'lmaydi." 
+        });
+      }
+
+      // RESTRICTION: Check if today is a scheduled class day
+      const group = await storage.getGroup(attendanceData.groupId);
+      if (!group) {
+        return res.status(404).json({ message: "Guruh topilmadi" });
+      }
+
+      const schedule = group.schedule as string[] | null;
+      if (!isScheduledClassDay(schedule, today)) {
+        const todayName = getUzbekDayName(today);
+        return res.status(403).json({ 
+          message: `Bugun (${todayName}) bu guruh uchun dars kuni emas. Faqat jadvalda belgilangan kunlarda davomat belgilash mumkin.`
         });
       }
 
@@ -102,6 +117,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (attendanceDateOnly.getTime() !== todayDateOnly.getTime()) {
         return res.status(403).json({ 
           message: "O'qituvchilar faqat bugungi sana uchun davomat o'zgartirishi mumkin. O'tmish yoki kelajak sanalar uchun davomat o'zgartirib bo'lmaydi." 
+        });
+      }
+
+      // RESTRICTION: Check if today is a scheduled class day
+      const groupForUpdate = await storage.getGroup(existingAttendance.groupId);
+      if (!groupForUpdate) {
+        return res.status(404).json({ message: "Guruh topilmadi" });
+      }
+
+      const scheduleForUpdate = groupForUpdate.schedule as string[] | null;
+      if (!isScheduledClassDay(scheduleForUpdate, today)) {
+        const todayName = getUzbekDayName(today);
+        return res.status(403).json({ 
+          message: `Bugun (${todayName}) bu guruh uchun dars kuni emas. Faqat jadvalda belgilangan kunlarda davomat o'zgartirish mumkin.`
         });
       }
 
