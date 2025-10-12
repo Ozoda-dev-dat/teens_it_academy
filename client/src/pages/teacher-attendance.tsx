@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Users, Clock, Check, X, AlertTriangle, Save } from "lucide-react";
+import { ArrowLeft, Users, Clock, Check, X, AlertTriangle, Save, CalendarX } from "lucide-react";
 import { useLocation, useRoute } from "wouter";
+import { isScheduledClassDay, getUzbekDayName } from "@shared/utils";
 
 interface Student {
   id: string;
@@ -27,6 +28,7 @@ interface Group {
   id: string;
   name: string;
   description: string;
+  schedule?: string[] | null;
   students: GroupStudent[];
 }
 
@@ -115,6 +117,11 @@ export default function TeacherAttendance() {
 
   const hasAttendanceToday = !!existingAttendance;
   const hasAttendanceCheckError = !!attendanceCheckError;
+
+  // Check if today is a scheduled class day
+  const today = new Date();
+  const isClassDay = group ? isScheduledClassDay(group.schedule, today) : false;
+  const todayName = getUzbekDayName(today);
 
   // Create attendance mutation
   const createAttendanceMutation = useMutation({
@@ -465,6 +472,54 @@ export default function TeacherAttendance() {
                     Orqaga
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          ) : !isClassDay ? (
+            // Not a class day - show info message
+            <Card className="max-w-2xl mx-auto border-orange-200 bg-orange-50">
+              <CardHeader className="text-center">
+                <CardTitle className="flex items-center justify-center space-x-2">
+                  <CalendarX className="w-6 h-6 text-orange-600" />
+                  <span className="text-orange-900">Bugun dars kuni emas</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center space-y-6">
+                <div>
+                  <p className="text-orange-800 mb-4">
+                    Bugun ({todayName}) bu guruh uchun dars kuni emas.
+                  </p>
+                  {group?.schedule && Array.isArray(group.schedule) && group.schedule.length > 0 && (
+                    <div className="bg-orange-100 border border-orange-300 rounded-lg p-4 mb-6">
+                      <div className="flex items-center space-x-2 text-orange-900 mb-2">
+                        <Clock className="w-5 h-5" />
+                        <span className="font-medium">Guruh jadvali:</span>
+                      </div>
+                      <div className="text-orange-800 space-y-1">
+                        {group.schedule.map((scheduleItem, index) => (
+                          <p key={index} className="text-sm">{scheduleItem}</p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 text-yellow-800">
+                      <AlertTriangle className="w-5 h-5" />
+                      <span className="font-medium">Eslatma</span>
+                    </div>
+                    <p className="text-yellow-700 mt-1 text-sm">
+                      Davomat faqat jadvalda belgilangan dars kunlarida belgilanishi mumkin.
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => setLocation("/teacher")}
+                  size="lg"
+                  variant="outline"
+                  className="border-orange-600 text-orange-600 hover:bg-orange-600 hover:text-white"
+                >
+                  <ArrowLeft className="w-5 h-5 mr-2" />
+                  Orqaga
+                </Button>
               </CardContent>
             </Card>
           ) : (
