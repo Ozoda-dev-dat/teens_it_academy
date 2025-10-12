@@ -23,6 +23,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
       const groupData = insertGroupSchema.parse(req.body);
+      
+      // Check for schedule conflicts
+      const allGroups = await storage.getAllGroups();
+      const newSchedule = groupData.schedule as string[] || [];
+      
+      for (const existingGroup of allGroups) {
+        const existingSchedule = existingGroup.schedule as string[] || [];
+        
+        // Check if any schedule time conflicts
+        for (const newTime of newSchedule) {
+          if (existingSchedule.includes(newTime)) {
+            return res.status(400).json({ 
+              message: `Ushbu vaqtda "${existingGroup.name}" guruhi mavjud, guruh vaqti va kunini o'zgartiring` 
+            });
+          }
+        }
+      }
+      
       const group = await storage.createGroup(groupData);
       
       // Broadcast real-time notification

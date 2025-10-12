@@ -14,7 +14,19 @@ export async function apiRequest(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`${response.status}: ${errorText || response.statusText}`);
+    let errorMessage = errorText || response.statusText;
+    
+    // Try to parse JSON error response
+    try {
+      const errorJson = JSON.parse(errorText);
+      if (errorJson.message) {
+        errorMessage = errorJson.message;
+      }
+    } catch {
+      // If not JSON, use the text as is
+    }
+    
+    throw new Error(errorMessage);
   }
 
   return response;

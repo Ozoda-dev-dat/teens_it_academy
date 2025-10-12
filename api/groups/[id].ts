@@ -60,6 +60,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
       const updates = insertGroupSchema.partial().parse(req.body);
+      
+      // Check for schedule conflicts if schedule is being updated
+      if (updates.schedule) {
+        const allGroups = await storage.getAllGroups();
+        const newSchedule = updates.schedule as string[] || [];
+        
+        for (const existingGroup of allGroups) {
+          // Skip the current group being edited
+          if (existingGroup.id === id) continue;
+          
+          const existingSchedule = existingGroup.schedule as string[] || [];
+          
+          // Check if any schedule time conflicts
+          for (const newTime of newSchedule) {
+            if (existingSchedule.includes(newTime)) {
+              return res.status(400).json({ 
+                message: `Ushbu vaqtda "${existingGroup.name}" guruhi mavjud, guruh vaqti va kunini o'zgartiring` 
+              });
+            }
+          }
+        }
+      }
+      
       const group = await storage.updateGroup(id, updates);
       if (!group) {
         return res.status(404).json({ message: "Guruh topilmadi" });
