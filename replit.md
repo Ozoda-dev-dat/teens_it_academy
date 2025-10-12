@@ -83,6 +83,10 @@ A comprehensive web-based platform for managing educational activities at an IT 
 
 ## Recent Changes
 - 2025-10-12: Initial project import and Replit environment setup
+- 2025-10-12: Added schedule conflict validation for group creation/editing
+  - Prevents creating groups with overlapping schedule times
+  - Displays Uzbek error message: "Ushbu vaqtda '{group_name}' guruhi mavjud, guruh vaqti va kunini o'zgartiring"
+  - Enhanced frontend error handling to properly display localized error messages
 
 ## Architecture Notes
 - Frontend and backend served on same port (5000)
