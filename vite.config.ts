@@ -41,5 +41,10 @@ export default defineConfig({
       strict: false,
       allow: ['..']
     },
+    hmr: {
+      host: process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost',
+      clientPort: 443,
+      protocol: 'wss'
+    },
   },
 });
