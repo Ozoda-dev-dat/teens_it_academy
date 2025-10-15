@@ -109,6 +109,12 @@ A comprehensive CRM system for managing IT school operations, including student 
 - CORS configured for Replit environment
 
 ## Recent Changes
+- **Oct 15, 2025:** Fixed database type casting issue in rankings API
+  - Added explicit VARCHAR casting in medal awards JOIN queries
+  - Fixed in `getTopStudentsByMedalsThisWeek` and `getTopStudentsByMedalsThisMonth` functions
+  - Resolved "operator does not exist: uuid = character varying" error
+  - Rankings now load correctly without database errors
+
 - **Oct 15, 2025:** Fixed student count display in teacher panel
   - Fixed naming mismatch: API returns `totalStudents` but frontend was accessing `studentCount`
   - Fixed in two places:

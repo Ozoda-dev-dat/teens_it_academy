@@ -198,7 +198,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(users)
       .leftJoin(medalAwards, and(
-        eq(medalAwards.studentId, users.id),
+        sql`${medalAwards.studentId}::varchar = ${users.id}::varchar`,
         gte(medalAwards.awardedAt, startOfWeek)
       ))
       .where(eq(users.role, 'student'))
@@ -250,7 +250,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(users)
       .leftJoin(medalAwards, and(
-        eq(medalAwards.studentId, users.id),
+        sql`${medalAwards.studentId}::varchar = ${users.id}::varchar`,
         gte(medalAwards.awardedAt, startOfMonth)
       ))
       .where(eq(users.role, 'student'))
