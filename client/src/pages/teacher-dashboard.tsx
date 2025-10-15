@@ -903,7 +903,7 @@ export default function TeacherDashboard() {
                           </div>
                           <div className="flex items-center space-x-2">
                             <Badge variant="secondary">
-                              {group.studentCount || 0} o'quvchi
+                              {group.totalStudents || 0} o'quvchi
                             </Badge>
                             <ArrowRight className="w-4 h-4 text-gray-400" />
                           </div>

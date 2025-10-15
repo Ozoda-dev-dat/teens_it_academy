@@ -111,6 +111,9 @@ A comprehensive CRM system for managing IT school operations, including student 
 ## Recent Changes
 - **Oct 15, 2025:** Fixed student count display in teacher panel
   - Fixed naming mismatch: API returns `totalStudents` but frontend was accessing `studentCount`
+  - Fixed in two places:
+    1. Attendance group card (line 67)
+    2. Overview tab group list (line 906)
   - Student counts now display correctly for each group in teacher dashboard
   
 - **Oct 15, 2025:** Initial Replit setup and configuration
