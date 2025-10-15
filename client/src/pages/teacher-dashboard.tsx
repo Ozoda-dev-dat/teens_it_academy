@@ -61,7 +61,7 @@ function AttendanceGroupCard({ group, onMarkAttendance }: { group: any; onMarkAt
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="text-lg">{group.name}</CardTitle>
-            <p className="text-sm text-gray-500">{group.studentCount || 0} o'quvchi</p>
+            <p className="text-sm text-gray-500">{group.totalStudents || 0} o'quvchi</p>
           </div>
           <Button onClick={onMarkAttendance} size="sm" className="bg-green-600 hover:bg-green-700">
             <ClipboardCheck className="w-4 h-4 mr-2" />

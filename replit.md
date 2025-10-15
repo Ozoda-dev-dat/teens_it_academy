@@ -109,6 +109,10 @@ A comprehensive CRM system for managing IT school operations, including student 
 - CORS configured for Replit environment
 
 ## Recent Changes
+- **Oct 15, 2025:** Fixed student count display in teacher panel
+  - Fixed naming mismatch: API returns `totalStudents` but frontend was accessing `studentCount`
+  - Student counts now display correctly for each group in teacher dashboard
+  
 - **Oct 15, 2025:** Initial Replit setup and configuration
   - Installed all dependencies
   - Migrated database schema
