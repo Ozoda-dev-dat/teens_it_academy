@@ -1,0 +1,196 @@
+==> Detected service running on port 10000
+==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+🔍 Login attempt: { email: '92811Q', passwordLength: 6 }
+👤 User found: YES
+🔐 Password match: true
+✅ Login successful
+6:40:07 AM [express] POST /api/login 200 in 587ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","r…
+Xaridlar tarixini olishda xatolik: error: column "status" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/opt/render/project/src/node_modules/src/node-postgres/session.ts:104:19)
+    at async DatabaseStorage.getStudentPurchases (/opt/render/project/src/server/storage.ts:845:20)
+    at async <anonymous> (/opt/render/project/src/server/routes.ts:824:25) {
+  length: 106,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '57',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+6:40:07 AM [express] GET /api/students/5658577b-012d-4d00-9e3f-a345d8bd94e9/purchases 500 in 378ms :…
+Xarid qilishda xatolik: error: column "status" of relation "purchases" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/opt/render/project/src/node_modules/src/node-postgres/session.ts:104:19)
+    at async DatabaseStorage.createPurchase (/opt/render/project/src/server/storage.ts:837:27)
+    at async <anonymous> (/opt/render/project/src/server/routes.ts:791:24) {
+  length: 128,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '75',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_target.c',
+  line: '1065',
+  routine: 'checkInsertTargets'
+}
+6:40:35 AM [express] POST /api/purchases 400 in 565ms :: {"message":"Xarid qilishda xatolik"}
+6:40:37 AM [express] GET /api/user 200 in 281ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:41:08 AM [express] GET /api/user 304 in 860ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:41:40 AM [express] GET /api/user 304 in 850ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:42:12 AM [express] GET /api/user 304 in 847ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:42:44 AM [express] GET /api/user 304 in 848ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:43:16 AM [express] GET /api/user 304 in 861ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:43:48 AM [express] GET /api/user 304 in 851ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:44:20 AM [express] GET /api/user 304 in 860ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:44:52 AM [express] GET /api/user 304 in 849ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:45:24 AM [express] GET /api/user 304 in 852ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:45:56 AM [express] GET /api/user 304 in 857ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:46:29 AM [express] GET /api/user 304 in 857ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:47:00 AM [express] GET /api/user 304 in 847ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:47:32 AM [express] GET /api/user 304 in 862ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+WebSocket client connected: userId=undefined, role=undefined, total clients: 3
+WebSocket client connected without authentication
+6:39:35 AM [express] GET /api/stats 304 in 755ms :: {"totalStudents":16,"activeGroups":5,"totalMedal…
+New WebSocket connection established
+Validating session: present
+Invalid session signature
+WebSocket client connected: userId=undefined, role=undefined, total clients: 4
+WebSocket client connected without authentication
+6:39:47 AM [express] PUT /api/students/5658577b-012d-4d00-9e3f-a345d8bd94e9/medals 200 in 382ms :: {…
+6:39:48 AM [express] GET /api/stats 200 in 756ms :: {"totalStudents":16,"activeGroups":5,"totalMedal…
+6:39:48 AM [express] GET /api/students 200 in 1024ms :: [{"id":"47c18b6b-a0e7-44ab-9564-cf1f23c6d2c7…
+6:39:51 AM [express] POST /api/logout 200 in 468ms
+WebSocket client disconnected: userId=undefined, remaining clients: 3
+WebSocket client disconnected: userId=undefined, remaining clients: 2
+New WebSocket connection established
+Validating session: present
+Invalid session signature
+WebSocket client connected: userId=undefined, role=undefined, total clients: 3
+WebSocket client connected without authentication
+New WebSocket connection established
+Validating session: present
+Invalid session signature
+WebSocket client connected: userId=undefined, role=undefined, total clients: 4
+WebSocket client connected without authentication
+==> Detected service running on port 10000
+==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+🔍 Login attempt: { email: '92811Q', passwordLength: 6 }
+👤 User found: YES
+🔐 Password match: true
+✅ Login successful
+6:40:07 AM [express] POST /api/login 200 in 587ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","r…
+Xaridlar tarixini olishda xatolik: error: column "status" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/opt/render/project/src/node_modules/src/node-postgres/session.ts:104:19)
+    at async DatabaseStorage.getStudentPurchases (/opt/render/project/src/server/storage.ts:845:20)
+    at async <anonymous> (/opt/render/project/src/server/routes.ts:824:25) {
+  length: 106,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '57',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+6:40:07 AM [express] GET /api/students/5658577b-012d-4d00-9e3f-a345d8bd94e9/purchases 500 in 378ms :…
+Xarid qilishda xatolik: error: column "status" of relation "purchases" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/opt/render/project/src/node_modules/src/node-postgres/session.ts:104:19)
+    at async DatabaseStorage.createPurchase (/opt/render/project/src/server/storage.ts:837:27)
+    at async <anonymous> (/opt/render/project/src/server/routes.ts:791:24) {
+  length: 128,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '75',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_target.c',
+  line: '1065',
+  routine: 'checkInsertTargets'
+}
+6:40:35 AM [express] POST /api/purchases 400 in 565ms :: {"message":"Xarid qilishda xatolik"}
+6:40:37 AM [express] GET /api/user 200 in 281ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:41:08 AM [express] GET /api/user 304 in 860ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:41:40 AM [express] GET /api/user 304 in 850ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:42:12 AM [express] GET /api/user 304 in 847ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:42:44 AM [express] GET /api/user 304 in 848ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:43:16 AM [express] GET /api/user 304 in 861ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:43:48 AM [express] GET /api/user 304 in 851ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:44:20 AM [express] GET /api/user 304 in 860ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:44:52 AM [express] GET /api/user 304 in 849ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:45:24 AM [express] GET /api/user 304 in 852ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:45:56 AM [express] GET /api/user 304 in 857ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:46:29 AM [express] GET /api/user 304 in 857ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:47:00 AM [express] GET /api/user 304 in 847ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:47:32 AM [express] GET /api/user 304 in 862ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:48:04 AM [express] GET /api/user 304 in 842ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+WebSocket client disconnected: userId=undefined, remaining clients: 3
+WebSocket client disconnected: userId=undefined, remaining clients: 2
+WebSocket client disconnected: userId=undefined, remaining clients: 1
+WebSocket client disconnected: userId=undefined, remaining clients: 0
+New WebSocket connection established
+Validating session: present
+Invalid session signature
+WebSocket client connected: userId=undefined, role=undefined, total clients: 1
+WebSocket client connected without authentication
+New WebSocket connection established
+Validating session: present
+Invalid session signature
+WebSocket client connected: userId=undefined, role=undefined, total clients: 2
+WebSocket client connected without authentication
+New WebSocket connection established
+Validating session: present
+Invalid session signature
+WebSocket client connected: userId=undefined, role=undefined, total clients: 3
+WebSocket client connected without authentication
+New WebSocket connection established
+Validating session: present
+Invalid session signature
+WebSocket client connected: userId=undefined, role=undefined, total clients: 4
+WebSocket client connected without authentication
+6:50:35 AM [express] GET /api/user 304 in 861ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:51:06 AM [express] GET /api/user 304 in 847ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:51:38 AM [express] GET /api/user 304 in 853ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:52:10 AM [express] GET /api/user 304 in 846ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
+6:52:42 AM [express] GET /api/user 304 in 857ms :: {"id":"5658577b-012d-4d00-9e3f-a345d8bd94e9","rol…
