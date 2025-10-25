@@ -57,6 +57,9 @@ export interface IStorage {
   // Purchase methods
   createPurchase(purchase: InsertPurchase): Promise<Purchase>;
   getStudentPurchases(studentId: string): Promise<Purchase[]>;
+  getPendingPurchases(): Promise<Purchase[]>;
+  getPurchase(id: string): Promise<Purchase | undefined>;
+  updatePurchase(id: string, updates: Partial<InsertPurchase>): Promise<Purchase | undefined>;
 
   // Stats methods
   getStats(): Promise<{
@@ -365,6 +368,31 @@ export class ServerlessStorage implements IStorage {
       .from(purchases)
       .where(eq(purchases.studentId, studentId))
       .orderBy(desc(purchases.purchaseDate));
+  }
+
+  async getPendingPurchases(): Promise<Purchase[]> {
+    return await db
+      .select()
+      .from(purchases)
+      .where(eq(purchases.status, "pending"))
+      .orderBy(desc(purchases.purchaseDate));
+  }
+
+  async getPurchase(id: string): Promise<Purchase | undefined> {
+    const [purchase] = await db
+      .select()
+      .from(purchases)
+      .where(eq(purchases.id, id));
+    return purchase || undefined;
+  }
+
+  async updatePurchase(id: string, updates: Partial<InsertPurchase>): Promise<Purchase | undefined> {
+    const [purchase] = await db
+      .update(purchases)
+      .set(updates)
+      .where(eq(purchases.id, id))
+      .returning();
+    return purchase || undefined;
   }
 
   // Stats methods
