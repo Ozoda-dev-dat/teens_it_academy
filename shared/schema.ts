@@ -209,15 +209,35 @@ export const medalAwardsRelations = relations(medalAwards, ({ one }) => ({
 }));
 
 // Schemas for validation
-export const insertUserSchema = createInsertSchema(users).omit({
+// Base schema for user data without role-specific validation
+const baseUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
 }).extend({
-  // Make parentPhone required for students and teachers
-  parentPhone: z.string().min(1, "Ota-ona telefon raqami talab qilinadi"),
-  // Parent name for better identification
-  parentName: z.string().min(1, "Ota-ona ismi talab qilinadi"),
+  // Make parentPhone and parentName optional (they are only required for students)
+  parentPhone: z.string().optional(),
+  parentName: z.string().optional(),
 });
+
+// Insert schema with role-specific validation
+export const insertUserSchema = baseUserSchema.refine(
+  (data) => {
+    // For students, parentPhone and parentName are required
+    if (data.role === "student") {
+      return !!data.parentPhone && data.parentPhone.length > 0 && 
+             !!data.parentName && data.parentName.length > 0;
+    }
+    // For teachers and admins, they are optional
+    return true;
+  },
+  {
+    message: "Ota-ona telefon raqami va ismi o'quvchilar uchun talab qilinadi",
+    path: ["parentPhone"], // This will show the error on the parentPhone field
+  }
+);
+
+// Update schema for partial updates (without role-specific validation since role might not be in the update)
+export const updateUserSchema = baseUserSchema.partial();
 
 // Teachers use the same schema as users with role="teacher"
 

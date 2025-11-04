@@ -5,7 +5,7 @@ import { setupAuth } from "./auth";
 import { notificationService } from "./notifications";
 import { getSecureUserFromSession } from "../lib/secure-auth";
 import { storage } from "./storage";
-import { insertUserSchema, insertGroupSchema, insertAttendanceSchema, insertPaymentSchema, insertProductSchema, insertPurchaseSchema, insertGroupStudentSchema, insertTeacherGroupSchema } from "@shared/schema";
+import { insertUserSchema, updateUserSchema, insertGroupSchema, insertAttendanceSchema, insertPaymentSchema, insertProductSchema, insertPurchaseSchema, insertGroupStudentSchema, insertTeacherGroupSchema } from "@shared/schema";
 import { z } from "zod";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
@@ -205,7 +205,7 @@ export function registerRoutes(app: Express): Server {
 
   app.put("/api/students/:id", requireStudentOrOwn, async (req, res) => {
     try {
-      const updates = insertUserSchema.partial().parse(req.body);
+      const updates = updateUserSchema.parse(req.body);
       const student = await storage.updateUser(req.params.id, updates);
       if (!student) {
         return res.status(404).json({ message: "Talaba topilmadi" });
