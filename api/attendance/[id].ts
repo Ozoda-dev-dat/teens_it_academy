@@ -12,20 +12,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'PUT') {
-    // PUT /api/attendance/[id] - Update attendance record (admin only)
     const adminUser = await requireSecureAdmin(req, res);
     if (!adminUser) return;
 
     try {
-      // First verify the attendance record exists
       const existingAttendance = await storage.getAttendance(id);
       if (!existingAttendance) {
         return res.status(404).json({ message: "Davomat yozuvi topilmadi" });
       }
 
       console.log("Received attendance update data:", req.body);
-      
-      // Create a new object with converted date
       const bodyWithDate = {
         ...req.body,
         date: new Date(req.body.date)
@@ -34,19 +30,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const attendanceData = insertAttendanceSchema.parse(bodyWithDate);
       console.log("Parsed attendance update data:", attendanceData);
       
-      // Verify the group exists
       const group = await storage.getGroup(attendanceData.groupId);
       if (!group) {
         return res.status(404).json({ message: "Guruh topilmadi" });
       }
-      
-      // Check for duplicate attendance record for same group and date (excluding current record)
       const duplicateAttendance = await storage.getAttendanceByDate(attendanceData.groupId, attendanceData.date);
       if (duplicateAttendance && duplicateAttendance.id !== id) {
         return res.status(400).json({ message: "Bu sana uchun davomat allaqachon mavjud" });
       }
-      
-      // Add update tracking information
+    
       const attendanceWithTracking = {
         ...attendanceData,
         updatedAt: new Date(),
@@ -76,12 +68,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'DELETE') {
-    // DELETE /api/attendance/[id] - Delete attendance record (admin only)
     const adminUser = await requireSecureAdmin(req, res);
     if (!adminUser) return;
 
     try {
-      // First verify the attendance record exists
       const existingAttendance = await storage.getAttendance(id);
       if (!existingAttendance) {
         return res.status(404).json({ message: "Davomat yozuvi topilmadi" });
