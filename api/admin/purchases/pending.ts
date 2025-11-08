@@ -4,7 +4,6 @@ import { requireSecureAdmin } from '../../../lib/secure-auth';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
-    // GET /api/admin/purchases/pending - Get pending purchases (admin only)
     const adminUser = await requireSecureAdmin(req, res);
     if (!adminUser) return;
 
