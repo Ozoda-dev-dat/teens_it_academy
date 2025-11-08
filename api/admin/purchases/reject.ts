@@ -5,7 +5,6 @@ import { notificationService } from '../../../server/notifications';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
-    // POST /api/admin/purchases/reject - Reject purchase (admin only)
     const adminUser = await requireSecureAdmin(req, res);
     if (!adminUser) return;
 
@@ -24,7 +23,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ message: "Bu xarid allaqachon tasdiqlangan yoki rad etilgan" });
       }
 
-      // Update purchase status to rejected
       const rejectedPurchase = await storage.updatePurchase(id, {
         status: "rejected",
         rejectionReason: reason || "Admin tomonidan rad etildi",
@@ -32,7 +30,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         approvedAt: new Date()
       });
 
-      // Broadcast notification
       notificationService.broadcast({
         type: 'product_updated',
         data: {
