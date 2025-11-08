@@ -5,7 +5,6 @@ import { notificationService } from '../../../server/notifications';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
-    // POST /api/admin/purchases/approve - Approve purchase (admin only)
     const adminUser = await requireSecureAdmin(req, res);
     if (!adminUser) return;
 
@@ -23,8 +22,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (purchase.status !== "pending") {
         return res.status(400).json({ message: "Bu xarid allaqachon tasdiqlangan yoki rad etilgan" });
       }
-
-      // Get student and product details
       const student = await storage.getUser(purchase.studentId);
       if (!student) {
         return res.status(404).json({ message: "Talaba topilmadi" });
@@ -44,8 +41,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           studentMedals.bronze < productCost.bronze) {
         return res.status(400).json({ message: "Talabada yetarli medallar yo'q" });
       }
-
-      // Deduct medals from student
       const updatedMedals = {
         gold: studentMedals.gold - productCost.gold,
         silver: studentMedals.silver - productCost.silver,
@@ -54,14 +49,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       await storage.updateUser(purchase.studentId, { medals: updatedMedals });
 
-      // Update purchase status to approved
       const approvedPurchase = await storage.updatePurchase(id, {
         status: "approved",
         approvedById: adminUser.id,
         approvedAt: new Date()
       });
 
-      // Broadcast notification
       notificationService.broadcast({
         type: 'product_updated',
         data: {
@@ -74,7 +67,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       return res.status(200).json({
         ...approvedPurchase,
-        message: "Xarid tasdiqlandi va medallar yechib olindi"
+        message: "Xarid tasdiqlandi va medallar yechib olindi!"
       });
     } catch (error) {
       console.error("Xaridni tasdiqlashda xatolik:", error);
