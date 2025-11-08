@@ -35,7 +35,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const studentMedals = student.medals as { gold: number; silver: number; bronze: number };
       const productCost = purchase.medalsPaid as { gold: number; silver: number; bronze: number };
 
-      // Verify student still has enough medals
       if (studentMedals.gold < productCost.gold || 
           studentMedals.silver < productCost.silver || 
           studentMedals.bronze < productCost.bronze) {
