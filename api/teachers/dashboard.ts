@@ -4,22 +4,18 @@ import { requireSecureTeacher } from '../../lib/secure-auth';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
-    // GET /api/teachers/dashboard - Get teacher's dashboard data
     const user = await requireSecureTeacher(req, res);
     if (!user) return;
 
     try {
-      // Get teacher's assigned groups
       const teacherGroups = await storage.getTeacherGroups(user.id);
-      
-      // Get detailed information for each group
+
       const groupsWithDetails = await Promise.all(
         teacherGroups.map(async (tg) => {
           const group = await storage.getGroup(tg.groupId);
           const groupStudents = await storage.getGroupStudents(tg.groupId);
           const attendance = await storage.getGroupAttendance(tg.groupId);
           
-          // Flatten the student data structure to match what the teacher dashboard expects
           const students = groupStudents.map((gs: any) => ({
             id: gs.student.id,
             firstName: gs.student.firstName,
@@ -43,7 +39,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         })
       );
 
-      // Calculate today's attendance (count of attendance records made today)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
@@ -51,18 +46,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       
       let todayAttendance = 0;
       for (const tg of teacherGroups) {
-        // Fetch all attendance records for this group (not just the recent 5)
         const allAttendance = await storage.getGroupAttendance(tg.groupId);
         const todayRecords = allAttendance.filter((record: any) => {
           const recordDate = new Date(record.date);
           return recordDate >= today && recordDate < tomorrow;
         });
         
-        // Count the number of attendance records created today
         todayAttendance += todayRecords.length;
       }
-
-      // Calculate total medals of all students in teacher's groups (deduplicated)
       const uniqueStudents = new Map<string, any>();
       for (const group of groupsWithDetails) {
         for (const student of group.students) {
