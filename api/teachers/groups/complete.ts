@@ -10,7 +10,6 @@ const completeTeacherGroupSchema = z.object({
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'PUT') {
-    // PUT /api/teachers/groups/complete - Mark teacher-group assignment as completed/active
     const adminUser = await requireSecureAdmin(req, res);
     if (!adminUser) return;
 
