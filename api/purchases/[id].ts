@@ -10,7 +10,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
-    // GET /api/purchases/[id] - Get purchase details
     const user = await getSecureUserFromSession(req);
     if (!user) {
       return res.status(401).json({ message: 'Autentifikatsiya talab qilinadi' });
@@ -22,7 +21,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(404).json({ message: "Xarid topilmadi" });
       }
       
-      // Students can only see their own purchases, admins can see all
       if (user.role === 'student' && purchase.studentId !== user.id) {
         return res.status(403).json({ message: "Kirish rad etildi" });
       }
