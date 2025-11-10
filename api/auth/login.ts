@@ -19,7 +19,6 @@ const loginSchema = z.object({
 });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -29,7 +28,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     console.log(`🔍 Login attempt: { email: '${email}', passwordLength: ${password.length} }`);
 
-    // Find user by email
     const user = await storage.getUserByEmail(email);
     
     if (!user) {
@@ -40,7 +38,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('👤 User found: YES');
 
-    // Verify password
     const isValidPassword = await verifyPassword(password, user.password);
     
     if (!isValidPassword) {
@@ -52,10 +49,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('🔐 Password match: true');
     console.log('✅ Login successful');
 
-    // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
 
-    // Set user session in cookie (simple approach for Vercel)
     const sessionData = JSON.stringify(userWithoutPassword);
     const sessionCookie = Buffer.from(sessionData).toString('base64');
     
