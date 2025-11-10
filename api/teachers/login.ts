@@ -18,7 +18,6 @@ const loginSchema = z.object({
 });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -28,7 +27,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     console.log(`🔍 Teacher login attempt: { email: '${email}', passwordLength: ${password.length} }`);
 
-    // Find user by email
     const user = await storage.getUserByEmail(email);
     
     if (!user) {
@@ -37,7 +35,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ message: "Email yoki parol noto'g'ri" });
     }
 
-    // Check if user is a teacher
     if (user.role !== 'teacher') {
       console.log('👤 User role:', user.role);
       console.log('❌ User is not a teacher');
@@ -46,7 +43,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('👤 Teacher found: YES');
 
-    // Verify password
     const isValidPassword = await verifyPassword(password, user.password);
     
     if (!isValidPassword) {
@@ -58,12 +54,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('🔐 Password match: true');
     console.log('✅ Teacher login successful');
 
-    // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
 
-    // ⚠️  SECURITY NOTICE: This endpoint has been migrated to use secure server-side sessions
-    // The old insecure cookie-based sessions have been replaced with secure PostgreSQL-backed sessions
-    // Please use the main /api/login endpoint instead, which properly handles Passport.js sessions
     
     return res.status(410).json({ 
       message: "Bu endpoint xavfsizlik yangilanishi tufayli o'chirildi. Iltimos /api/login dan foydalaning.",
