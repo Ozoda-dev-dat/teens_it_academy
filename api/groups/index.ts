@@ -6,7 +6,6 @@ import { requireSecureAdmin } from '../../lib/secure-auth';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
-    // GET /api/groups - Get all groups
     try {
       const groups = await storage.getAllGroups();
       return res.status(200).json(groups);
@@ -17,21 +16,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'POST') {
-    // POST /api/groups - Create group (admin only)
     const adminUser = await requireSecureAdmin(req, res);
     if (!adminUser) return;
 
     try {
       const groupData = insertGroupSchema.parse(req.body);
       
-      // Check for schedule conflicts
       const allGroups = await storage.getAllGroups();
       const newSchedule = groupData.schedule as string[] || [];
       
       for (const existingGroup of allGroups) {
         const existingSchedule = existingGroup.schedule as string[] || [];
         
-        // Check if any schedule time conflicts
         for (const newTime of newSchedule) {
           if (existingSchedule.includes(newTime)) {
             return res.status(400).json({ 
@@ -43,7 +39,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       
       const group = await storage.createGroup(groupData);
       
-      // Broadcast real-time notification
       notificationService.broadcast({
         type: 'group_created',
         data: group,
