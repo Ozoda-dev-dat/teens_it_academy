@@ -9,7 +9,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
-    // GET /api/students/[id]/purchases - Get student purchases
     const user = await requireSecureStudentOrOwn(req, res, id);
     if (!user) return;
 
