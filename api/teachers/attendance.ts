@@ -12,24 +12,19 @@ async function verifyTeacherGroup(teacherId: string, groupId: string): Promise<b
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
-    // POST /api/teachers/attendance - Record attendance
     const user = await requireSecureTeacher(req, res);
     if (!user) return;
 
     try {
       const attendanceData = insertAttendanceSchema.parse(req.body);
       
-      // Verify teacher is assigned to this group
       const canManageGroup = await verifyTeacherGroup(user.id, attendanceData.groupId);
       if (!canManageGroup) {
         return res.status(403).json({ message: "Bu guruhni boshqarish huquqingiz yo'q" });
       }
 
-      // RESTRICTION: Teachers can only mark attendance for TODAY'S date (not past or future dates)
       const today = new Date();
       const attendanceDate = new Date(attendanceData.date);
-      
-      // Normalize dates to compare only year, month, day (ignore time)
       const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const attendanceDateOnly = new Date(attendanceDate.getFullYear(), attendanceDate.getMonth(), attendanceDate.getDate());
       
@@ -38,8 +33,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           message: "O'qituvchilar faqat bugungi sana uchun davomat belgilashi mumkin. O'tmish yoki kelajak sanalar uchun davomat belgilab bo'lmaydi." 
         });
       }
-
-      // RESTRICTION: Check if today is a scheduled class day
       const group = await storage.getGroup(attendanceData.groupId);
       if (!group) {
         return res.status(404).json({ message: "Guruh topilmadi" });
@@ -53,15 +46,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      // RESTRICTION: Check if attendance already exists for this group and date (teachers can only mark once per day)
       const existingAttendance = await storage.getAttendanceByDate(attendanceData.groupId, attendanceData.date);
       if (existingAttendance) {
         return res.status(400).json({ 
           message: "Bu guruh uchun bugungi sana uchun davomat allaqachon belgilangan. Har kuni faqat bir marta davomat belgilash mumkin." 
         });
       }
-      
-      // Add creator tracking information
       const attendanceWithTracking = {
         ...attendanceData,
         createdById: user.id,
@@ -83,7 +73,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'PUT') {
-    // PUT /api/teachers/attendance?attendanceId=... - Update attendance record (teachers can modify their own records)
     const user = await requireSecureTeacher(req, res);
     if (!user) return;
 
@@ -94,23 +83,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-      // First verify the attendance record exists and get it
       const existingAttendance = await storage.getAttendance(attendanceId);
       if (!existingAttendance) {
         return res.status(404).json({ message: "Davomat yozuvi topilmadi" });
       }
-
-      // Verify teacher is assigned to this group
       const canManageGroup = await verifyTeacherGroup(user.id, existingAttendance.groupId);
       if (!canManageGroup) {
         return res.status(403).json({ message: "Bu guruhni boshqarish huquqingiz yo'q" });
       }
 
-      // RESTRICTION: Teachers can only modify attendance for TODAY'S date (not past or future dates)
       const today = new Date();
       const attendanceDate = new Date(existingAttendance.date);
       
-      // Normalize dates to compare only year, month, day (ignore time)
       const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const attendanceDateOnly = new Date(attendanceDate.getFullYear(), attendanceDate.getMonth(), attendanceDate.getDate());
       
@@ -119,8 +103,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           message: "O'qituvchilar faqat bugungi sana uchun davomat o'zgartirishi mumkin. O'tmish yoki kelajak sanalar uchun davomat o'zgartirib bo'lmaydi." 
         });
       }
-
-      // RESTRICTION: Check if today is a scheduled class day
       const groupForUpdate = await storage.getGroup(existingAttendance.groupId);
       if (!groupForUpdate) {
         return res.status(404).json({ message: "Guruh topilmadi" });
@@ -133,25 +115,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           message: `Bugun (${todayName}) bu guruh uchun dars kuni emas. Faqat jadvalda belgilangan kunlarda davomat o'zgartirish mumkin.`
         });
       }
-
-      // Parse and validate the updated attendance data
       const attendanceData = insertAttendanceSchema.parse({
         ...req.body,
         date: new Date(req.body.date)
       });
-      
-      // Verify the group exists and teacher is still assigned
       const group = await storage.getGroup(attendanceData.groupId);
       if (!group) {
         return res.status(404).json({ message: "Guruh topilmadi" });
       }
 
-      // Ensure the group ID matches the existing attendance record
       if (attendanceData.groupId !== existingAttendance.groupId) {
         return res.status(400).json({ message: "Guruh ID o'zgartirib bo'lmaydi" });
       }
-      
-      // Add update tracking information
       const attendanceWithTracking = {
         ...attendanceData,
         updatedAt: new Date(),
@@ -181,7 +156,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
-    // GET /api/teachers/attendance?groupId=... - Get attendance for a group
     const user = await requireSecureTeacher(req, res);
     if (!user) return;
 
@@ -192,7 +166,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-      // Verify teacher is assigned to this group
       const canManageGroup = await verifyTeacherGroup(user.id, groupId);
       if (!canManageGroup) {
         return res.status(403).json({ message: "Bu guruhni ko'rish huquqingiz yo'q" });
