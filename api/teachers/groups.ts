@@ -6,7 +6,6 @@ import { requireSecureAdmin } from '../../lib/secure-auth';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
-    // POST /api/teachers/groups - Assign teacher to group
     const adminUser = await requireSecureAdmin(req, res);
     if (!adminUser) return;
 
@@ -25,7 +24,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
       
-      // Handle unique constraint violation (duplicate assignment)
       if (error?.code === '23505' || error?.constraint?.includes('uniqueTeacherGroup')) {
         return res.status(409).json({ 
           message: "Bu o'qituvchi allaqachon ushbu guruhga tayinlangan" 
@@ -37,7 +35,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'DELETE') {
-    // DELETE /api/teachers/groups - Remove teacher from group
     const adminUser = await requireSecureAdmin(req, res);
     if (!adminUser) return;
 
