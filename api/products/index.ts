@@ -5,7 +5,6 @@ import { requireSecureAdmin } from '../../lib/secure-auth';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
-    // GET /api/products - Get all products
     try {
       const products = await storage.getAllProducts();
       return res.status(200).json(products);
@@ -16,7 +15,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'POST') {
-    // POST /api/products - Create product (admin only)
     const adminUser = await requireSecureAdmin(req, res);
     if (!adminUser) return;
 
