@@ -17,13 +17,11 @@ async function hashPassword(password: string) {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
-    // GET /api/teachers - Get all teachers
     const adminUser = await requireSecureAdmin(req, res);
     if (!adminUser) return;
 
     try {
       const teachers = await storage.getAllTeachers();
-      // Remove password from response
       const teachersWithoutPassword = teachers.map(({ password, ...teacher }) => teacher);
       return res.status(200).json(teachersWithoutPassword);
     } catch (error) {
@@ -33,7 +31,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'POST') {
-    // POST /api/teachers - Create teacher
     const adminUser = await requireSecureAdmin(req, res);
     if (!adminUser) return;
 
@@ -44,16 +41,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         medals: { gold: 0, silver: 0, bronze: 0 }
       });
       
-      // Hash the password before storing
       if (teacherData.password) {
         teacherData.password = await hashPassword(teacherData.password);
       }
       
       const teacher = await storage.createUser(teacherData);
-      // Remove password from response
       const { password, ...teacherWithoutPassword } = teacher;
       
-      // Broadcast real-time notification
       notificationService.broadcast({
         type: 'user_created',
         data: { ...teacherWithoutPassword, role: 'teacher' },
