@@ -4,7 +4,6 @@ import { requireSecureAdmin } from '../../lib/secure-auth';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
-    // GET /api/teachers/[id] - Get teacher profile with group details (admin only)
     const adminUser = await requireSecureAdmin(req, res);
     if (!adminUser) return;
 
@@ -15,16 +14,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-      // Get teacher details
       const teacher = await storage.getTeacher(id);
       if (!teacher) {
         return res.status(404).json({ message: "O'qituvchi topilmadi" });
       }
 
-      // Get teacher's assigned groups with details
       const teacherGroups = await storage.getTeacherGroups(id);
-      
-      // Get detailed information for each group
+    
       const groupsWithDetails = await Promise.all(
         teacherGroups.map(async (tg) => {
           const group = await storage.getGroup(tg.groupId);
@@ -45,12 +41,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           };
         })
       );
-
-      // Separate active and completed groups
       const activeGroups = groupsWithDetails.filter(g => g.status === 'active');
       const completedGroups = groupsWithDetails.filter(g => g.status === 'completed');
 
-      // Remove password from teacher response
       const { password, ...teacherWithoutPassword } = teacher;
 
       return res.status(200).json({
