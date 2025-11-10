@@ -31,15 +31,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useQuery<SelectUser | undefined, Error>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
-    // Add polling for real-time medal updates - poll every 30 seconds
     refetchInterval: 30000,
     refetchIntervalInBackground: true,
-    // Only enable polling when user is authenticated
     enabled: true,
   });
 
-  // Note: WebSocket authentication is handled server-side via session cookies
-  // No need to sync user data to localStorage for WebSocket auth
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
@@ -48,7 +44,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
-      // localStorage sync is handled by useEffect above
       toast({
         title: "Muvaffaqiyat",
         description: "Tizimga muvaffaqiyatli kirdingiz",
@@ -70,7 +65,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
-      // localStorage cleanup is handled by useEffect above
       toast({
         title: "Chiqish",
         description: "Tizimdan muvaffaqiyatli chiqdingiz",
