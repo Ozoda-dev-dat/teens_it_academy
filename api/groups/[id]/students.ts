@@ -9,17 +9,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
-    // GET /api/groups/[id]/students - Get students in a specific group (admin or assigned teachers)
     const user = await getSecureUserFromSession(req);
     if (!user) {
       return res.status(401).json({ message: "Autentifikatsiya talab qilinadi" });
     }
-
-    // Allow admin access to any group
     if (user.role === 'admin') {
-      // Admin can access any group - keep existing logic
     } else if (user.role === 'teacher') {
-      // Check if teacher is assigned to this group
       const teacherGroups = await storage.getTeacherGroups(user.id);
       const hasAccess = teacherGroups.some(tg => tg.groupId === id);
       
@@ -31,7 +26,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-      // First verify the group exists
       const group = await storage.getGroup(id);
       if (!group) {
         return res.status(404).json({ message: "Guruh topilmadi" });
