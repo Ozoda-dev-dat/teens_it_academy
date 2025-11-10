@@ -3,7 +3,6 @@ import { storage } from '../../lib/storage';
 import { getSecureUserFromSession } from '../../lib/secure-auth';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Only allow GET requests
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -16,7 +15,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     
 
-    // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
     
     return res.status(200).json(userWithoutPassword);
