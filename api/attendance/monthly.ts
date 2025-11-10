@@ -3,7 +3,6 @@ import { storage } from "../../lib/storage";
 import { requireSecureAdmin } from "../../lib/secure-auth";
 import { z } from "zod";
 
-// Schema for monthly attendance request
 const monthlyAttendanceSchema = z.object({
   groupId: z.string(),
   year: z.number().int().min(2020).max(2050),
@@ -40,7 +39,6 @@ interface MonthlyAttendanceData {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
-    // GET /api/attendance/monthly - Get monthly attendance data (admin only)
     const adminUser = await requireSecureAdmin(req, res);
     if (!adminUser) return;
 
@@ -53,28 +51,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         month: parseInt(month as string),
       });
 
-      // Verify the group exists
       const group = await storage.getGroup(validatedParams.groupId);
       if (!group) {
         return res.status(404).json({ message: "Guruh topilmadi" });
       }
 
-      // Get all students in the group
       const groupStudents = await storage.getGroupStudents(validatedParams.groupId);
       
-      // Calculate date range for the month
       const startDate = new Date(validatedParams.year, validatedParams.month - 1, 1);
       const endDate = new Date(validatedParams.year, validatedParams.month, 0, 23, 59, 59);
       const daysInMonth = endDate.getDate();
-
-      // Get all attendance records for the month
       const attendanceRecords = await storage.getAttendanceByDateRange(
         validatedParams.groupId,
         startDate,
         endDate
       );
 
-      // Build monthly data for each student
       const monthlyData: MonthlyAttendanceData = {
         year: validatedParams.year,
         month: validatedParams.month,
@@ -83,18 +75,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         students: groupStudents.map(groupStudent => {
           const student = groupStudent.student as any;
           
-          // Build attendance array for all days in month
           const attendance = Array.from({ length: daysInMonth }, (_, i) => {
             const day = i + 1;
             const dayDate = new Date(validatedParams.year, validatedParams.month - 1, day);
-            
-            // Find attendance record for this day
             const dayAttendance = attendanceRecords.find((record: any) => {
               const recordDate = new Date(record.date);
               return recordDate.getDate() === day;
             });
             
-            // Find this student's status in the day's attendance
             const participants = (dayAttendance?.participants as any[]) || [];
             const studentAttendance = participants.find(
               (p: any) => p.studentId === student.id
@@ -109,8 +97,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               updatedByRole: dayAttendance?.updatedByRole || undefined,
             };
           });
-
-          // Calculate statistics
           const presentDays = attendance.filter(a => a.status === 'arrived').length;
           const lateDays = attendance.filter(a => a.status === 'late').length;
           const absentDays = attendance.filter(a => a.status === 'absent').length;
