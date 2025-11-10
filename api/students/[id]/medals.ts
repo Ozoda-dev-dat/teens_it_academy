@@ -18,11 +18,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'POST') {
     try {
-      // Parse and validate request data
       const { medalType, amount, reason } = medalAwardSchema.parse(req.body);
       
-      // Authorization: Both admins and teachers (if they can access the student)
-      // Use a single auth check without writing premature responses
       const authenticatedUser = await getSecureUserFromSession(req);
       
       if (!authenticatedUser) {
@@ -34,7 +31,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (authenticatedUser.role === 'admin') {
         awardingUser = authenticatedUser;
       } else if (authenticatedUser.role === 'teacher') {
-        // Verify teacher can access this student through group assignments
         const hasAccess = await canTeacherAccessStudent(authenticatedUser.id, id);
         if (!hasAccess) {
           return res.status(403).json({ message: "Bu o'quvchini boshqarish huquqingiz yo'q" });
@@ -44,7 +40,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(403).json({ message: 'Access denied' });
       }
 
-      // Award medals using the atomic transaction
       const result = await storage.awardMedalsSafelyWithTotals(
         id, 
         medalType, 
@@ -59,7 +54,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      // Broadcast real-time notification to all connected clients
       notificationService.broadcast({
         type: 'medal_awarded',
         data: {
