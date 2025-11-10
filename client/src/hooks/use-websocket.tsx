@@ -34,16 +34,12 @@ export function useWebSocket(
   const reconnectCount = useRef(0);
   
   const getWebSocketUrl = () => {
-    // Handle cases where window.location might not be fully available
     if (typeof window === 'undefined') return '';
     
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     
-    // For Replit environment, always use the current host
-    // Fall back to localhost:5000 only in development if host is not available
     let host = window.location.host;
     if (!host) {
-      // If host is not available (which shouldn't happen in browser), use fallback
       host = process.env.NODE_ENV === 'development' ? 'localhost:5000' : window.location.hostname + ':5000';
     }
     
@@ -58,7 +54,6 @@ export function useWebSocket(
         return;
       }
 
-      // Skip connection if URL is not available yet
       if (!defaultUrl || defaultUrl.includes('undefined')) {
         console.warn('WebSocket URL not ready yet, skipping connection');
         return;
@@ -72,8 +67,6 @@ export function useWebSocket(
         setReadyState(WebSocket.OPEN);
         reconnectCount.current = 0;
         
-        // Authentication is handled automatically by server via session cookies
-        // No client-side authentication message needed
       };
       
       ws.current.onmessage = (event) => {
@@ -81,13 +74,11 @@ export function useWebSocket(
           const message = JSON.parse(event.data);
           console.log('Received WebSocket message:', message);
           
-          // Filter control messages from regular notifications
           if (message.type === 'auth_required' || message.type === 'auth_confirmed') {
             console.log('WebSocket auth status:', message.type);
             return;
           }
           
-          // Only set domain messages as notifications
           const notification: RealtimeNotification = message;
           setLastMessage(notification);
         } catch (error) {
@@ -134,23 +125,19 @@ export function useWebSocket(
     }
   }, []);
 
-  // Initialize connection
   useEffect(() => {
     connect();
     
     return () => {
-      // Clear any pending reconnection timeouts
       reconnectTimeouts.current.forEach(timeout => clearTimeout(timeout));
       reconnectTimeouts.current = [];
-      
-      // Close WebSocket connection
+    
       if (ws.current) {
         ws.current.close();
       }
     };
   }, [connect]);
 
-  // Update ready state when connection changes
   useEffect(() => {
     if (ws.current) {
       setReadyState(ws.current.readyState as WebSocketReadyState);
@@ -165,7 +152,6 @@ export function useWebSocket(
   };
 }
 
-// Hook specifically for real-time data updates
 export function useRealtimeUpdates() {
   const { lastMessage, isConnected } = useWebSocket();
   const [notifications, setNotifications] = useState<RealtimeNotification[]>([]);
@@ -173,7 +159,6 @@ export function useRealtimeUpdates() {
   useEffect(() => {
     if (lastMessage) {
       setNotifications(prev => {
-        // Keep only the last 50 notifications to avoid memory issues
         const newNotifications = [lastMessage, ...prev].slice(0, 50);
         return newNotifications;
       });
