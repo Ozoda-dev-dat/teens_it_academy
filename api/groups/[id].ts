@@ -10,7 +10,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
-    // GET /api/groups/[id] - Get group details with students (teachers and admins)
     const user = await requireSecureTeacher(req, res);
     if (!user) return;
 
@@ -20,7 +19,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(404).json({ message: "Guruh topilmadi" });
       }
 
-      // For teachers, verify they can access this group
       if (user.role === 'teacher') {
         const teacherGroups = await storage.getTeacherGroups(user.id);
         const canAccess = teacherGroups.some(tg => tg.groupId === id);
@@ -29,10 +27,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      // Get students for this group
       const groupStudents = await storage.getGroupStudents(id);
       
-      // Flatten the student data structure to match what the teacher dashboard expects
       const students = groupStudents.map((gs: any) => ({
         id: gs.student.id,
         firstName: gs.student.firstName,
@@ -54,25 +50,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'PUT') {
-    // PUT /api/groups/[id] - Update group (admin only)
     const adminUser = await requireSecureAdmin(req, res);
     if (!adminUser) return;
 
     try {
       const updates = insertGroupSchema.partial().parse(req.body);
       
-      // Check for schedule conflicts if schedule is being updated
       if (updates.schedule) {
         const allGroups = await storage.getAllGroups();
         const newSchedule = updates.schedule as string[] || [];
         
         for (const existingGroup of allGroups) {
-          // Skip the current group being edited
           if (existingGroup.id === id) continue;
           
           const existingSchedule = existingGroup.schedule as string[] || [];
           
-          // Check if any schedule time conflicts
           for (const newTime of newSchedule) {
             if (existingSchedule.includes(newTime)) {
               return res.status(400).json({ 
@@ -95,7 +87,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'DELETE') {
-    // DELETE /api/groups/[id] - Delete group (admin only)
     const adminUser = await requireSecureAdmin(req, res);
     if (!adminUser) return;
 
