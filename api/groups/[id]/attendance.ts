@@ -9,12 +9,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
-    // GET /api/groups/[id]/attendance - Get attendance records for a specific group (admin only)
     const adminUser = await requireSecureAdmin(req, res);
     if (!adminUser) return;
 
     try {
-      // First verify the group exists
       const group = await storage.getGroup(id);
       if (!group) {
         return res.status(404).json({ message: "Guruh topilmadi" });
