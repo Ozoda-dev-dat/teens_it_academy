@@ -4,7 +4,6 @@ import { requireSecureAdmin } from "../../lib/secure-auth";
 import { insertAttendanceSchema } from "../../shared/schema";
 import { z } from "zod";
 
-// Schema for bulk edit request
 const bulkEditSchema = z.object({
   updates: z.array(z.object({
     attendanceId: z.string(),
@@ -14,7 +13,6 @@ const bulkEditSchema = z.object({
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'PUT') {
-    // PUT /api/attendance/bulk-edit - Bulk edit attendance records (admin only)
     const adminUser = await requireSecureAdmin(req, res);
     if (!adminUser) return;
 
@@ -24,12 +22,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const results = [];
       const errors = [];
 
-      // Process each update
       for (let i = 0; i < requestData.updates.length; i++) {
         const update = requestData.updates[i];
         
         try {
-          // Verify the attendance record exists
           const existingAttendance = await storage.getAttendance(update.attendanceId);
           if (!existingAttendance) {
             errors.push({
@@ -40,7 +36,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             continue;
           }
 
-          // Prepare update data with tracking info
           const updateData = {
             ...update.data,
             updatedAt: new Date(),
@@ -48,12 +43,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             updatedByRole: adminUser.role,
           };
 
-          // If date is being updated, convert it
           if (update.data.date) {
             updateData.date = new Date(update.data.date);
           }
 
-          // Check for duplicate attendance if date or group is being changed
           if (update.data.date || update.data.groupId) {
             const checkGroupId = update.data.groupId || existingAttendance.groupId;
             const checkDate = update.data.date ? new Date(update.data.date) : existingAttendance.date;
@@ -102,7 +95,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         errors
       };
 
-      // Return success if at least some updates succeeded
       if (results.length > 0) {
         return res.status(200).json(response);
       } else {
