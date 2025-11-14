@@ -142,6 +142,67 @@ export default function StudentDashboard() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Promotional Banner */}
+        <div className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 p-1 shadow-2xl animate-pulse">
+          <div className="relative overflow-hidden rounded-3xl bg-white p-6">
+            <div className="absolute -top-10 -right-10 text-9xl opacity-10 animate-spin-slow">🎁</div>
+            <div className="absolute -bottom-8 -left-8 text-7xl opacity-10 animate-bounce">⭐</div>
+            
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="text-6xl animate-bounce">🎉</div>
+                  <div className="absolute -top-2 -right-2 text-2xl animate-ping">✨</div>
+                </div>
+                
+                <div className="text-center md:text-left">
+                  <h2 className="text-2xl md:text-3xl font-black bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-2 animate-pulse">
+                    Do'stlaringizni taklif qiling! 🚀
+                  </h2>
+                  <p className="text-lg font-bold text-gray-700">
+                    Har bir do'stingiz uchun 
+                    <span className="inline-flex items-center mx-2 px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full text-white shadow-lg transform hover:scale-110 transition-transform">
+                      🥇 10 ta medal
+                    </span>
+                    yutib oling!
+                  </p>
+                  <p className="text-md font-semibold text-purple-600 mt-1">
+                    Medallaringizni 
+                    <span className="inline-flex items-center mx-1 text-pink-600">
+                      🛍️ Do'kon
+                    </span>
+                    bo'limida yoqtirgan mahsulotlarga almashtiring!
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex gap-2">
+                  <div className="text-4xl animate-bounce" style={{ animationDelay: '0ms' }}>🥇</div>
+                  <div className="text-4xl animate-bounce" style={{ animationDelay: '100ms' }}>🥈</div>
+                  <div className="text-4xl animate-bounce" style={{ animationDelay: '200ms' }}>🥉</div>
+                </div>
+                <div className="flex gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <div 
+                      key={i}
+                      className="text-2xl animate-pulse"
+                      style={{ animationDelay: `${i * 150}ms` }}
+                    >
+                      ⭐
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            {/* Floating elements */}
+            <div className="absolute top-4 right-1/4 text-3xl animate-float">🎈</div>
+            <div className="absolute bottom-4 left-1/4 text-2xl animate-float" style={{ animationDelay: '1s' }}>🌟</div>
+            <div className="absolute top-1/2 right-10 text-xl animate-float" style={{ animationDelay: '0.5s' }}>💫</div>
+          </div>
+        </div>
+
         {/* Welcome Section */}
         <div className="bg-gradient-to-r from-teens-blue to-teens-navy rounded-2xl p-8 text-white mb-8 relative overflow-hidden">
           <div className="absolute top-4 right-4 text-6xl opacity-20">🚀</div>
