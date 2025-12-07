@@ -1,0 +1,256 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(210 25% 7.8431%);
+  --card: hsl(180 6.6667% 97.0588%);
+  --card-foreground: hsl(210 25% 7.8431%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(210 25% 7.8431%);
+  --primary: hsl(220 88% 40%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(210 25% 7.8431%);
+  --secondary-foreground: hsl(0 0% 100%);
+  --muted: hsl(240 1.9608% 90%);
+  --muted-foreground: hsl(210 25% 7.8431%);
+  --accent: hsl(211.5789 51.3514% 92.7451%);
+  --accent-foreground: hsl(220 88% 40%);
+  --destructive: hsl(356.3033 90.5579% 54.3137%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(201.4286 30.4348% 90.9804%);
+  --input: hsl(200 23.0769% 97.4510%);
+  --ring: hsl(220 88% 40%);
+  --chart-1: hsl(220 88% 40%);
+  --chart-2: hsl(145 63% 42%);
+  --chart-3: hsl(48 96% 53%);
+  --chart-4: hsl(147.1429 78.5047% 41.9608%);
+  --chart-5: hsl(341.4894 75.2000% 50.9804%);
+  --sidebar: hsl(180 6.6667% 97.0588%);
+  --sidebar-foreground: hsl(210 25% 7.8431%);
+  --sidebar-primary: hsl(220 88% 40%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(211.5789 51.3514% 92.7451%);
+  --sidebar-accent-foreground: hsl(220 88% 40%);
+  --sidebar-border: hsl(205.0000 25.0000% 90.5882%);
+  --sidebar-ring: hsl(220 88% 40%);
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: Menlo, monospace;
+  --radius: 1.3rem;
+  --shadow-2xs: 0px 2px 0px 0px hsl(220 88% 40% / 0.00);
+  --shadow-xs: 0px 2px 0px 0px hsl(220 88% 40% / 0.00);
+  --shadow-sm: 0px 2px 0px 0px hsl(220 88% 40% / 0.00), 0px 1px 2px -1px hsl(220 88% 40% / 0.00);
+  --shadow: 0px 2px 0px 0px hsl(220 88% 40% / 0.00), 0px 1px 2px -1px hsl(220 88% 40% / 0.00);
+  --shadow-md: 0px 2px 0px 0px hsl(220 88% 40% / 0.00), 0px 2px 4px -1px hsl(220 88% 40% / 0.00);
+  --shadow-lg: 0px 2px 0px 0px hsl(220 88% 40% / 0.00), 0px 4px 6px -1px hsl(220 88% 40% / 0.00);
+  --shadow-xl: 0px 2px 0px 0px hsl(220 88% 40% / 0.00), 0px 8px 10px -1px hsl(220 88% 40% / 0.00);
+  --shadow-2xl: 0px 2px 0px 0px hsl(220 88% 40% / 0.00);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+  
+  /* Teens IT School Custom Colors */
+  --teens-navy: hsl(220 88% 40%);
+  --teens-blue: hsl(217 91% 60%);
+  --teens-yellow: hsl(48 96% 53%);
+  --teens-green: hsl(145 63% 42%);
+  --teens-red: hsl(346 87% 43%);
+}
+
+.dark {
+  --background: hsl(0 0% 0%);
+  --foreground: hsl(200 6.6667% 91.1765%);
+  --card: hsl(228 9.8039% 10%);
+  --card-foreground: hsl(0 0% 85.0980%);
+  --popover: hsl(0 0% 0%);
+  --popover-foreground: hsl(200 6.6667% 91.1765%);
+  --primary: hsl(217 91% 60%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(195.0000 15.3846% 94.9020%);
+  --secondary-foreground: hsl(210 25% 7.8431%);
+  --muted: hsl(0 0% 9.4118%);
+  --muted-foreground: hsl(210 3.3898% 46.2745%);
+  --accent: hsl(220 14% 15%);
+  --accent-foreground: hsl(217 91% 60%);
+  --destructive: hsl(356.3033 90.5579% 54.3137%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(210 5.2632% 14.9020%);
+  --input: hsl(220 13% 18%);
+  --ring: hsl(217 91% 60%);
+  --chart-1: hsl(217 91% 60%);
+  --chart-2: hsl(145 63% 42%);
+  --chart-3: hsl(48 96% 53%);
+  --chart-4: hsl(147.1429 78.5047% 41.9608%);
+  --chart-5: hsl(341.4894 75.2000% 50.9804%);
+  --sidebar: hsl(228 9.8039% 10%);
+  --sidebar-foreground: hsl(0 0% 85.0980%);
+  --sidebar-primary: hsl(217 91% 60%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(220 14% 15%);
+  --sidebar-accent-foreground: hsl(217 91% 60%);
+  --sidebar-border: hsl(220 13% 18%);
+  --sidebar-ring: hsl(217 91% 60%);
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: Menlo, monospace;
+  --radius: 1.3rem;
+  --shadow-2xs: 0px 2px 0px 0px hsl(217 91% 60% / 0.00);
+  --shadow-xs: 0px 2px 0px 0px hsl(217 91% 60% / 0.00);
+  --shadow-sm: 0px 2px 0px 0px hsl(217 91% 60% / 0.00), 0px 1px 2px -1px hsl(217 91% 60% / 0.00);
+  --shadow: 0px 2px 0px 0px hsl(217 91% 60% / 0.00), 0px 1px 2px -1px hsl(217 91% 60% / 0.00);
+  --shadow-md: 0px 2px 0px 0px hsl(217 91% 60% / 0.00), 0px 2px 4px -1px hsl(217 91% 60% / 0.00);
+  --shadow-lg: 0px 2px 0px 0px hsl(217 91% 60% / 0.00), 0px 4px 6px -1px hsl(217 91% 60% / 0.00);
+  --shadow-xl: 0px 2px 0px 0px hsl(217 91% 60% / 0.00), 0px 8px 10px -1px hsl(217 91% 60% / 0.00);
+  --shadow-2xl: 0px 2px 0px 0px hsl(217 91% 60% / 0.00);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .animate-spin-slow {
+    animation: spin-slow 10s linear infinite;
+  }
+  
+  .animation-delay-1000 {
+    animation-delay: 1s;
+  }
+  
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+}
+
+@layer utilities {
+  .teens-navy {
+    color: var(--teens-navy);
+  }
+  
+  .bg-teens-navy {
+    background-color: var(--teens-navy);
+  }
+  
+  .teens-blue {
+    color: var(--teens-blue);
+  }
+  
+  .bg-teens-blue {
+    background-color: var(--teens-blue);
+  }
+  
+  .teens-yellow {
+    color: var(--teens-yellow);
+  }
+  
+  .bg-teens-yellow {
+    background-color: var(--teens-yellow);
+  }
+  
+  .teens-green {
+    color: var(--teens-green);
+  }
+  
+  .bg-teens-green {
+    background-color: var(--teens-green);
+  }
+  
+  .teens-red {
+    color: var(--teens-red);
+  }
+  
+  .bg-teens-red {
+    background-color: var(--teens-red);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--teens-blue);
+  border-radius: 3px;
+  opacity: 0.7;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--teens-navy);
+  opacity: 1;
+}
+
+/* Loading animation */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Hover effects */
+.hover-scale {
+  transition: transform 0.2s ease-in-out;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+/* Button animations */
+.btn-pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
