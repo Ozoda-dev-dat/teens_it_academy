@@ -466,10 +466,11 @@ export function registerRoutes(app: Express): Server {
       const attendanceRecords = await storage.getAllAttendanceByDate(date);
       
       const allGroups = await storage.getAllGroups();
-      const allUsers = await Promise.all([
+      const [teachers, students] = await Promise.all([
         storage.getAllTeachers(),
         storage.getAllStudents()
-      ]).then(([teachers, students]) => [...teachers, ...students]);
+      ]);
+      const allUsers = [...teachers, ...students];
       
       const enrichedRecords = attendanceRecords.map((record) => {
         const group = allGroups.find(g => g.id === record.groupId);
@@ -477,8 +478,19 @@ export function registerRoutes(app: Express): Server {
           ? allUsers.find(u => u.id === record.createdById)
           : null;
         
+        const participants = Array.isArray(record.participants) ? record.participants as any[] : [];
+        const enrichedParticipants = participants.map((p: any) => {
+          const student = allUsers.find(u => u.id === p.studentId);
+          return {
+            ...p,
+            firstName: student?.firstName || 'Noma\'lum',
+            lastName: student?.lastName || ''
+          };
+        });
+        
         return {
           ...record,
+          participants: enrichedParticipants,
           groupName: group?.name || 'Noma\'lum guruh',
           createdByName: createdBy 
             ? `${createdBy.firstName} ${createdBy.lastName}` 

@@ -2283,23 +2283,23 @@ export default function AdminDashboard() {
                                     <th className="border border-gray-300 px-4 py-2 text-left">Guruh</th>
                                     <th className="border border-gray-300 px-4 py-2 text-left">Yaratuvchi</th>
                                     <th className="border border-gray-300 px-4 py-2 text-left">Rol</th>
-                                    <th className="border border-gray-300 px-4 py-2 text-center">Kelgan</th>
-                                    <th className="border border-gray-300 px-4 py-2 text-center">Kech</th>
-                                    <th className="border border-gray-300 px-4 py-2 text-center">Kelmagan</th>
+                                    <th className="border border-gray-300 px-4 py-2 text-left">Kelgan o'quvchilar</th>
+                                    <th className="border border-gray-300 px-4 py-2 text-left">Kech kelganlar</th>
+                                    <th className="border border-gray-300 px-4 py-2 text-left">Kelmaganlar</th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {dailyAttendance.map((record) => {
                                     const participants = Array.isArray(record.participants) ? record.participants as any[] : [];
-                                    const arrived = participants.filter(p => p && p.status === 'arrived').length;
-                                    const late = participants.filter(p => p && p.status === 'late').length;
-                                    const absent = participants.filter(p => p && p.status === 'absent').length;
+                                    const arrivedStudents = participants.filter(p => p && p.status === 'arrived');
+                                    const lateStudents = participants.filter(p => p && p.status === 'late');
+                                    const absentStudents = participants.filter(p => p && p.status === 'absent');
                                     const createdTime = record.createdAt 
                                       ? new Date(record.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })
                                       : '-';
                                     
                                     return (
-                                      <tr key={record.id} className="hover:bg-gray-50">
+                                      <tr key={record.id} className="hover:bg-gray-50 align-top">
                                         <td className="border border-gray-300 px-4 py-2 text-sm">
                                           {createdTime}
                                         </td>
@@ -2317,20 +2317,62 @@ export default function AdminDashboard() {
                                             {record.createdByRole === 'teacher' ? "O'qituvchi" : 'Admin'}
                                           </Badge>
                                         </td>
-                                        <td className="border border-gray-300 px-4 py-2 text-center">
-                                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-700 font-medium">
-                                            {arrived}
-                                          </span>
+                                        <td className="border border-gray-300 px-4 py-2">
+                                          <div className="space-y-1">
+                                            <Badge variant="secondary" className="bg-green-100 text-green-800 mb-1">
+                                              {arrivedStudents.length} ta
+                                            </Badge>
+                                            {arrivedStudents.length > 0 ? (
+                                              <div className="text-sm text-gray-700">
+                                                {arrivedStudents.map((p: any, idx: number) => (
+                                                  <div key={p.studentId || idx} className="flex items-center gap-1">
+                                                    <CheckCircle className="w-3 h-3 text-green-500" />
+                                                    <span>{p.firstName} {p.lastName}</span>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            ) : (
+                                              <span className="text-gray-400 text-sm">-</span>
+                                            )}
+                                          </div>
                                         </td>
-                                        <td className="border border-gray-300 px-4 py-2 text-center">
-                                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-yellow-100 text-yellow-700 font-medium">
-                                            {late}
-                                          </span>
+                                        <td className="border border-gray-300 px-4 py-2">
+                                          <div className="space-y-1">
+                                            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 mb-1">
+                                              {lateStudents.length} ta
+                                            </Badge>
+                                            {lateStudents.length > 0 ? (
+                                              <div className="text-sm text-gray-700">
+                                                {lateStudents.map((p: any, idx: number) => (
+                                                  <div key={p.studentId || idx} className="flex items-center gap-1">
+                                                    <Clock className="w-3 h-3 text-yellow-500" />
+                                                    <span>{p.firstName} {p.lastName}</span>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            ) : (
+                                              <span className="text-gray-400 text-sm">-</span>
+                                            )}
+                                          </div>
                                         </td>
-                                        <td className="border border-gray-300 px-4 py-2 text-center">
-                                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-700 font-medium">
-                                            {absent}
-                                          </span>
+                                        <td className="border border-gray-300 px-4 py-2">
+                                          <div className="space-y-1">
+                                            <Badge variant="secondary" className="bg-red-100 text-red-800 mb-1">
+                                              {absentStudents.length} ta
+                                            </Badge>
+                                            {absentStudents.length > 0 ? (
+                                              <div className="text-sm text-gray-700">
+                                                {absentStudents.map((p: any, idx: number) => (
+                                                  <div key={p.studentId || idx} className="flex items-center gap-1">
+                                                    <XCircle className="w-3 h-3 text-red-500" />
+                                                    <span>{p.firstName} {p.lastName}</span>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            ) : (
+                                              <span className="text-gray-400 text-sm">-</span>
+                                            )}
+                                          </div>
                                         </td>
                                       </tr>
                                     );
