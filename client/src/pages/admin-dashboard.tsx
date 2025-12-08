@@ -2715,7 +2715,7 @@ export default function AdminDashboard() {
                             Yangi mahsulot
                           </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="max-h-[80vh] overflow-y-auto">
                           <DialogHeader>
                             <DialogTitle>Yangi mahsulot qo'shish</DialogTitle>
                           </DialogHeader>
@@ -3155,7 +3155,7 @@ export default function AdminDashboard() {
       
       {/* Edit Product Dialog */}
       <Dialog open={isEditProductOpen} onOpenChange={setIsEditProductOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Mahsulot ma'lumotlarini tahrirlash</DialogTitle>
           </DialogHeader>
