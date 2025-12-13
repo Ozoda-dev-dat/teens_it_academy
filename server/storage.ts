@@ -884,16 +884,56 @@ export class DatabaseStorage implements IStorage {
   }
 
   async approvePurchase(id: string, adminId: string): Promise<Purchase> {
-    const [updated] = await db
-      .update(purchases)
-      .set({
-        status: "approved",
-        approvedById: adminId,
-        approvedAt: new Date(),
-      })
-      .where(eq(purchases.id, id))
-      .returning();
-    return updated;
+    return await db.transaction(async (tx) => {
+      const [purchase] = await tx
+        .select()
+        .from(purchases)
+        .where(eq(purchases.id, id))
+        .for('update')
+        .then((r) => r[0]);
+
+      if (!purchase) {
+        throw new Error('Purchase not found');
+      }
+
+      if (purchase.status !== 'pending') {
+        throw new Error('Purchase already processed');
+      }
+
+      const [product] = await tx
+        .select()
+        .from(products)
+        .where(eq(products.id, purchase.productId))
+        .for('update')
+        .then((r) => r[0]);
+
+      if (!product) {
+        throw new Error('Product not found');
+      }
+
+      const currentQty = (product.quantity ?? 0) as number;
+      if (currentQty <= 0) {
+        throw new Error('Product out of stock');
+      }
+
+      // Decrement product quantity by 1 (purchases are for single items)
+      await tx
+        .update(products)
+        .set({ quantity: currentQty - 1 })
+        .where(eq(products.id, product.id));
+
+      const [updatedPurchase] = await tx
+        .update(purchases)
+        .set({
+          status: 'approved',
+          approvedById: adminId,
+          approvedAt: new Date(),
+        })
+        .where(eq(purchases.id, id))
+        .returning();
+
+      return updatedPurchase;
+    });
   }
 
   async rejectPurchase(id: string, adminId: string, reason?: string): Promise<Purchase> {

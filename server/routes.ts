@@ -837,6 +837,12 @@ export function registerRoutes(app: Express): Server {
           studentMedals.bronze < productCost.bronze) {
         return res.status(400).json({ message: "Yetarli medallaringiz yo'q" });
       }
+
+      // Check product stock before creating purchase request
+      const availableQty = (product.quantity ?? 0) as number;
+      if (availableQty <= 0) {
+        return res.status(400).json({ message: "Mahsulot zaxirada yetarli emas" });
+      }
       
       // Create PENDING purchase request (medals not deducted yet)
       // Medals will be deducted only when admin approves
