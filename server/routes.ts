@@ -1443,7 +1443,19 @@ export function registerRoutes(app: Express): Server {
   
   wss.on('connection', async (socket, request) => {
     console.log('New WebSocket connection established');
-    
+
+    // Log upgrade metadata for diagnostics (do not log raw cookies)
+    try {
+      console.log('WS upgrade metadata', {
+        url: request.url,
+        remoteAddress: request.socket?.remoteAddress || null,
+        hasCookie: !!request.headers.cookie,
+        userAgent: request.headers['user-agent'] ? String(request.headers['user-agent']).slice(0, 200) : null,
+      });
+    } catch (err) {
+      console.debug('Failed to log WS upgrade metadata', err);
+    }
+
     // Authenticate WebSocket connection using session
     let authenticatedUser = null;
     try {
@@ -1452,7 +1464,14 @@ export function registerRoutes(app: Express): Server {
       if (cookieHeader) {
         // Create a mock request object for session validation
         const mockReq = { headers: { cookie: cookieHeader } } as any;
-        authenticatedUser = await getSecureUserFromSession(mockReq);
+        // Attempt to resolve the session -> user mapping
+        try {
+          authenticatedUser = await getSecureUserFromSession(mockReq);
+        } catch (innerErr) {
+          console.error('getSecureUserFromSession threw error during WS auth:', innerErr);
+        }
+      } else {
+        console.log('WebSocket upgrade did not include cookie header');
       }
     } catch (error) {
       console.error('WebSocket authentication error:', error);
@@ -1473,6 +1492,7 @@ export function registerRoutes(app: Express): Server {
       // Add client without authentication (limited access)
       notificationService.addClient(socket);
       console.log('WebSocket client connected without authentication');
+      console.log('WS unauthenticated connection - sent auth_required message');
       
       // Send authentication required message
       socket.send(JSON.stringify({

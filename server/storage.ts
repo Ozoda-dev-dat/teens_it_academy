@@ -109,6 +109,31 @@ export class DatabaseStorage implements IStorage {
       // Use shorter session expiry for better security
       ttl: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
     });
+
+    // Basic initialization logging for diagnostics
+    try {
+      console.log('Session store initialized', {
+        tableName: 'session',
+        pruneIntervalSeconds: 60 * 15,
+        ttlMs: 24 * 60 * 60 * 1000,
+      });
+
+      // If the underlying store emits events, attach lightweight listeners
+      // to help debug connection / error situations in production.
+      if (this.sessionStore && typeof (this.sessionStore as any).on === 'function') {
+        const s = this.sessionStore as any;
+        try {
+          s.on('connect', () => console.log('Session store: connect'));
+          s.on('disconnect', () => console.log('Session store: disconnect'));
+          s.on('error', (err: any) => console.error('Session store error:', err));
+        } catch (err) {
+          // Non-fatal — not all stores expose these events
+          console.debug('Session store event attachment failed:', err);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to initialize session store diagnostics:', err);
+    }
   }
 
   // User methods

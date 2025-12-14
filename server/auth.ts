@@ -44,6 +44,22 @@ export function setupAuth(app: Express) {
 
   app.set("trust proxy", 1);
   app.use(session(sessionSettings));
+  // Lightweight request logging for API routes to help debug session/cookie behavior
+  app.use('/api', (req: any, _res: any, next: any) => {
+    try {
+      console.log('API request:', {
+        method: req.method,
+        path: req.path,
+        sessionID: req.sessionID || null,
+        hasCookie: !!req.headers?.cookie,
+        isAuthenticated: typeof req.isAuthenticated === 'function' ? req.isAuthenticated() : false,
+        userId: req.user?.id ?? null,
+      });
+    } catch (err) {
+      console.debug('API request logging failed', err);
+    }
+    next();
+  });
   app.use(passport.initialize());
   app.use(passport.session());
 
@@ -121,6 +137,11 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/user", (req, res) => {
+    try {
+      console.log('/api/user called - isAuthenticated:', typeof req.isAuthenticated === 'function' ? req.isAuthenticated() : false, 'sessionID:', req.sessionID || null);
+    } catch (err) {
+      console.debug('Error logging /api/user call', err);
+    }
     if (!req.isAuthenticated()) return res.sendStatus(401);
     // Password is already excluded from req.user
     res.json(req.user);
