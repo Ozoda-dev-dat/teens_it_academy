@@ -55,6 +55,7 @@ export interface IStorage {
   // Payment methods
   createPayment(payment: InsertPayment): Promise<Payment>;
   getStudentPayments(studentId: string): Promise<Payment[]>;
+  getAllPayments(): Promise<Payment[]>;
   updatePayment(id: string, updates: Partial<InsertPayment>): Promise<Payment | undefined>;
 
   // Product methods
@@ -794,6 +795,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(payments)
       .where(eq(payments.studentId, studentId))
+      .orderBy(desc(payments.paymentDate));
+    return result || [];
+  }
+
+  async getAllPayments(): Promise<Payment[]> {
+    const result = await db
+      .select()
+      .from(payments)
       .orderBy(desc(payments.paymentDate));
     return result || [];
   }

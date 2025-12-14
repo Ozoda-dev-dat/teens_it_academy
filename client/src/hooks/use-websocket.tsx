@@ -37,12 +37,8 @@ export function useWebSocket(
     if (typeof window === 'undefined') return '';
     
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    
-    let host = window.location.host;
-    if (!host) {
-      host = process.env.NODE_ENV === 'development' ? 'localhost:5000' : window.location.hostname + ':5000';
-    }
-    
+    const host = window.location.host;
+    // Use the same origin host. If backend is on a different host, set a custom WS URL via env
     return `${protocol}//${host}/ws`;
   };
   

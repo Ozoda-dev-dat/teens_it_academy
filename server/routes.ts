@@ -733,6 +733,17 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin: list all payments
+  app.get("/api/payments", requireAdmin, async (req, res) => {
+    try {
+      const payments = await storage.getAllPayments();
+      res.json(payments);
+    } catch (error) {
+      console.error("To'lovlarni olishda xatolik:", error);
+      res.status(500).json({ message: "To'lovlarni yuklashda xatolik" });
+    }
+  });
+
   app.get("/api/students/:studentId/payments", requireStudentOrOwn, async (req, res) => {
     try {
       const payments = await storage.getStudentPayments(req.params.studentId);
