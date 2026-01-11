@@ -24,7 +24,7 @@ export default function TeacherDashboard() {
       const res = await fetch('/api/medals/award', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId, medalType, amount, reason: "Teacher award" })
+        body: JSON.stringify({ studentId, medalType, amount, reason: "O'qituvchi tomonidan" })
       });
       if (!res.ok) throw new Error(await res.text());
       return res.json();

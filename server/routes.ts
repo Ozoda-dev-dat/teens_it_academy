@@ -150,10 +150,10 @@ export function registerRoutes(app: Express): Server {
 
   app.get("/api/purchases/pending", requireAdmin, async (req, res) => res.json(await storage.getPendingPurchases()));
   app.post("/api/purchases/:id/approve", requireAdmin, async (req, res) => {
-    try { res.json(await storage.approvePurchase(req.params.id, req.user.id)); } catch (e) { res.status(400).json({ message: (e as Error).message }); }
+    try { res.json(await storage.approvePurchase(req.params.id, req.user!.id)); } catch (e) { res.status(400).json({ message: (e as Error).message }); }
   });
   app.post("/api/purchases/:id/reject", requireAdmin, async (req, res) => {
-    try { res.json(await storage.rejectPurchase(req.params.id, req.user.id, req.body.reason)); } catch (e) { res.status(400).json({ message: (e as Error).message }); }
+    try { res.json(await storage.rejectPurchase(req.params.id, req.user!.id, req.body.reason)); } catch (e) { res.status(400).json({ message: (e as Error).message }); }
   });
 
   app.get("/api/stats", async (req, res) => res.json(await storage.getStats()));

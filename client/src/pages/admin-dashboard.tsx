@@ -191,7 +191,8 @@ export default function AdminDashboard() {
 
   const approvePurchaseMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest("POST", `/api/purchases/${id}/approve`);
+      const res = await apiRequest("POST", `/api/purchases/${id}/approve`);
+      if (!res.ok) throw new Error(await res.text());
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/purchases/pending"] });
@@ -202,7 +203,8 @@ export default function AdminDashboard() {
 
   const rejectPurchaseMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest("POST", `/api/purchases/${id}/reject`);
+      const res = await apiRequest("POST", `/api/purchases/${id}/reject`);
+      if (!res.ok) throw new Error(await res.text());
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/purchases/pending"] });
