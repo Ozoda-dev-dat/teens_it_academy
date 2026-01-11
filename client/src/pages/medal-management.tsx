@@ -47,7 +47,6 @@ export default function MedalManagement() {
     totalStudents: number;
     activeGroups: number;
     totalMedals: { gold: number; silver: number; bronze: number };
-    unpaidAmount: number;
   }>({
     queryKey: ["/api/stats"],
     enabled: !!user,
@@ -59,7 +58,7 @@ export default function MedalManagement() {
 
     const { type } = lastMessage;
 
-    if (type === 'medal_awarded') {
+    if (type === 'medal_awarded' || type === 'stats_updated') {
       queryClient.invalidateQueries({ queryKey: ["/api/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     }
@@ -67,38 +66,21 @@ export default function MedalManagement() {
 
   // Medal awarding mutation
   const awardMedalsMutation = useMutation({
-    mutationFn: async ({ studentId, medals }: { studentId: string; medals: any }) => {
-      const res = await apiRequest("PUT", `/api/students/${studentId}/medals`, medals);
+    mutationFn: async ({ studentId, medalType, amount }: { studentId: string; medalType: string; amount: number }) => {
+      const res = await apiRequest("POST", "/api/medals/award", { studentId, medalType, amount, reason: "Administrator tomonidan" });
       return await res.json();
     },
     onSuccess: (data, variables) => {
-      // Calculate new medals awarded
-      const currentMedals = selectedStudent?.medals as any || { gold: 0, silver: 0, bronze: 0 };
-      const newMedals = variables.medals;
-      const awarded = [];
+      setShowCelebration(true);
+      setIsAwardingMedals(true);
+      setCelebrationMedals([{ type: variables.medalType, count: variables.amount }]);
       
-      if (newMedals.gold > currentMedals.gold) {
-        awarded.push({ type: 'gold', count: newMedals.gold - currentMedals.gold });
-      }
-      if (newMedals.silver > currentMedals.silver) {
-        awarded.push({ type: 'silver', count: newMedals.silver - currentMedals.silver });
-      }
-      if (newMedals.bronze > currentMedals.bronze) {
-        awarded.push({ type: 'bronze', count: newMedals.bronze - currentMedals.bronze });
-      }
-      
-      if (awarded.length > 0) {
-        setShowCelebration(true);
-        setIsAwardingMedals(true);
-        setCelebrationMedals(awarded);
-        
-        // Hide celebration after animation
-        setTimeout(() => {
-          setShowCelebration(false);
-          setIsAwardingMedals(false);
-          setCelebrationMedals([]);
-        }, 4000);
-      }
+      // Hide celebration after animation
+      setTimeout(() => {
+        setShowCelebration(false);
+        setIsAwardingMedals(false);
+        setCelebrationMedals([]);
+      }, 4000);
       
       queryClient.invalidateQueries({ queryKey: ["/api/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
@@ -108,7 +90,7 @@ export default function MedalManagement() {
       
       toast({ 
         title: "🎉 Tabriklaymiz!", 
-        description: awarded.length > 0 ? "Yangi medallar muvaffaqiyatli berildi!" : "Medallar yangilandi" 
+        description: "Medallar muvaffaqiyatli berildi!" 
       });
     },
     onError: (error: any) => {
@@ -126,25 +108,25 @@ export default function MedalManagement() {
     student.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAwardMedals = () => {
-    if (!selectedStudent) return;
+  const handleAwardMedals = (type: 'gold' | 'silver' | 'bronze') => {
+    if (!selectedStudent || medalForm[type] <= 0) return;
     awardMedalsMutation.mutate({
       studentId: selectedStudent.id,
-      medals: medalForm
+      medalType: type,
+      amount: medalForm[type]
     });
   };
 
   const openAwardModal = (student: User) => {
     setSelectedStudent(student);
-    const currentMedals = student.medals as any || { gold: 0, silver: 0, bronze: 0 };
-    setMedalForm(currentMedals);
+    setMedalForm({ gold: 1, silver: 1, bronze: 1 });
     setIsAwardModalOpen(true);
   };
 
   const adjustMedal = (type: 'gold' | 'silver' | 'bronze', increment: boolean) => {
     setMedalForm(prev => ({
       ...prev,
-      [type]: Math.max(0, prev[type] + (increment ? 1 : -1))
+      [type]: Math.max(1, prev[type] + (increment ? 1 : -1))
     }));
   };
 
@@ -338,26 +320,13 @@ export default function MedalManagement() {
                     <Medal className="w-6 h-6 text-yellow-500" />
                     <div>
                       <p className="font-semibold">Oltin medal</p>
-                      <p className="text-sm text-gray-600">Premium yutuqlar</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => adjustMedal('gold', false)}
-                      disabled={medalForm.gold <= 0}
-                    >
-                      <Minus className="w-3 h-3" />
-                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => adjustMedal('gold', false)} disabled={medalForm.gold <= 1}><Minus className="w-3 h-3" /></Button>
                     <span className="w-8 text-center font-semibold">{medalForm.gold}</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => adjustMedal('gold', true)}
-                    >
-                      <Plus className="w-3 h-3" />
-                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => adjustMedal('gold', true)}><Plus className="w-3 h-3" /></Button>
+                    <Button size="sm" onClick={() => handleAwardMedals('gold')} disabled={awardMedalsMutation.isPending}><Award className="w-4 h-4" /></Button>
                   </div>
                 </div>
 
@@ -367,26 +336,13 @@ export default function MedalManagement() {
                     <Medal className="w-6 h-6 text-gray-400" />
                     <div>
                       <p className="font-semibold">Kumush medal</p>
-                      <p className="text-sm text-gray-600">Yuqori natijalar</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => adjustMedal('silver', false)}
-                      disabled={medalForm.silver <= 0}
-                    >
-                      <Minus className="w-3 h-3" />
-                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => adjustMedal('silver', false)} disabled={medalForm.silver <= 1}><Minus className="w-3 h-3" /></Button>
                     <span className="w-8 text-center font-semibold">{medalForm.silver}</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => adjustMedal('silver', true)}
-                    >
-                      <Plus className="w-3 h-3" />
-                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => adjustMedal('silver', true)}><Plus className="w-3 h-3" /></Button>
+                    <Button size="sm" onClick={() => handleAwardMedals('silver')} disabled={awardMedalsMutation.isPending}><Award className="w-4 h-4" /></Button>
                   </div>
                 </div>
 
@@ -396,51 +352,19 @@ export default function MedalManagement() {
                     <Medal className="w-6 h-6 text-amber-600" />
                     <div>
                       <p className="font-semibold">Bronza medal</p>
-                      <p className="text-sm text-gray-600">Yaxshi natijalar</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => adjustMedal('bronze', false)}
-                      disabled={medalForm.bronze <= 0}
-                    >
-                      <Minus className="w-3 h-3" />
-                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => adjustMedal('bronze', false)} disabled={medalForm.bronze <= 1}><Minus className="w-3 h-3" /></Button>
                     <span className="w-8 text-center font-semibold">{medalForm.bronze}</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => adjustMedal('bronze', true)}
-                    >
-                      <Plus className="w-3 h-3" />
-                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => adjustMedal('bronze', true)}><Plus className="w-3 h-3" /></Button>
+                    <Button size="sm" onClick={() => handleAwardMedals('bronze')} disabled={awardMedalsMutation.isPending}><Award className="w-4 h-4" /></Button>
                   </div>
                 </div>
               </div>
 
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleAwardMedals}
-                  disabled={awardMedalsMutation.isPending}
-                  className="flex-1"
-                >
-                  {awardMedalsMutation.isPending ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      Berilmoqda...
-                    </>
-                  ) : (
-                    <>
-                      <Award className="w-4 h-4 mr-2" />
-                      Medallarni berish
-                    </>
-                  )}
-                </Button>
-                <Button variant="outline" onClick={() => setIsAwardModalOpen(false)}>
-                  Bekor qilish
-                </Button>
+              <div className="flex justify-end pt-4">
+                <Button variant="outline" onClick={() => setIsAwardModalOpen(false)}>Yopish</Button>
               </div>
             </div>
           )}
