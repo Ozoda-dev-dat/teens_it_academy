@@ -78,29 +78,6 @@ export const teacherGroups = pgTable("teacher_groups", {
 }));
 
 
-export const attendance = pgTable("attendance", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  groupId: varchar("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
-  date: timestamp("date").notNull(),
-  participants: jsonb("participants").notNull(), // array of {studentId: string, status: 'arrived' | 'late' | 'absent'}
-  createdAt: timestamp("created_at").defaultNow(),
-  createdById: varchar("created_by_id").references(() => users.id),
-  createdByRole: varchar("created_by_role").notNull().default("admin"),
-  updatedAt: timestamp("updated_at"),
-  updatedById: varchar("updated_by_id").references(() => users.id),
-  updatedByRole: varchar("updated_by_role"),
-});
-
-export const payments = pgTable("payments", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  studentId: varchar("student_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  amount: integer("amount").notNull(), // in cents
-  paymentDate: timestamp("payment_date").defaultNow(),
-  classesAttended: integer("classes_attended").notNull().default(0),
-  status: text("status").notNull().default("paid"), // "paid" or "unpaid"
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
 export const products = pgTable("products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
@@ -138,7 +115,6 @@ export const medalAwards = pgTable("medal_awards", {
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   groupStudents: many(groupStudents),
-  payments: many(payments),
   purchases: many(purchases),
 }));
 
@@ -147,7 +123,6 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const groupsRelations = relations(groups, ({ many }) => ({
   groupStudents: many(groupStudents),
   teacherGroups: many(teacherGroups),
-  attendance: many(attendance),
 }));
 
 export const groupStudentsRelations = relations(groupStudents, ({ one }) => ({
@@ -169,20 +144,6 @@ export const teacherGroupsRelations = relations(teacherGroups, ({ one }) => ({
   group: one(groups, {
     fields: [teacherGroups.groupId],
     references: [groups.id],
-  }),
-}));
-
-export const attendanceRelations = relations(attendance, ({ one }) => ({
-  group: one(groups, {
-    fields: [attendance.groupId],
-    references: [groups.id],
-  }),
-}));
-
-export const paymentsRelations = relations(payments, ({ one }) => ({
-  student: one(users, {
-    fields: [payments.studentId],
-    references: [users.id],
   }),
 }));
 
@@ -256,16 +217,6 @@ export const insertTeacherGroupSchema = createInsertSchema(teacherGroups).omit({
   assignedAt: true,
 });
 
-export const insertAttendanceSchema = createInsertSchema(attendance).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertPaymentSchema = createInsertSchema(payments).omit({
-  id: true,
-  createdAt: true,
-});
-
 export const insertProductSchema = createInsertSchema(products).omit({
   id: true,
   createdAt: true,
@@ -291,10 +242,6 @@ export type GroupStudent = typeof groupStudents.$inferSelect;
 export type InsertGroupStudent = z.infer<typeof insertGroupStudentSchema>;
 export type TeacherGroup = typeof teacherGroups.$inferSelect;
 export type InsertTeacherGroup = z.infer<typeof insertTeacherGroupSchema>;
-export type Attendance = typeof attendance.$inferSelect;
-export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;
-export type Payment = typeof payments.$inferSelect;
-export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Purchase = typeof purchases.$inferSelect;
