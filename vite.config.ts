@@ -9,9 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [
     react(),
-    ...(process.env.NODE_ENV !== "production" 
-      ? [runtimeErrorOverlay()]
-      : []),
+    runtimeErrorOverlay(),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
@@ -42,9 +40,7 @@ export default defineConfig({
       allow: ['..']
     },
     hmr: {
-      host: process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost',
       clientPort: 443,
-      protocol: 'wss'
     },
   },
 });

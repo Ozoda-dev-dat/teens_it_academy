@@ -137,7 +137,7 @@ export default function AdminDashboard() {
     queryKey: ["/api/products"],
     enabled: !!user,
   });
-  
+
   // Pending purchases query
   const { data: pendingPurchases = [] } = useQuery<Purchase[]>({
     queryKey: ["/api/purchases/pending"],

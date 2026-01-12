@@ -335,8 +335,8 @@ export class DatabaseStorage implements IStorage {
   async awardMedalsSafelyWithTotals(studentId: string, medalType: 'gold' | 'silver' | 'bronze', amount: number, reason: string, relatedId?: string): Promise<{ success: boolean; updatedTotals?: { gold: number; silver: number; bronze: number }; reason?: string }> {
     return await db.transaction(async (tx) => {
       const [student] = await tx.select().from(users).where(eq(users.id, studentId)).for('update');
-      if (!student) return { success: false, reason: 'Student not found' };
-      if (!await this.canAwardMedals(studentId, medalType, amount)) return { success: false, reason: 'Limit reached' };
+      if (!student) return { success: false, reason: 'O\'quvchi topilmadi' };
+      if (!(await this.canAwardMedals(studentId, medalType, amount))) return { success: false, reason: 'Limitga yetildi' };
       const current = student.medals as { gold: number; silver: number; bronze: number };
       const newMedals = { ...current, [medalType]: current[medalType] + amount };
       await tx.update(users).set({ medals: newMedals }).where(eq(users.id, studentId));
