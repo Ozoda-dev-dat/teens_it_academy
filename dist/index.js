@@ -9,6 +9,7 @@ import express2 from "express";
 
 // server/routes.ts
 import { createServer } from "http";
+import { WebSocketServer } from "ws";
 
 // server/auth.ts
 import passport from "passport";
@@ -20,61 +21,52 @@ import { promisify } from "util";
 // shared/schema.ts
 var schema_exports = {};
 __export(schema_exports, {
-  attendance: () => attendance,
-  attendanceRelations: () => attendanceRelations,
   groupStudents: () => groupStudents,
   groupStudentsRelations: () => groupStudentsRelations,
   groups: () => groups,
   groupsRelations: () => groupsRelations,
-  insertAttendanceSchema: () => insertAttendanceSchema,
   insertGroupSchema: () => insertGroupSchema,
   insertGroupStudentSchema: () => insertGroupStudentSchema,
-  insertPaymentSchema: () => insertPaymentSchema,
+  insertMedalAwardSchema: () => insertMedalAwardSchema,
   insertProductSchema: () => insertProductSchema,
   insertPurchaseSchema: () => insertPurchaseSchema,
   insertTeacherGroupSchema: () => insertTeacherGroupSchema,
-  insertTeacherSchema: () => insertTeacherSchema,
   insertUserSchema: () => insertUserSchema,
-  payments: () => payments,
-  paymentsRelations: () => paymentsRelations,
+  medalAwards: () => medalAwards,
+  medalAwardsRelations: () => medalAwardsRelations,
   products: () => products,
   productsRelations: () => productsRelations,
   purchases: () => purchases,
   purchasesRelations: () => purchasesRelations,
   teacherGroups: () => teacherGroups,
   teacherGroupsRelations: () => teacherGroupsRelations,
-  teachers: () => teachers,
-  teachersRelations: () => teachersRelations,
+  updateUserSchema: () => updateUserSchema,
   users: () => users,
   usersRelations: () => usersRelations
 });
 import { sql } from "drizzle-orm";
 import { pgTable, text, varchar, integer, timestamp, jsonb, boolean, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
 import { relations } from "drizzle-orm";
 var users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   role: text("role").notNull().default("student"),
-  // "admin" or "student"
+  // "admin", "student", or "teacher"
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
+  phone: text("phone"),
+  // Student's own phone number
+  parentPhone: text("parent_phone"),
+  // Parent's phone number
+  parentName: text("parent_name"),
+  // Parent's name
   profilePic: text("profile_pic"),
   avatarConfig: jsonb("avatar_config"),
   // Stores detailed avatar customization data
   medals: jsonb("medals").default(sql`'{"gold": 0, "silver": 0, "bronze": 0}'`),
-  createdAt: timestamp("created_at").defaultNow()
-});
-var teachers = pgTable("teachers", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  profilePic: text("profile_pic"),
-  avatarConfig: jsonb("avatar_config"),
-  // Stores detailed avatar customization data
   createdAt: timestamp("created_at").defaultNow()
 });
 var groups = pgTable("groups", {
@@ -93,39 +85,20 @@ var groupStudents = pgTable("group_students", {
 });
 var teacherGroups = pgTable("teacher_groups", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  teacherId: varchar("teacher_id").notNull().references(() => teachers.id, { onDelete: "cascade" }),
+  teacherId: varchar("teacher_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   groupId: varchar("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
-  assignedAt: timestamp("assigned_at").defaultNow()
+  assignedAt: timestamp("assigned_at").defaultNow(),
+  completedAt: timestamp("completed_at")
 }, (table) => ({
-  // Unique constraint to prevent duplicate teacher-group assignments
   uniqueTeacherGroup: unique().on(table.teacherId, table.groupId)
 }));
-var attendance = pgTable("attendance", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  groupId: varchar("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
-  date: timestamp("date").notNull(),
-  participants: jsonb("participants").notNull(),
-  // array of {studentId: string, status: 'arrived' | 'late' | 'absent'}
-  createdAt: timestamp("created_at").defaultNow()
-});
-var payments = pgTable("payments", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  studentId: varchar("student_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  amount: integer("amount").notNull(),
-  // in cents
-  paymentDate: timestamp("payment_date").defaultNow(),
-  classesAttended: integer("classes_attended").notNull().default(0),
-  status: text("status").notNull().default("paid"),
-  // "paid" or "unpaid"
-  createdAt: timestamp("created_at").defaultNow()
-});
 var products = pgTable("products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   description: text("description"),
   image: text("image"),
   quantity: integer("quantity").notNull().default(0),
-  medalCost: jsonb("medal_cost").notNull(),
+  medalCost: jsonb("medal_cost").$type().notNull().default(sql`'{"gold": 0, "silver": 0, "bronze": 0}'`),
   // {gold: 0, silver: 0, bronze: 0}
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow()
@@ -135,20 +108,32 @@ var purchases = pgTable("purchases", {
   studentId: varchar("student_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   productId: varchar("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
   medalsPaid: jsonb("medals_paid").notNull(),
-  purchaseDate: timestamp("purchase_date").defaultNow()
+  status: text("status").notNull().default("pending"),
+  // "pending", "approved", or "rejected"
+  purchaseDate: timestamp("purchase_date").defaultNow(),
+  approvedById: varchar("approved_by_id").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  rejectionReason: text("rejection_reason")
+});
+var medalAwards = pgTable("medal_awards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  medalType: text("medal_type").notNull(),
+  // "gold", "silver", or "bronze"
+  amount: integer("amount").notNull().default(1),
+  reason: text("reason"),
+  // e.g., "attendance", "achievement", "purchase"
+  relatedId: varchar("related_id"),
+  // Reference to attendance, achievement, etc.
+  awardedAt: timestamp("awarded_at").defaultNow()
 });
 var usersRelations = relations(users, ({ many }) => ({
   groupStudents: many(groupStudents),
-  payments: many(payments),
   purchases: many(purchases)
-}));
-var teachersRelations = relations(teachers, ({ many }) => ({
-  teacherGroups: many(teacherGroups)
 }));
 var groupsRelations = relations(groups, ({ many }) => ({
   groupStudents: many(groupStudents),
-  teacherGroups: many(teacherGroups),
-  attendance: many(attendance)
+  teacherGroups: many(teacherGroups)
 }));
 var groupStudentsRelations = relations(groupStudents, ({ one }) => ({
   group: one(groups, {
@@ -161,25 +146,13 @@ var groupStudentsRelations = relations(groupStudents, ({ one }) => ({
   })
 }));
 var teacherGroupsRelations = relations(teacherGroups, ({ one }) => ({
-  teacher: one(teachers, {
+  teacher: one(users, {
     fields: [teacherGroups.teacherId],
-    references: [teachers.id]
+    references: [users.id]
   }),
   group: one(groups, {
     fields: [teacherGroups.groupId],
     references: [groups.id]
-  })
-}));
-var attendanceRelations = relations(attendance, ({ one }) => ({
-  group: one(groups, {
-    fields: [attendance.groupId],
-    references: [groups.id]
-  })
-}));
-var paymentsRelations = relations(payments, ({ one }) => ({
-  student: one(users, {
-    fields: [payments.studentId],
-    references: [users.id]
   })
 }));
 var productsRelations = relations(products, ({ many }) => ({
@@ -195,14 +168,34 @@ var purchasesRelations = relations(purchases, ({ one }) => ({
     references: [products.id]
   })
 }));
-var insertUserSchema = createInsertSchema(users).omit({
+var medalAwardsRelations = relations(medalAwards, ({ one }) => ({
+  student: one(users, {
+    fields: [medalAwards.studentId],
+    references: [users.id]
+  })
+}));
+var baseUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true
+}).extend({
+  // Make parentPhone and parentName optional (they are only required for students)
+  parentPhone: z.string().optional(),
+  parentName: z.string().optional()
 });
-var insertTeacherSchema = createInsertSchema(teachers).omit({
-  id: true,
-  createdAt: true
-});
+var insertUserSchema = baseUserSchema.refine(
+  (data) => {
+    if (data.role === "student") {
+      return !!data.parentPhone && data.parentPhone.length > 0 && !!data.parentName && data.parentName.length > 0;
+    }
+    return true;
+  },
+  {
+    message: "Ota-ona telefon raqami va ismi o'quvchilar uchun talab qilinadi",
+    path: ["parentPhone"]
+    // This will show the error on the parentPhone field
+  }
+);
+var updateUserSchema = baseUserSchema.partial();
 var insertGroupSchema = createInsertSchema(groups).omit({
   id: true,
   createdAt: true
@@ -215,14 +208,6 @@ var insertTeacherGroupSchema = createInsertSchema(teacherGroups).omit({
   id: true,
   assignedAt: true
 });
-var insertAttendanceSchema = createInsertSchema(attendance).omit({
-  id: true,
-  createdAt: true
-});
-var insertPaymentSchema = createInsertSchema(payments).omit({
-  id: true,
-  createdAt: true
-});
 var insertProductSchema = createInsertSchema(products).omit({
   id: true,
   createdAt: true
@@ -231,40 +216,48 @@ var insertPurchaseSchema = createInsertSchema(purchases).omit({
   id: true,
   purchaseDate: true
 });
+var insertMedalAwardSchema = createInsertSchema(medalAwards).omit({
+  id: true,
+  awardedAt: true
+});
 
 // server/db.ts
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?"
-  );
+  throw new Error("DATABASE_URL must be set!");
 }
 var pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false
+  ssl: {
+    rejectUnauthorized: false
+    // 🔑 Neon uchun majburiy
+  },
+  connectionTimeoutMillis: 15e3,
+  // 10 soniya kutadi
+  idleTimeoutMillis: 3e4,
+  // bo‘sh ulanishni yopadi
+  max: 10
+  // pool ulanishlar soni
+}).on("error", (err, client) => {
+  console.error("Unexpected error on idle client", err);
+  process.exit(-1);
 });
 var db = drizzle(pool, { schema: schema_exports });
 
 // server/storage.ts
-import { eq, and, sql as sql2, desc } from "drizzle-orm";
+import { eq, and, sql as sql2, desc, gte, lte } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 var PostgresSessionStore = connectPg(session);
 var DatabaseStorage = class {
-  sessionStore;
   constructor() {
     this.sessionStore = new PostgresSessionStore({
-      // Use the existing database pool instead of creating a new connection
       pool,
       tableName: "session",
-      // Table to store sessions
       createTableIfMissing: true,
       pruneSessionInterval: 60 * 15,
-      // Prune expired sessions every 15 minutes
-      // Use shorter session expiry for better security
       ttl: 24 * 60 * 60 * 1e3
-      // 24 hours in milliseconds
     });
   }
   // User methods
@@ -292,38 +285,13 @@ var DatabaseStorage = class {
     const result = await db.select().from(users).where(eq(users.role, "student"));
     return result || [];
   }
-  async getAllTeachers() {
-    const result = await db.select().from(teachers);
-    return result || [];
-  }
-  async createTeacher(insertTeacher) {
-    const [teacher] = await db.insert(teachers).values(insertTeacher).returning();
-    return teacher;
-  }
-  async getTeacher(id) {
-    const [teacher] = await db.select().from(teachers).where(eq(teachers.id, id));
-    return teacher || void 0;
-  }
-  async getTeacherByEmail(email) {
-    const [teacher] = await db.select().from(teachers).where(eq(teachers.email, email));
-    return teacher || void 0;
-  }
-  async updateTeacher(id, updates) {
-    const [teacher] = await db.update(teachers).set(updates).where(eq(teachers.id, id)).returning();
-    return teacher || void 0;
-  }
-  async deleteTeacher(id) {
-    const result = await db.delete(teachers).where(eq(teachers.id, id));
-    return (result.rowCount ?? 0) > 0;
-  }
   // Group methods
   async createGroup(group) {
     const [newGroup] = await db.insert(groups).values(group).returning();
     return newGroup;
   }
   async getAllGroups() {
-    const result = await db.select().from(groups);
-    return result || [];
+    return await db.select().from(groups).orderBy(desc(groups.createdAt));
   }
   async getGroup(id) {
     const [group] = await db.select().from(groups).where(eq(groups.id, id));
@@ -343,31 +311,14 @@ var DatabaseStorage = class {
     return newGroupStudent;
   }
   async removeStudentFromGroup(groupId, studentId) {
-    const result = await db.delete(groupStudents).where(and(
-      eq(groupStudents.groupId, groupId),
-      eq(groupStudents.studentId, studentId)
-    ));
+    const result = await db.delete(groupStudents).where(and(eq(groupStudents.groupId, groupId), eq(groupStudents.studentId, studentId)));
     return (result.rowCount ?? 0) > 0;
   }
   async getGroupStudents(groupId) {
-    const result = await db.select({
-      id: groupStudents.id,
-      groupId: groupStudents.groupId,
-      studentId: groupStudents.studentId,
-      joinedAt: groupStudents.joinedAt,
-      student: {
-        id: users.id,
-        firstName: users.firstName,
-        lastName: users.lastName,
-        email: users.email,
-        role: users.role
-      }
-    }).from(groupStudents).innerJoin(users, eq(groupStudents.studentId, users.id)).where(eq(groupStudents.groupId, groupId));
-    return result || [];
+    return await db.select().from(groupStudents).where(eq(groupStudents.groupId, groupId));
   }
   async getStudentGroups(studentId) {
-    const result = await db.select().from(groupStudents).where(eq(groupStudents.studentId, studentId));
-    return result || [];
+    return await db.select().from(groupStudents).where(eq(groupStudents.studentId, studentId));
   }
   // Teacher Group methods
   async assignTeacherToGroup(teacherGroup) {
@@ -375,53 +326,41 @@ var DatabaseStorage = class {
     return newTeacherGroup;
   }
   async removeTeacherFromGroup(teacherId, groupId) {
-    const result = await db.delete(teacherGroups).where(and(
-      eq(teacherGroups.teacherId, teacherId),
-      eq(teacherGroups.groupId, groupId)
-    ));
+    const result = await db.delete(teacherGroups).where(and(eq(teacherGroups.teacherId, teacherId), eq(teacherGroups.groupId, groupId)));
     return (result.rowCount ?? 0) > 0;
   }
   async getTeacherGroups(teacherId) {
-    const result = await db.select().from(teacherGroups).where(eq(teacherGroups.teacherId, teacherId));
-    return result || [];
+    return await db.select().from(teacherGroups).where(eq(teacherGroups.teacherId, teacherId));
   }
   async getGroupTeachers(groupId) {
-    const result = await db.select().from(teacherGroups).where(eq(teacherGroups.groupId, groupId));
-    return result || [];
+    return await db.select().from(teacherGroups).where(eq(teacherGroups.groupId, groupId));
   }
-  // Attendance methods
-  async createAttendance(attendanceData) {
-    const [newAttendance] = await db.insert(attendance).values(attendanceData).returning();
-    return newAttendance;
+  async updateTeacherGroupStatus(teacherGroupId, completedAt) {
+    const [teacherGroup] = await db.update(teacherGroups).set({ completedAt }).where(eq(teacherGroups.id, teacherGroupId)).returning();
+    return teacherGroup || void 0;
   }
-  async getGroupAttendance(groupId) {
-    try {
-      const result = await db.select().from(attendance).where(eq(attendance.groupId, groupId)).orderBy(desc(attendance.date));
-      return result || [];
-    } catch (error) {
-      console.error("Error fetching group attendance:", error);
-      return [];
-    }
+  async getAllTeachers() {
+    return await db.select().from(users).where(eq(users.role, "teacher"));
   }
-  async getAttendanceByDate(groupId, date) {
-    const [attendanceRecord] = await db.select().from(attendance).where(and(
-      eq(attendance.groupId, groupId),
-      eq(attendance.date, date)
-    ));
-    return attendanceRecord || void 0;
+  async createTeacher(teacher) {
+    const [newTeacher] = await db.insert(users).values({ ...teacher, role: "teacher" }).returning();
+    return newTeacher;
   }
-  // Payment methods
-  async createPayment(payment) {
-    const [newPayment] = await db.insert(payments).values(payment).returning();
-    return newPayment;
+  async getTeacher(id) {
+    const [user] = await db.select().from(users).where(and(eq(users.id, id), eq(users.role, "teacher")));
+    return user || void 0;
   }
-  async getStudentPayments(studentId) {
-    const result = await db.select().from(payments).where(eq(payments.studentId, studentId)).orderBy(desc(payments.paymentDate));
-    return result || [];
+  async getTeacherByEmail(email) {
+    const [user] = await db.select().from(users).where(and(eq(users.email, email), eq(users.role, "teacher")));
+    return user || void 0;
   }
-  async updatePayment(id, updates) {
-    const [payment] = await db.update(payments).set(updates).where(eq(payments.id, id)).returning();
-    return payment || void 0;
+  async updateTeacher(id, updates) {
+    const [user] = await db.update(users).set(updates).where(and(eq(users.id, id), eq(users.role, "teacher"))).returning();
+    return user || void 0;
+  }
+  async deleteTeacher(id) {
+    const result = await db.delete(users).where(and(eq(users.id, id), eq(users.role, "teacher")));
+    return (result.rowCount ?? 0) > 0;
   }
   // Product methods
   async createProduct(product) {
@@ -429,13 +368,7 @@ var DatabaseStorage = class {
     return newProduct;
   }
   async getAllProducts() {
-    try {
-      const result = await db.select().from(products).where(eq(products.isActive, true));
-      return result || [];
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      return [];
-    }
+    return await db.select().from(products);
   }
   async getProduct(id) {
     const [product] = await db.select().from(products).where(eq(products.id, id));
@@ -455,45 +388,150 @@ var DatabaseStorage = class {
     return newPurchase;
   }
   async getStudentPurchases(studentId) {
-    const result = await db.select().from(purchases).where(eq(purchases.studentId, studentId)).orderBy(desc(purchases.purchaseDate));
-    return result || [];
+    return await db.select().from(purchases).where(eq(purchases.studentId, studentId)).orderBy(desc(purchases.purchaseDate));
+  }
+  async getPendingPurchases() {
+    return await db.select().from(purchases).where(eq(purchases.status, "pending")).orderBy(desc(purchases.purchaseDate));
+  }
+  async getPurchase(id) {
+    const [purchase] = await db.select().from(purchases).where(eq(purchases.id, id));
+    return purchase || void 0;
+  }
+  async approvePurchase(id, adminId) {
+    return await db.transaction(async (tx) => {
+      const [purchase] = await tx.select().from(purchases).where(eq(purchases.id, id)).for("update");
+      if (!purchase || purchase.status !== "pending") throw new Error("Purchase not available");
+      const [product] = await tx.select().from(products).where(eq(products.id, purchase.productId)).for("update");
+      if (!product || product.quantity <= 0) throw new Error("Product unavailable");
+      await tx.update(products).set({ quantity: product.quantity - 1 }).where(eq(products.id, product.id));
+      const [updated] = await tx.update(purchases).set({ status: "approved", approvedById: adminId, approvedAt: /* @__PURE__ */ new Date() }).where(eq(purchases.id, id)).returning();
+      return updated;
+    });
+  }
+  async rejectPurchase(id, adminId, reason) {
+    return await db.transaction(async (tx) => {
+      const [purchase] = await tx.select().from(purchases).where(eq(purchases.id, id)).for("update");
+      if (!purchase || purchase.status !== "pending") throw new Error("Purchase not available");
+      const [student] = await tx.select().from(users).where(eq(users.id, purchase.studentId)).for("update");
+      if (student) {
+        const currentMedals = student.medals;
+        const medalsToRefund = purchase.medalsPaid;
+        const newMedals = {
+          gold: currentMedals.gold + (medalsToRefund.gold || 0),
+          silver: currentMedals.silver + (medalsToRefund.silver || 0),
+          bronze: currentMedals.bronze + (medalsToRefund.bronze || 0)
+        };
+        await tx.update(users).set({ medals: newMedals }).where(eq(users.id, student.id));
+      }
+      const [updated] = await tx.update(purchases).set({ status: "rejected", approvedById: adminId, approvedAt: /* @__PURE__ */ new Date(), rejectionReason: reason }).where(eq(purchases.id, id)).returning();
+      return updated;
+    });
+  }
+  // Medal Award methods
+  async createMedalAward(medalAward) {
+    const [award] = await db.insert(medalAwards).values(medalAward).returning();
+    return award;
+  }
+  async getStudentMedalAwards(studentId) {
+    return await db.select().from(medalAwards).where(eq(medalAwards.studentId, studentId)).orderBy(desc(medalAwards.awardedAt));
+  }
+  async getMonthlyMedalAwards(studentId, year, month) {
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0, 23, 59, 59);
+    return await db.select().from(medalAwards).where(and(eq(medalAwards.studentId, studentId), gte(medalAwards.awardedAt, start), lte(medalAwards.awardedAt, end))).orderBy(desc(medalAwards.awardedAt));
+  }
+  async canAwardMedals(studentId, medalType, amount = 1) {
+    const now = /* @__PURE__ */ new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    const results = await db.select().from(medalAwards).where(and(eq(medalAwards.studentId, studentId), eq(medalAwards.medalType, medalType), gte(medalAwards.awardedAt, start), lte(medalAwards.awardedAt, end)));
+    const current = results.reduce((sum, a) => sum + a.amount, 0);
+    const limits = { gold: 2, silver: 2, bronze: 48 };
+    return current + amount <= limits[medalType];
+  }
+  async awardMedalsSafelyWithTotals(studentId, medalType, amount, reason, relatedId) {
+    return await db.transaction(async (tx) => {
+      const [student] = await tx.select().from(users).where(eq(users.id, studentId)).for("update");
+      if (!student) return { success: false, reason: "O'quvchi topilmadi" };
+      if (!await this.canAwardMedals(studentId, medalType, amount)) return { success: false, reason: "Limitga yetildi" };
+      const current = student.medals;
+      const newMedals = { ...current, [medalType]: current[medalType] + amount };
+      await tx.update(users).set({ medals: newMedals }).where(eq(users.id, studentId));
+      await tx.insert(medalAwards).values({ studentId, medalType, amount, reason, relatedId });
+      return { success: true, updatedTotals: newMedals };
+    });
+  }
+  async revokeMedalsSafely(studentId, medalType, amount, reason, relatedId) {
+    return await db.transaction(async (tx) => {
+      const [student] = await tx.select().from(users).where(eq(users.id, studentId)).for("update");
+      if (!student) return { success: false, reason: "Student not found" };
+      const current = student.medals;
+      if (current[medalType] < amount) return { success: false, reason: "Not enough medals" };
+      const newMedals = { ...current, [medalType]: current[medalType] - amount };
+      await tx.update(users).set({ medals: newMedals }).where(eq(users.id, studentId));
+      await tx.delete(medalAwards).where(and(eq(medalAwards.studentId, studentId), eq(medalAwards.medalType, medalType), eq(medalAwards.reason, reason), relatedId ? eq(medalAwards.relatedId, relatedId) : sql2`true`));
+      return { success: true };
+    });
+  }
+  // Ranking methods
+  async getTopStudentsByMedalsThisWeek(limit) {
+    const now = /* @__PURE__ */ new Date();
+    const start = new Date(now.setDate(now.getDate() - now.getDay()));
+    start.setHours(0, 0, 0, 0);
+    const result = await db.select({
+      id: users.id,
+      role: users.role,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      phone: users.phone,
+      profilePic: users.profilePic,
+      avatarConfig: users.avatarConfig,
+      medals: users.medals,
+      createdAt: users.createdAt,
+      gold: sql2`COALESCE(SUM(CASE WHEN ${medalAwards.medalType} = 'gold' THEN ${medalAwards.amount} ELSE 0 END), 0)`,
+      silver: sql2`COALESCE(SUM(CASE WHEN ${medalAwards.medalType} = 'silver' THEN ${medalAwards.amount} ELSE 0 END), 0)`,
+      bronze: sql2`COALESCE(SUM(CASE WHEN ${medalAwards.medalType} = 'bronze' THEN ${medalAwards.amount} ELSE 0 END), 0)`
+    }).from(users).leftJoin(medalAwards, and(eq(medalAwards.studentId, users.id), gte(medalAwards.awardedAt, start))).where(eq(users.role, "student")).groupBy(users.id).orderBy(desc(sql2`gold * 3 + silver * 2 + bronze`)).limit(limit);
+    return result.map((r) => ({ ...r, password: "", parentPhone: null, parentName: null, weeklyMedals: { gold: Number(r.gold), silver: Number(r.silver), bronze: Number(r.bronze) } }));
+  }
+  async getTopStudentsByMedalsThisMonth(limit) {
+    const now = /* @__PURE__ */ new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const result = await db.select({
+      id: users.id,
+      role: users.role,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      phone: users.phone,
+      profilePic: users.profilePic,
+      avatarConfig: users.avatarConfig,
+      medals: users.medals,
+      createdAt: users.createdAt,
+      gold: sql2`COALESCE(SUM(CASE WHEN ${medalAwards.medalType} = 'gold' THEN ${medalAwards.amount} ELSE 0 END), 0)`,
+      silver: sql2`COALESCE(SUM(CASE WHEN ${medalAwards.medalType} = 'silver' THEN ${medalAwards.amount} ELSE 0 END), 0)`,
+      bronze: sql2`COALESCE(SUM(CASE WHEN ${medalAwards.medalType} = 'bronze' THEN ${medalAwards.amount} ELSE 0 END), 0)`
+    }).from(users).leftJoin(medalAwards, and(eq(medalAwards.studentId, users.id), gte(medalAwards.awardedAt, start))).where(eq(users.role, "student")).groupBy(users.id).orderBy(desc(sql2`gold * 3 + silver * 2 + bronze`)).limit(limit);
+    return result.map((r) => ({ ...r, password: "", parentPhone: null, parentName: null, monthlyMedals: { gold: Number(r.gold), silver: Number(r.silver), bronze: Number(r.bronze) } }));
+  }
+  async getTopStudentsByMedalsAllTime(limit) {
+    const result = await db.select().from(users).where(eq(users.role, "student")).orderBy(desc(sql2`CAST(medals->>'gold' AS INTEGER) * 3 + CAST(medals->>'silver' AS INTEGER) * 2 + CAST(medals->>'bronze' AS INTEGER)`)).limit(limit);
+    return result.map((r) => ({ ...r, password: "", parentPhone: null, parentName: null }));
   }
   // Stats methods
   async getStats() {
-    try {
-      const studentCountResult = await db.select({ count: sql2`count(*)` }).from(users).where(eq(users.role, "student"));
-      const totalStudents = studentCountResult[0]?.count || 0;
-      const groupCountResult = await db.select({ count: sql2`count(*)` }).from(groups);
-      const activeGroups = groupCountResult[0]?.count || 0;
-      const medalResults = await db.select({ medals: users.medals }).from(users).where(eq(users.role, "student"));
-      const totalMedals = (medalResults || []).reduce(
-        (acc, user) => {
-          const medals = user.medals;
-          acc.gold += medals?.gold || 0;
-          acc.silver += medals?.silver || 0;
-          acc.bronze += medals?.bronze || 0;
-          return acc;
-        },
-        { gold: 0, silver: 0, bronze: 0 }
-      );
-      const unpaidPayments = await db.select({ amount: payments.amount }).from(payments).where(eq(payments.status, "unpaid"));
-      const unpaidAmount = (unpaidPayments || []).reduce((total, payment) => total + (payment.amount || 0), 0);
-      return {
-        totalStudents: Number(totalStudents),
-        activeGroups: Number(activeGroups),
-        totalMedals,
-        unpaidAmount: Number(unpaidAmount) / 100
-        // Convert from cents to dollars
-      };
-    } catch (error) {
-      console.error("Error fetching stats:", error);
-      return {
-        totalStudents: 0,
-        activeGroups: 0,
-        totalMedals: { gold: 0, silver: 0, bronze: 0 },
-        unpaidAmount: 0
-      };
-    }
+    const [sc] = await db.select({ count: sql2`count(*)` }).from(users).where(eq(users.role, "student"));
+    const [gc] = await db.select({ count: sql2`count(*)` }).from(groups);
+    const students = await this.getAllStudents();
+    const tm = students.reduce((acc, s) => {
+      const m = s.medals;
+      acc.gold += m?.gold || 0;
+      acc.silver += m?.silver || 0;
+      acc.bronze += m?.bronze || 0;
+      return acc;
+    }, { gold: 0, silver: 0, bronze: 0 });
+    return { totalStudents: Number(sc.count), activeGroups: Number(gc.count), totalMedals: tm };
   }
 };
 var storage = new DatabaseStorage();
@@ -511,10 +549,34 @@ function setupAuth(app2) {
     secret: process.env.SESSION_SECRET || "teens-it-school-secret-2024",
     resave: false,
     saveUninitialized: false,
-    store: storage.sessionStore
+    store: storage.sessionStore,
+    cookie: {
+      maxAge: 24 * 60 * 60 * 1e3,
+      // 24 hours
+      httpOnly: true,
+      secure: false,
+      // Set to false for Replit environment
+      sameSite: "lax"
+      // Allow cross-site requests in iframe
+    }
   };
   app2.set("trust proxy", 1);
   app2.use(session2(sessionSettings));
+  app2.use("/api", (req, _res, next) => {
+    try {
+      console.log("API request:", {
+        method: req.method,
+        path: req.path,
+        sessionID: req.sessionID || null,
+        hasCookie: !!req.headers?.cookie,
+        isAuthenticated: typeof req.isAuthenticated === "function" ? req.isAuthenticated() : false,
+        userId: req.user?.id ?? null
+      });
+    } catch (err) {
+      console.debug("API request logging failed", err);
+    }
+    next();
+  });
   app2.use(passport.initialize());
   app2.use(passport.session());
   passport.use(
@@ -546,7 +608,12 @@ function setupAuth(app2) {
   passport.deserializeUser(async (id, done) => {
     try {
       const user = await storage.getUser(id);
-      done(null, user);
+      if (user) {
+        const { password, ...publicUser } = user;
+        done(null, publicUser);
+      } else {
+        done(null, null);
+      }
     } catch (error) {
       done(error);
     }
@@ -563,7 +630,8 @@ function setupAuth(app2) {
         if (err2) {
           return res.status(500).json({ message: "Tizimga kirishda xatolik yuz berdi" });
         }
-        res.status(200).json(user);
+        const { password, ...userWithoutPassword } = user;
+        res.status(200).json(userWithoutPassword);
       });
     })(req, res, next);
   });
@@ -574,13 +642,93 @@ function setupAuth(app2) {
     });
   });
   app2.get("/api/user", (req, res) => {
+    try {
+      console.log("/api/user called - isAuthenticated:", typeof req.isAuthenticated === "function" ? req.isAuthenticated() : false, "sessionID:", req.sessionID || null);
+    } catch (err) {
+      console.debug("Error logging /api/user call", err);
+    }
     if (!req.isAuthenticated()) return res.sendStatus(401);
     res.json(req.user);
   });
 }
 
+// server/notifications.ts
+import { WebSocket } from "ws";
+var NotificationService = class {
+  constructor() {
+    this.clients = /* @__PURE__ */ new Map();
+    console.log("NotificationService initialized");
+  }
+  addClient(socket, userId, role) {
+    const client = { socket, userId, role };
+    this.clients.set(socket, client);
+    console.log(`WebSocket client connected: userId=${userId}, role=${role}, total clients: ${this.clients.size}`);
+    this.sendToSocket(socket, {
+      type: "stats_updated",
+      data: { message: "Connected to real-time updates" },
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    });
+    socket.on("close", () => {
+      this.clients.delete(socket);
+      console.log(`WebSocket client disconnected: userId=${userId}, remaining clients: ${this.clients.size}`);
+    });
+    socket.on("error", (error) => {
+      console.error("WebSocket error:", error);
+      this.clients.delete(socket);
+    });
+  }
+  removeClient(socket) {
+    this.clients.delete(socket);
+  }
+  sendToSocket(socket, notification) {
+    if (socket.readyState === WebSocket.OPEN) {
+      try {
+        socket.send(JSON.stringify(notification));
+      } catch (error) {
+        console.error("Error sending notification to client:", error);
+        this.clients.delete(socket);
+      }
+    }
+  }
+  // Broadcast to all authenticated clients (sensitive notifications)
+  broadcast(notification) {
+    console.log(`Broadcasting notification: ${notification.type} to authenticated clients`);
+    const isSensitive = ["medal_awarded", "user_created", "payment_created", "attendance_created"].includes(notification.type);
+    Array.from(this.clients.entries()).forEach(([socket, client]) => {
+      if (isSensitive && !client.userId) {
+        return;
+      }
+      this.sendToSocket(socket, notification);
+    });
+  }
+  // Broadcast to clients with specific role
+  broadcastToRole(role, notification) {
+    console.log(`Broadcasting to ${role}: ${notification.type}`);
+    Array.from(this.clients.entries()).forEach(([socket, client]) => {
+      if (client.role === role || role === "all") {
+        this.sendToSocket(socket, notification);
+      }
+    });
+  }
+  // Broadcast to specific user
+  broadcastToUser(userId, notification) {
+    console.log(`Broadcasting to user ${userId}: ${notification.type}`);
+    Array.from(this.clients.entries()).forEach(([socket, client]) => {
+      if (client.userId === userId) {
+        this.sendToSocket(socket, notification);
+      }
+    });
+  }
+  getConnectedClients() {
+    return Array.from(this.clients.values());
+  }
+  getClientCount() {
+    return this.clients.size;
+  }
+};
+var notificationService = new NotificationService();
+
 // server/routes.ts
-import { z } from "zod";
 import { scrypt as scrypt2, randomBytes as randomBytes2 } from "crypto";
 import { promisify as promisify2 } from "util";
 var scryptAsync2 = promisify2(scrypt2);
@@ -588,6 +736,15 @@ async function hashPassword(password) {
   const salt = randomBytes2(16).toString("hex");
   const buf = await scryptAsync2(password, salt, 64);
   return `${buf.toString("hex")}.${salt}`;
+}
+function generateLogin() {
+  const digits = Math.floor(1e4 + Math.random() * 9e4).toString();
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const letter = letters.charAt(Math.floor(Math.random() * letters.length));
+  return digits + letter;
+}
+function generatePassword() {
+  return Math.floor(1e5 + Math.random() * 9e5).toString();
 }
 function registerRoutes(app2) {
   setupAuth(app2);
@@ -598,483 +755,136 @@ function registerRoutes(app2) {
     next();
   };
   const requireStudentOrOwn = (req, res, next) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Autentifikatsiya talab qilinadi" });
-    }
-    if (req.user.role === "admin") {
-      return next();
-    }
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Autentifikatsiya talab qilinadi" });
+    if (req.user.role === "admin") return next();
     if (req.user.role === "student") {
-      const studentId = req.params.studentId || req.body.studentId;
-      if (studentId && studentId !== req.user.id) {
-        return res.status(403).json({ message: "Faqat o'z ma'lumotlaringizga kirish mumkin" });
-      }
+      const studentId = req.params.studentId || req.body.studentId || req.params.id;
+      if (studentId && studentId !== req.user.id) return res.status(403).json({ message: "Faqat o'z ma'lumotlaringizga kirish mumkin" });
       return next();
     }
     return res.status(403).json({ message: "Kirish rad etildi" });
   };
   app2.post("/api/students", requireAdmin, async (req, res) => {
     try {
-      const studentData = insertUserSchema.parse({
-        ...req.body,
-        role: "student",
-        medals: { gold: 0, silver: 0, bronze: 0 }
-      });
-      if (studentData.password) {
-        studentData.password = await hashPassword(studentData.password);
-      }
+      let login = generateLogin();
+      while (await storage.getUserByEmail(login)) login = generateLogin();
+      const plainPassword = generatePassword();
+      const studentData = insertUserSchema.parse({ ...req.body, email: login, password: plainPassword, role: "student", medals: { gold: 0, silver: 0, bronze: 0 } });
+      studentData.password = await hashPassword(plainPassword);
       const student = await storage.createUser(studentData);
-      res.status(201).json(student);
-    } catch (error) {
-      console.error("Talaba yaratishda xatolik:", error);
-      res.status(400).json({ message: "Talaba yaratishda xatolik yuz berdi" });
+      const { password, ...s } = student;
+      res.status(201).json({ ...s, generatedCredentials: { login, password: plainPassword } });
+    } catch (e) {
+      res.status(400).json({ message: "Xatolik" });
     }
   });
   app2.get("/api/students", requireAdmin, async (req, res) => {
-    try {
-      const students = await storage.getAllStudents();
-      res.json(students);
-    } catch (error) {
-      console.error("Talabalarni olishda xatolik:", error);
-      res.status(500).json({ message: "Talabalarni yuklashda xatolik" });
-    }
+    const students = await storage.getAllStudents();
+    res.json(students.map(({ password, ...s }) => s));
   });
   app2.get("/api/students/:id", requireStudentOrOwn, async (req, res) => {
-    try {
-      const student = await storage.getUser(req.params.id);
-      if (!student) {
-        return res.status(404).json({ message: "Talaba topilmadi" });
-      }
-      res.json(student);
-    } catch (error) {
-      console.error("Talaba ma'lumotlarini olishda xatolik:", error);
-      res.status(500).json({ message: "Talaba ma'lumotlarini yuklashda xatolik" });
-    }
+    const s = await storage.getUser(req.params.id);
+    if (!s) return res.status(404).json({ message: "Topilmadi" });
+    const { password, ...rest } = s;
+    res.json(rest);
   });
   app2.put("/api/students/:id", requireStudentOrOwn, async (req, res) => {
     try {
-      const updates = insertUserSchema.partial().parse(req.body);
-      const student = await storage.updateUser(req.params.id, updates);
-      if (!student) {
-        return res.status(404).json({ message: "Talaba topilmadi" });
-      }
-      res.json(student);
-    } catch (error) {
-      console.error("Talaba ma'lumotlarini yangilashda xatolik:", error);
-      res.status(400).json({ message: "Ma'lumotlarni yangilashda xatolik" });
+      const updates = updateUserSchema.parse(req.body);
+      const s = await storage.updateUser(req.params.id, updates);
+      if (!s) return res.status(404).json({ message: "Topilmadi" });
+      const { password, ...rest } = s;
+      res.json(rest);
+    } catch (e) {
+      res.status(400).json({ message: "Xatolik" });
     }
   });
   app2.delete("/api/students/:id", requireAdmin, async (req, res) => {
-    try {
-      const deleted = await storage.deleteUser(req.params.id);
-      if (!deleted) {
-        return res.status(404).json({ message: "Talaba topilmadi" });
-      }
-      res.json({ message: "Talaba muvaffaqiyatli o'chirildi" });
-    } catch (error) {
-      console.error("Talabani o'chirishda xatolik:", error);
-      res.status(500).json({ message: "Talabani o'chirishda xatolik" });
-    }
+    const d = await storage.deleteUser(req.params.id);
+    res.json({ message: d ? "O'chirildi" : "Topilmadi" });
   });
   app2.post("/api/groups", requireAdmin, async (req, res) => {
     try {
-      const groupData = insertGroupSchema.parse(req.body);
-      const group = await storage.createGroup(groupData);
-      res.status(201).json(group);
-    } catch (error) {
-      console.error("Guruh yaratishda xatolik:", error);
-      res.status(400).json({ message: "Guruh yaratishda xatolik" });
+      res.status(201).json(await storage.createGroup(insertGroupSchema.parse(req.body)));
+    } catch (e) {
+      res.status(400).json({ message: "Xatolik" });
     }
   });
-  app2.get("/api/groups", async (req, res) => {
-    try {
-      const groups2 = await storage.getAllGroups();
-      res.json(groups2);
-    } catch (error) {
-      console.error("Guruhlarni olishda xatolik:", error);
-      res.status(500).json({ message: "Guruhlarni yuklashda xatolik" });
-    }
-  });
+  app2.get("/api/groups", async (req, res) => res.json(await storage.getAllGroups()));
   app2.get("/api/groups/:id", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Autentifikatsiya talab qilinadi" });
-    }
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Autentifikatsiya" });
+    const g = await storage.getGroup(req.params.id);
+    if (!g) return res.status(404).json({ message: "Topilmadi" });
+    res.json(g);
+  });
+  app2.post("/api/medals/award", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.role !== "admin" && req.user.role !== "teacher") return res.status(403).json({ message: "Rad etildi" });
     try {
-      if (req.user.role === "admin") {
-        const group = await storage.getGroup(req.params.id);
-        if (!group) {
-          return res.status(404).json({ message: "Guruh topilmadi" });
-        }
-        return res.json(group);
-      } else if (req.user.role === "teacher") {
-        const teacherGroups2 = await storage.getTeacherGroups(req.user.id);
-        const hasAccess = teacherGroups2.some((tg) => tg.groupId === req.params.id);
-        if (!hasAccess) {
-          return res.status(403).json({ message: "Bu guruhga kirish huquqingiz yo'q" });
-        }
-        const group = await storage.getGroup(req.params.id);
-        if (!group) {
-          return res.status(404).json({ message: "Guruh topilmadi" });
-        }
-        return res.json(group);
-      }
-      return res.status(403).json({ message: "Kirish rad etildi" });
-    } catch (error) {
-      console.error("Guruh ma'lumotlarini olishda xatolik:", error);
-      res.status(500).json({ message: "Guruh ma'lumotlarini yuklashda xatolik" });
+      const { studentId, medalType, amount, reason } = req.body;
+      const result = await storage.awardMedalsSafelyWithTotals(studentId, medalType, amount, reason, req.user.id);
+      if (result.success) {
+        notificationService.broadcast({ type: "medal_awarded", data: { studentId, delta: { [medalType]: amount }, totals: result.updatedTotals, awardedBy: req.user.id, reason }, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+        res.json(result);
+      } else res.status(400).json(result);
+    } catch (e) {
+      res.status(400).json({ message: "Xatolik" });
     }
   });
-  app2.put("/api/groups/:id", requireAdmin, async (req, res) => {
-    try {
-      const updates = insertGroupSchema.partial().parse(req.body);
-      const group = await storage.updateGroup(req.params.id, updates);
-      if (!group) {
-        return res.status(404).json({ message: "Guruh topilmadi" });
-      }
-      res.json(group);
-    } catch (error) {
-      console.error("Guruh yangilashda xatolik:", error);
-      res.status(400).json({ message: "Guruh yangilashda xatolik" });
-    }
-  });
-  app2.delete("/api/groups/:id", requireAdmin, async (req, res) => {
-    try {
-      const deleted = await storage.deleteGroup(req.params.id);
-      if (!deleted) {
-        return res.status(404).json({ message: "Guruh topilmadi" });
-      }
-      res.json({ message: "Guruh muvaffaqiyatli o'chirildi" });
-    } catch (error) {
-      console.error("Guruhni o'chirishda xatolik:", error);
-      res.status(500).json({ message: "Guruhni o'chirishda xatolik" });
-    }
-  });
-  app2.post("/api/groups/:groupId/students", requireAdmin, async (req, res) => {
-    try {
-      const groupStudent = await storage.addStudentToGroup({
-        groupId: req.params.groupId,
-        studentId: req.body.studentId
-      });
-      res.status(201).json(groupStudent);
-    } catch (error) {
-      console.error("Talabani guruhga qo'shishda xatolik:", error);
-      res.status(400).json({ message: "Talabani guruhga qo'shishda xatolik" });
-    }
-  });
-  app2.get("/api/groups/:groupId/students", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Autentifikatsiya talab qilinadi" });
-    }
-    try {
-      if (req.user.role === "admin") {
-        const groupStudents2 = await storage.getGroupStudents(req.params.groupId);
-        return res.json(groupStudents2);
-      } else if (req.user.role === "teacher") {
-        const teacherGroups2 = await storage.getTeacherGroups(req.user.id);
-        const hasAccess = teacherGroups2.some((tg) => tg.groupId === req.params.groupId);
-        if (!hasAccess) {
-          return res.status(403).json({ message: "Bu guruhga kirish huquqingiz yo'q" });
-        }
-        const groupStudents2 = await storage.getGroupStudents(req.params.groupId);
-        return res.json(groupStudents2);
-      }
-      return res.status(403).json({ message: "Kirish rad etildi" });
-    } catch (error) {
-      console.error("Guruh talabalarini olishda xatolik:", error);
-      res.status(500).json({ message: "Guruh talabalarini yuklashda xatolik" });
-    }
-  });
-  app2.delete("/api/groups/:groupId/students/:studentId", requireAdmin, async (req, res) => {
-    try {
-      const removed = await storage.removeStudentFromGroup(req.params.groupId, req.params.studentId);
-      if (!removed) {
-        return res.status(404).json({ message: "O'quvchi bu guruhda topilmadi" });
-      }
-      res.status(200).json({ message: "O'quvchi guruhdan chiqarildi" });
-    } catch (error) {
-      console.error("Talabani guruhdan chiqarishda xatolik:", error);
-      res.status(400).json({ message: "Talabani guruhdan chiqarishda xatolik" });
-    }
-  });
-  app2.post("/api/attendance", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Autentifikatsiya talab qilinadi" });
-    }
-    try {
-      console.log("Received attendance data:", req.body);
-      const bodyWithDate = {
-        ...req.body,
-        date: new Date(req.body.date)
-      };
-      const attendanceData = insertAttendanceSchema.parse(bodyWithDate);
-      console.log("Parsed attendance data:", attendanceData);
-      if (req.user.role === "admin") {
-        const attendance2 = await storage.createAttendance(attendanceData);
-        return res.status(201).json(attendance2);
-      } else if (req.user.role === "teacher") {
-        const teacherGroups2 = await storage.getTeacherGroups(req.user.id);
-        const hasAccess = teacherGroups2.some((tg) => tg.groupId === attendanceData.groupId);
-        if (!hasAccess) {
-          return res.status(403).json({ message: "Bu guruh uchun davomat yaratish huquqingiz yo'q" });
-        }
-        const attendance2 = await storage.createAttendance(attendanceData);
-        return res.status(201).json(attendance2);
-      }
-      return res.status(403).json({ message: "Kirish rad etildi" });
-    } catch (error) {
-      console.error("Davomat yaratishda xatolik:", error);
-      if (error instanceof Error) {
-        res.status(400).json({ message: "Davomat yaratishda xatolik: " + error.message });
-      } else {
-        res.status(400).json({ message: "Davomat yaratishda xatolik" });
-      }
-    }
-  });
-  app2.get("/api/groups/:groupId/attendance", requireAdmin, async (req, res) => {
-    try {
-      const attendance2 = await storage.getGroupAttendance(req.params.groupId);
-      res.json(attendance2);
-    } catch (error) {
-      console.error("Davomat ma'lumotlarini olishda xatolik:", error);
-      res.status(500).json({ message: "Davomat ma'lumotlarini yuklashda xatolik" });
-    }
-  });
-  app2.get("/api/teachers/attendance", async (req, res) => {
-    if (!req.isAuthenticated() || req.user.role !== "teacher") {
-      return res.status(403).json({ message: "Faqat o'qituvchilar uchun" });
-    }
-    const { groupId } = req.query;
-    if (!groupId || typeof groupId !== "string") {
-      return res.status(400).json({ message: "Guruh ID talab qilinadi" });
-    }
-    try {
-      const teacherGroups2 = await storage.getTeacherGroups(req.user.id);
-      const hasAccess = teacherGroups2.some((tg) => tg.groupId === groupId);
-      if (!hasAccess) {
-        return res.status(403).json({ message: "Bu guruhni ko'rish huquqingiz yo'q" });
-      }
-      const attendance2 = await storage.getGroupAttendance(groupId);
-      res.json(attendance2);
-    } catch (error) {
-      console.error("Davomat ma'lumotlarini olishda xatolik:", error);
-      res.status(500).json({ message: "Davomat ma'lumotlarini yuklashda xatolik" });
-    }
-  });
-  app2.post("/api/payments", requireAdmin, async (req, res) => {
-    try {
-      const paymentData = insertPaymentSchema.parse(req.body);
-      const payment = await storage.createPayment(paymentData);
-      res.status(201).json(payment);
-    } catch (error) {
-      console.error("To'lov yaratishda xatolik:", error);
-      res.status(400).json({ message: "To'lov yaratishda xatolik" });
-    }
-  });
-  app2.get("/api/students/:studentId/payments", requireStudentOrOwn, async (req, res) => {
-    try {
-      const payments2 = await storage.getStudentPayments(req.params.studentId);
-      res.json(payments2);
-    } catch (error) {
-      console.error("To'lov ma'lumotlarini olishda xatolik:", error);
-      res.status(500).json({ message: "To'lov ma'lumotlarini yuklashda xatolik" });
-    }
-  });
-  app2.put("/api/students/:id/medals", requireAdmin, async (req, res) => {
-    try {
-      const medalSchema = z.object({
-        gold: z.number().min(0),
-        silver: z.number().min(0),
-        bronze: z.number().min(0)
-      });
-      const medals = medalSchema.parse(req.body);
-      const student = await storage.updateUser(req.params.id, { medals });
-      if (!student) {
-        return res.status(404).json({ message: "Talaba topilmadi" });
-      }
-      res.json(student);
-    } catch (error) {
-      console.error("Medallarni yangilashda xatolik:", error);
-      res.status(400).json({ message: "Medallarni yangilashda xatolik" });
-    }
-  });
+  app2.get("/api/products", async (req, res) => res.json(await storage.getAllProducts()));
   app2.post("/api/products", requireAdmin, async (req, res) => {
     try {
-      const productData = insertProductSchema.parse(req.body);
-      const product = await storage.createProduct(productData);
-      res.status(201).json(product);
-    } catch (error) {
-      console.error("Mahsulot yaratishda xatolik:", error);
-      res.status(400).json({ message: "Mahsulot yaratishda xatolik" });
+      res.status(201).json(await storage.createProduct(insertProductSchema.parse(req.body)));
+    } catch (e) {
+      res.status(400).json({ message: "Xatolik" });
     }
   });
-  app2.get("/api/products", async (req, res) => {
+  app2.post("/api/purchases", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.role !== "student") return res.status(401).json({ message: "O'quvchi bo'lishingiz kerak" });
     try {
-      const products2 = await storage.getAllProducts();
-      res.json(products2);
-    } catch (error) {
-      console.error("Mahsulotlarni olishda xatolik:", error);
-      res.status(500).json({ message: "Mahsulotlarni yuklashda xatolik" });
-    }
-  });
-  app2.put("/api/products/:id", requireAdmin, async (req, res) => {
-    try {
-      const updates = insertProductSchema.partial().parse(req.body);
-      const product = await storage.updateProduct(req.params.id, updates);
-      if (!product) {
-        return res.status(404).json({ message: "Mahsulot topilmadi" });
-      }
-      res.json(product);
-    } catch (error) {
-      console.error("Mahsulot yangilashda xatolik:", error);
-      res.status(400).json({ message: "Mahsulot yangilashda xatolik" });
-    }
-  });
-  app2.post("/api/purchases", requireStudentOrOwn, async (req, res) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ message: "Autentifikatsiya talab qilinadi" });
-      }
-      const purchaseData = insertPurchaseSchema.parse({
-        ...req.body,
-        studentId: req.user.id
-        // Ensure student can only purchase for themselves
-      });
+      const { productId } = req.body;
+      const product = await storage.getProduct(productId);
+      if (!product || !product.isActive || product.quantity <= 0) return res.status(400).json({ message: "Mahsulot mavjud emas" });
       const student = await storage.getUser(req.user.id);
-      if (!student) {
-        return res.status(404).json({ message: "Talaba topilmadi" });
-      }
-      const product = await storage.getProduct(purchaseData.productId);
-      if (!product) {
-        return res.status(404).json({ message: "Mahsulot topilmadi" });
-      }
-      const studentMedals = student.medals;
-      const productCost = product.medalCost;
-      if (studentMedals.gold < productCost.gold || studentMedals.silver < productCost.silver || studentMedals.bronze < productCost.bronze) {
-        return res.status(400).json({ message: "Yetarli medallaringiz yo'q" });
+      const currentMedals = student.medals;
+      const cost = product.medalCost;
+      if (currentMedals.gold < cost.gold || currentMedals.silver < cost.silver || currentMedals.bronze < cost.bronze) {
+        return res.status(400).json({ message: "Medallar yetarli emas" });
       }
       const newMedals = {
-        gold: studentMedals.gold - productCost.gold,
-        silver: studentMedals.silver - productCost.silver,
-        bronze: studentMedals.bronze - productCost.bronze
+        gold: currentMedals.gold - cost.gold,
+        silver: currentMedals.silver - cost.silver,
+        bronze: currentMedals.bronze - cost.bronze
       };
-      const purchase = await storage.createPurchase({
-        ...purchaseData,
-        medalsPaid: productCost
-      });
       await storage.updateUser(req.user.id, { medals: newMedals });
+      const purchase = await storage.createPurchase({ studentId: req.user.id, productId, medalsPaid: cost, status: "pending" });
       res.status(201).json(purchase);
-    } catch (error) {
-      console.error("Xarid qilishda xatolik:", error);
-      res.status(400).json({ message: "Xarid qilishda xatolik" });
+    } catch (e) {
+      res.status(400).json({ message: "Xatolik" });
     }
   });
-  app2.get("/api/students/:studentId/purchases", requireStudentOrOwn, async (req, res) => {
+  app2.get("/api/purchases/pending", requireAdmin, async (req, res) => res.json(await storage.getPendingPurchases()));
+  app2.post("/api/purchases/:id/approve", requireAdmin, async (req, res) => {
     try {
-      const purchases2 = await storage.getStudentPurchases(req.params.studentId);
-      res.json(purchases2);
-    } catch (error) {
-      console.error("Xaridlar tarixini olishda xatolik:", error);
-      res.status(500).json({ message: "Xaridlar tarixini yuklashda xatolik" });
+      res.json(await storage.approvePurchase(req.params.id, req.user.id));
+    } catch (e) {
+      res.status(400).json({ message: e.message });
     }
   });
-  app2.post("/api/teachers", requireAdmin, async (req, res) => {
+  app2.post("/api/purchases/:id/reject", requireAdmin, async (req, res) => {
     try {
-      const teacherData = insertTeacherSchema.parse(req.body);
-      if (teacherData.password) {
-        teacherData.password = await hashPassword(teacherData.password);
-      }
-      const teacher = await storage.createTeacher(teacherData);
-      res.status(201).json(teacher);
-    } catch (error) {
-      console.error("O'qituvchi yaratishda xatolik:", error);
-      res.status(400).json({ message: "O'qituvchi yaratishda xatolik yuz berdi" });
+      res.json(await storage.rejectPurchase(req.params.id, req.user.id, req.body.reason));
+    } catch (e) {
+      res.status(400).json({ message: e.message });
     }
   });
-  app2.get("/api/teachers", requireAdmin, async (req, res) => {
-    try {
-      const teachers2 = await storage.getAllTeachers();
-      res.json(teachers2);
-    } catch (error) {
-      console.error("O'qituvchilarni olishda xatolik:", error);
-      res.status(500).json({ message: "O'qituvchilarni yuklashda xatolik" });
-    }
+  app2.get("/api/stats", async (req, res) => res.json(await storage.getStats()));
+  const server = createServer(app2);
+  const wss = new WebSocketServer({ server, path: "/ws" });
+  wss.on("connection", (ws) => {
+    ws.on("message", (msg) => {
+    });
   });
-  app2.post("/api/teachers/groups", requireAdmin, async (req, res) => {
-    try {
-      const assignmentData = insertTeacherGroupSchema.parse(req.body);
-      const assignment = await storage.assignTeacherToGroup(assignmentData);
-      res.status(201).json(assignment);
-    } catch (error) {
-      console.error("O'qituvchini guruhga tayinlashda xatolik:", error);
-      res.status(400).json({ message: "O'qituvchini guruhga tayinlashda xatolik" });
-    }
-  });
-  app2.delete("/api/teachers/groups", requireAdmin, async (req, res) => {
-    try {
-      const { teacherId, groupId } = req.query;
-      if (!teacherId || !groupId) {
-        return res.status(400).json({ message: "O'qituvchi ID va Guruh ID talab qilinadi" });
-      }
-      const success = await storage.removeTeacherFromGroup(teacherId, groupId);
-      if (success) {
-        res.status(200).json({ message: "O'qituvchi guruhdan muvaffaqiyatli olib tashlandi" });
-      } else {
-        res.status(404).json({ message: "Tayinlash topilmadi" });
-      }
-    } catch (error) {
-      console.error("O'qituvchini guruhdan olib tashlashda xatolik:", error);
-      res.status(500).json({ message: "O'qituvchini guruhdan olib tashlashda xatolik" });
-    }
-  });
-  app2.get("/api/teachers/dashboard", async (req, res) => {
-    if (!req.isAuthenticated() || req.user.role !== "teacher") {
-      return res.status(403).json({ message: "Faqat o'qituvchilar uchun" });
-    }
-    try {
-      const teacherGroups2 = await storage.getTeacherGroups(req.user.id);
-      const groupsWithDetails = await Promise.all(
-        teacherGroups2.map(async (tg) => {
-          const group = await storage.getGroup(tg.groupId);
-          const students = await storage.getGroupStudents(tg.groupId);
-          const attendance2 = await storage.getGroupAttendance(tg.groupId);
-          return {
-            id: group?.id,
-            name: group?.name,
-            description: group?.description,
-            schedule: group?.schedule,
-            students,
-            studentCount: students.length,
-            recentAttendance: attendance2.slice(0, 5),
-            assignedAt: tg.assignedAt
-          };
-        })
-      );
-      res.json({
-        groups: groupsWithDetails,
-        totalStudents: groupsWithDetails.reduce((sum, group) => sum + group.studentCount, 0),
-        todayAttendance: 0,
-        // Could be calculated based on today's date
-        medalsGiven: 0,
-        // Could be tracked separately
-        recentActivity: []
-        // Could be implemented later
-      });
-    } catch (error) {
-      console.error("O'qituvchi dashboard ma'lumotlarini olishda xatolik:", error);
-      res.status(500).json({ message: "Ma'lumotlarni yuklashda xatolik" });
-    }
-  });
-  app2.get("/api/stats", requireAdmin, async (req, res) => {
-    try {
-      const stats = await storage.getStats();
-      res.json(stats);
-    } catch (error) {
-      console.error("Statistika olishda xatolik:", error);
-      res.status(500).json({ message: "Statistika ma'lumotlarini yuklashda xatolik" });
-    }
-  });
-  const httpServer = createServer(app2);
-  return httpServer;
+  return server;
 }
 
 // server/vite.ts
@@ -1116,9 +926,13 @@ var vite_config_default = defineConfig({
   server: {
     host: "0.0.0.0",
     port: 5e3,
+    allowedHosts: true,
     fs: {
       strict: false,
       allow: [".."]
+    },
+    hmr: {
+      clientPort: 443
     }
   }
 });
@@ -1137,11 +951,6 @@ function log(message, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 async function setupVite(app2, server) {
-  const serverOptions = {
-    middlewareMode: true,
-    hmr: { server },
-    allowedHosts: true
-  };
   const vite = await createViteServer({
     ...vite_config_default,
     configFile: false,
@@ -1152,7 +961,11 @@ async function setupVite(app2, server) {
         process.exit(1);
       }
     },
-    server: serverOptions,
+    server: {
+      ...vite_config_default.server,
+      middlewareMode: true,
+      hmr: { server }
+    },
     appType: "custom"
   });
   app2.use(vite.middlewares);
@@ -1195,13 +1008,16 @@ function serveStatic(app2) {
 }
 
 // server/index.ts
-if (process.env.NODE_ENV === "development") {
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-}
+import cors from "cors";
 var app = express2();
-if (process.env.NODE_ENV === "production") {
-  app.set("trust proxy", 1);
-}
+app.set("trust proxy", 1);
+app.use(cors({
+  origin: true,
+  // Allow all origins in Replit environment
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept"]
+}));
 app.use(express2.json());
 app.use(express2.urlencoded({ extended: false }));
 app.use((req, res, next) => {
@@ -1217,7 +1033,7 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path3.startsWith("/api")) {
       let logLine = `${req.method} ${path3} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
+      if (process.env.NODE_ENV === "development" && capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
       if (logLine.length > 80) {
@@ -1251,7 +1067,7 @@ app.use((req, res, next) => {
     });
     res.status(status).json({ message });
   });
-  if (app.get("env") === "development") {
+  if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
