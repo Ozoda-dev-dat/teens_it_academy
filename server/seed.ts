@@ -68,7 +68,8 @@ async function seedDatabase() {
           description: 'Rasmiy Teens IT School futbolkasi - yuqori sifatli paxta',
           medalCost: { gold: 3, silver: 2, bronze: 1 },
           image: 'https://via.placeholder.com/300x200?text=Teens+IT+Futbolka',
-          isActive: true
+          isActive: true,
+          quantity: 10
         });
 
         await storage.createProduct({
@@ -76,7 +77,8 @@ async function seedDatabase() {
           description: 'Turli dasturlash tillari va texnologiyalari uchun stikerlar',
           medalCost: { gold: 1, silver: 1, bronze: 0 },
           image: 'https://via.placeholder.com/300x200?text=Stikerlar',
-          isActive: true
+          isActive: true,
+          quantity: 50
         });
 
         await storage.createProduct({
@@ -84,7 +86,8 @@ async function seedDatabase() {
           description: 'Yoshlar uchun dasturlash va IT sohasiga kirish bo\'yicha qo\'llanma',
           medalCost: { gold: 5, silver: 3, bronze: 2 },
           image: 'https://via.placeholder.com/300x200?text=IT+Kitob',
-          isActive: true
+          isActive: true,
+          quantity: 5
         });
 
         console.log('✅ Sample products created');
