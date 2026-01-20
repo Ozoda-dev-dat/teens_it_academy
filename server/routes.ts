@@ -63,7 +63,10 @@ export function registerRoutes(app: Express): Server {
     } catch (e) { res.status(400).json({ message: "Xatolik" }); }
   });
 
-  app.get("/api/students", requireAdmin, async (req, res) => {
+  app.get("/api/students", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user.role !== "admin" && req.user.role !== "teacher")) {
+      return res.status(403).json({ message: "Kirish rad etildi" });
+    }
     const students = await storage.getAllStudents();
     res.json(students.map(({ password, ...s }) => s));
   });
