@@ -107,12 +107,30 @@ export function registerRoutes(app: Express): Server {
     if (!req.isAuthenticated() || (req.user.role !== "admin" && req.user.role !== "teacher")) return res.status(403).json({ message: "Rad etildi" });
     try {
       const { studentId, medalType, amount, reason } = req.body;
-      const result = await storage.awardMedalsSafelyWithTotals(studentId, medalType, amount, reason, req.user.id);
+      const numAmount = parseInt(amount);
+      if (isNaN(numAmount)) return res.status(400).json({ message: "Miqdor xato" });
+      
+      const result = await storage.awardMedalsSafelyWithTotals(studentId, medalType, numAmount, reason, req.user.id);
       if (result.success) {
-        notificationService.broadcast({ type: 'medal_awarded', data: { studentId, delta: { [medalType]: amount }, totals: result.updatedTotals, awardedBy: req.user.id, reason }, timestamp: new Date().toISOString() });
+        notificationService.broadcast({ 
+          type: 'medal_awarded', 
+          data: { 
+            studentId, 
+            delta: { [medalType]: numAmount }, 
+            totals: result.updatedTotals, 
+            awardedBy: req.user.id, 
+            reason 
+          }, 
+          timestamp: new Date().toISOString() 
+        });
         res.json(result);
-      } else res.status(400).json(result);
-    } catch (e) { res.status(400).json({ message: "Xatolik" }); }
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (e) { 
+      console.error('Award medals error:', e);
+      res.status(400).json({ message: "Xatolik yuz berdi" }); 
+    }
   });
 
   // Store management
