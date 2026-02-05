@@ -58,9 +58,20 @@ export function registerRoutes(app: Express): Server {
       const studentData = insertUserSchema.parse({ ...req.body, email: login, password: plainPassword, role: "student", medals: { gold: 0, silver: 0, bronze: 0 } });
       studentData.password = await hashPassword(plainPassword);
       const student = await storage.createUser(studentData);
+      
+      // Notify about new student for real-time updates
+      notificationService.broadcast({
+        type: 'user_created',
+        data: { user: student },
+        timestamp: new Date().toISOString()
+      });
+
       const { password, ...s } = student;
       res.status(201).json({ ...s, generatedCredentials: { login, password: plainPassword } });
-    } catch (e) { res.status(400).json({ message: "Xatolik" }); }
+    } catch (e) { 
+      console.error('Create student error:', e);
+      res.status(400).json({ message: e instanceof Error ? e.message : "Xatolik" }); 
+    }
   });
 
   app.get("/api/students", async (req, res) => {

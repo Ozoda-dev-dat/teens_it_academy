@@ -176,8 +176,8 @@ const baseUserSchema = createInsertSchema(users).omit({
   createdAt: true,
 }).extend({
   // Make parentPhone and parentName optional (they are only required for students)
-  parentPhone: z.string().optional(),
-  parentName: z.string().optional(),
+  parentPhone: z.string().min(1, "Ota-ona telefon raqami kiritilishi shart"),
+  parentName: z.string().min(1, "Ota-ona ismi kiritilishi shart"),
 });
 
 // Insert schema with role-specific validation
