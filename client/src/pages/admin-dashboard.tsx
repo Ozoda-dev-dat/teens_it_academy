@@ -307,7 +307,70 @@ export default function AdminDashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>O'quvchilar</CardTitle>
-              <Button onClick={() => setIsAddStudentOpen(true)}><Plus className="w-4 h-4 mr-2" /> Qo'shish</Button>
+              <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>
+                <DialogTrigger asChild>
+                  <Button><Plus className="w-4 h-4 mr-2" /> Qo'shish</Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Yangi o'quvchi qo'shish</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="firstName" className="text-right">Ism</Label>
+                      <Input
+                        id="firstName"
+                        value={studentForm.firstName}
+                        onChange={(e) => setStudentForm({ ...studentForm, firstName: e.target.value })}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="lastName" className="text-right">Familiya</Label>
+                      <Input
+                        id="lastName"
+                        value={studentForm.lastName}
+                        onChange={(e) => setStudentForm({ ...studentForm, lastName: e.target.value })}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="phone" className="text-right">Tel</Label>
+                      <Input
+                        id="phone"
+                        value={studentForm.phone}
+                        onChange={(e) => setStudentForm({ ...studentForm, phone: e.target.value })}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="parentName" className="text-right">Ota-ona ismi</Label>
+                      <Input
+                        id="parentName"
+                        value={studentForm.parentName}
+                        onChange={(e) => setStudentForm({ ...studentForm, parentName: e.target.value })}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="parentPhone" className="text-right">Ota-ona tel</Label>
+                      <Input
+                        id="parentPhone"
+                        value={studentForm.parentPhone}
+                        onChange={(e) => setStudentForm({ ...studentForm, parentPhone: e.target.value })}
+                        className="col-span-3"
+                      />
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={() => createStudentMutation.mutate(studentForm)}
+                    disabled={createStudentMutation.isPending}
+                  >
+                    {createStudentMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Saqlash
+                  </Button>
+                </DialogContent>
+              </Dialog>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -358,6 +421,29 @@ export default function AdminDashboard() {
 
         {activeTab === "medals" && <MedalManagement />}
       </div>
+      {/* Credentials Dialog */}
+      <Dialog open={showCredentialsDialog} onOpenChange={setShowCredentialsDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>O'quvchi ma'lumotlari</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+              <p className="text-sm font-medium text-blue-800">Tizimga kirish uchun login va parol:</p>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <span className="text-gray-600">Login:</span>
+                <span className="font-mono font-bold text-blue-900">{generatedCredentials?.login}</span>
+                <span className="text-gray-600">Parol:</span>
+                <span className="font-mono font-bold text-blue-900">{generatedCredentials?.password}</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 italic">
+              * Iltimos, ushbu ma'lumotlarni o'quvchiga yetkazing. Parol xavfsizlik maqsadida qayta ko'rsatilmaydi.
+            </p>
+          </div>
+          <Button onClick={() => setShowCredentialsDialog(false)}>Tushunarli</Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
