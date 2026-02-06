@@ -228,8 +228,6 @@ export default function AdminDashboard() {
             {[
               { id: "dashboard", icon: BarChart3, label: "Dashboard" },
               { id: "students", icon: Users, label: "O'quvchilar" },
-              { id: "teachers", icon: UserIcon, label: "O'qituvchilar" },
-              { id: "groups", icon: BookOpen, label: "Guruhlar" },
               { id: "marketplace", icon: ShoppingBag, label: "Do'kon" },
               { id: "medals", icon: Award, label: "Medallar" }
             ].map((item) => (
