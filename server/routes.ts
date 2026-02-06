@@ -180,7 +180,18 @@ export function registerRoutes(app: Express): Server {
     } catch (e) { res.status(400).json({ message: "Xatolik" }); }
   });
 
-  app.get("/api/purchases/pending", requireAdmin, async (req, res) => res.json(await storage.getPendingPurchases()));
+  app.get("/api/purchases/pending", requireAdmin, async (req, res) => {
+    const purchases = await storage.getPendingPurchases();
+    const students = await storage.getAllStudents();
+    const studentsMap = Object.fromEntries(students.map(s => [s.id, s]));
+    
+    res.json(purchases.map(p => ({
+      ...p,
+      studentName: studentsMap[p.studentId] 
+        ? `${studentsMap[p.studentId].firstName} ${studentsMap[p.studentId].lastName}`
+        : "Noma'lum o'quvchi"
+    })));
+  });
   app.post("/api/purchases/:id/approve", requireAdmin, async (req, res) => {
     try { res.json(await storage.approvePurchase(req.params.id, req.user!.id)); } catch (e) { res.status(400).json({ message: (e as Error).message }); }
   });

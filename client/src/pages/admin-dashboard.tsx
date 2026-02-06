@@ -398,11 +398,11 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {pendingPurchases.map(p => (
+                  {pendingPurchases.map((p: any) => (
                     <div key={p.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <p className="font-bold">Xarid #{p.id.slice(0,8)}</p>
-                        <p className="text-sm text-gray-500">Talaba: {p.studentId}</p>
+                        <p className="font-bold">{p.studentName}</p>
+                        <p className="text-sm text-gray-500">Xarid #{p.id.slice(0,8)}</p>
                       </div>
                       <div className="flex space-x-2">
                         <Button variant="outline" className="text-green-600" onClick={() => approvePurchaseMutation.mutate(p.id)}>Tasdiqlash</Button>
