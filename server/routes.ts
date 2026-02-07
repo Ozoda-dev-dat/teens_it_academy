@@ -153,6 +153,27 @@ export function registerRoutes(app: Express): Server {
     try { res.status(201).json(await storage.createProduct(insertProductSchema.parse(req.body))); } catch (e) { res.status(400).json({ message: "Xatolik" }); }
   });
 
+  app.put("/api/products/:id", requireAdmin, async (req, res) => {
+    try {
+      const updates = insertProductSchema.partial().parse(req.body);
+      const product = await storage.updateProduct(req.params.id, updates);
+      if (!product) return res.status(404).json({ message: "Mahsulot topilmadi" });
+      res.json(product);
+    } catch (e) {
+      res.status(400).json({ message: "Xatolik" });
+    }
+  });
+
+  app.delete("/api/products/:id", requireAdmin, async (req, res) => {
+    try {
+      const success = await storage.deleteProduct(req.params.id);
+      if (!success) return res.status(404).json({ message: "Mahsulot topilmadi" });
+      res.json({ message: "O'chirildi" });
+    } catch (e) {
+      res.status(400).json({ message: "Xatolik" });
+    }
+  });
+
   app.post("/api/purchases", async (req, res) => {
     if (!req.isAuthenticated() || req.user.role !== "student") return res.status(401).json({ message: "O'quvchi bo'lishingiz kerak" });
     try {

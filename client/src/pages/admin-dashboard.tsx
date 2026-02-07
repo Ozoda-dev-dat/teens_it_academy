@@ -209,6 +209,29 @@ export default function AdminDashboard() {
     }
   });
 
+  const updateProductMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string, data: any }) => {
+      const res = await apiRequest("PUT", `/api/products/${id}`, data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      setIsEditProductOpen(false);
+      setEditingProduct(null);
+      toast({ title: "Muvaffaqiyat", description: "Mahsulot yangilandi" });
+    }
+  });
+
+  const deleteProductMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/products/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({ title: "Muvaffaqiyat", description: "Mahsulot o'chirildi" });
+    }
+  });
+
   const approvePurchaseMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await apiRequest("POST", `/api/purchases/${id}/approve`);
@@ -512,7 +535,40 @@ export default function AdminDashboard() {
                           />
                         </div>
                       )}
-                      <CardHeader>
+                      <CardHeader className="relative">
+                        <div className="absolute top-2 right-2 flex space-x-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-blue-600 hover:text-blue-800"
+                            onClick={() => {
+                              setEditingProduct(p);
+                              setProductForm({
+                                name: p.name,
+                                description: p.description || "",
+                                image: p.image || "",
+                                quantity: p.quantity,
+                                medalCost: p.medalCost as any,
+                                isActive: p.isActive
+                              });
+                              setIsEditProductOpen(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-red-600 hover:text-red-800"
+                            onClick={() => {
+                              if (confirm("Haqiqatan ham ushbu mahsulotni o'chirmoqchimisiz?")) {
+                                deleteProductMutation.mutate(p.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                         <CardTitle className="text-lg">{p.name}</CardTitle>
                       </CardHeader>
                       <CardContent>
@@ -534,6 +590,91 @@ export default function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
+
+            <Dialog open={isEditProductOpen} onOpenChange={setIsEditProductOpen}>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Mahsulotni tahrirlash</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="editProductName" className="text-right">Nomi</Label>
+                    <Input
+                      id="editProductName"
+                      value={productForm.name}
+                      onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="editDescription" className="text-right">Tavsif</Label>
+                    <Textarea
+                      id="editDescription"
+                      value={productForm.description}
+                      onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="editQuantity" className="text-right">Soni</Label>
+                    <Input
+                      id="editQuantity"
+                      type="number"
+                      value={productForm.quantity}
+                      onChange={(e) => setProductForm({ ...productForm, quantity: parseInt(e.target.value) || 0 })}
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right">Narxi (Medal)</Label>
+                    <div className="col-span-3 flex space-x-2">
+                      <Input
+                        placeholder="Altin"
+                        type="number"
+                        value={productForm.medalCost.gold}
+                        onChange={(e) => setProductForm({ ...productForm, medalCost: { ...productForm.medalCost, gold: parseInt(e.target.value) || 0 } })}
+                      />
+                      <Input
+                        placeholder="Kumush"
+                        type="number"
+                        value={productForm.medalCost.silver}
+                        onChange={(e) => setProductForm({ ...productForm, medalCost: { ...productForm.medalCost, silver: parseInt(e.target.value) || 0 } })}
+                      />
+                      <Input
+                        placeholder="Bronza"
+                        type="number"
+                        value={productForm.medalCost.bronze}
+                        onChange={(e) => setProductForm({ ...productForm, medalCost: { ...productForm.medalCost, bronze: parseInt(e.target.value) || 0 } })}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="editImage" className="text-right">Rasm URL</Label>
+                    <Input
+                      id="editImage"
+                      value={productForm.image}
+                      onChange={(e) => setProductForm({ ...productForm, image: e.target.value })}
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="editIsActive" className="text-right">Faol</Label>
+                    <Switch
+                      id="editIsActive"
+                      checked={productForm.isActive}
+                      onCheckedChange={(checked) => setProductForm({ ...productForm, isActive: checked })}
+                    />
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => updateProductMutation.mutate({ id: editingProduct!.id, data: productForm })}
+                  disabled={updateProductMutation.isPending}
+                >
+                  {updateProductMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Saqlash
+                </Button>
+              </DialogContent>
+            </Dialog>
 
             <Card>
               <CardHeader>
