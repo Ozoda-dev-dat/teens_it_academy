@@ -475,6 +475,16 @@ export default function AdminDashboard() {
                           />
                         </div>
                       </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="image" className="text-right">Rasm URL</Label>
+                        <Input
+                          id="image"
+                          value={productForm.image}
+                          onChange={(e) => setProductForm({ ...productForm, image: e.target.value })}
+                          className="col-span-3"
+                          placeholder="https://example.com/image.png"
+                        />
+                      </div>
                     </div>
                     <Button 
                       onClick={() => createProductMutation.mutate(productForm)}
@@ -489,7 +499,19 @@ export default function AdminDashboard() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {products.map(p => (
-                    <Card key={p.id}>
+                    <Card key={p.id} className="overflow-hidden">
+                      {p.image && (
+                        <div className="aspect-video w-full overflow-hidden">
+                          <img 
+                            src={p.image} 
+                            alt={p.name} 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "https://placehold.co/400x225?text=Rasm+yo'q";
+                            }}
+                          />
+                        </div>
+                      )}
                       <CardHeader>
                         <CardTitle className="text-lg">{p.name}</CardTitle>
                       </CardHeader>
