@@ -189,6 +189,26 @@ export default function AdminDashboard() {
     }
   });
 
+  const createProductMutation = useMutation({
+    mutationFn: async (productData: any) => {
+      const res = await apiRequest("POST", "/api/products", productData);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      setIsAddProductOpen(false);
+      setProductForm({
+        name: "",
+        description: "",
+        image: "",
+        quantity: 0,
+        medalCost: { gold: 0, silver: 0, bronze: 0 },
+        isActive: true
+      });
+      toast({ title: "Muvaffaqiyat", description: "Mahsulot yaratildi" });
+    }
+  });
+
   const approvePurchaseMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await apiRequest("POST", `/api/purchases/${id}/approve`);
@@ -392,6 +412,107 @@ export default function AdminDashboard() {
 
         {activeTab === "marketplace" && (
           <div className="space-y-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Mahsulotlar</CardTitle>
+                <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
+                  <DialogTrigger asChild>
+                    <Button><Plus className="w-4 h-4 mr-2" /> Qo'shish</Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                      <DialogTitle>Yangi mahsulot qo'shish</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="productName" className="text-right">Nomi</Label>
+                        <Input
+                          id="productName"
+                          value={productForm.name}
+                          onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                          className="col-span-3"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="description" className="text-right">Tavsif</Label>
+                        <Textarea
+                          id="description"
+                          value={productForm.description}
+                          onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                          className="col-span-3"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="quantity" className="text-right">Soni</Label>
+                        <Input
+                          id="quantity"
+                          type="number"
+                          value={productForm.quantity}
+                          onChange={(e) => setProductForm({ ...productForm, quantity: parseInt(e.target.value) || 0 })}
+                          className="col-span-3"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label className="text-right">Narxi (Medal)</Label>
+                        <div className="col-span-3 flex space-x-2">
+                          <Input
+                            placeholder="Altin"
+                            type="number"
+                            value={productForm.medalCost.gold}
+                            onChange={(e) => setProductForm({ ...productForm, medalCost: { ...productForm.medalCost, gold: parseInt(e.target.value) || 0 } })}
+                          />
+                          <Input
+                            placeholder="Kumush"
+                            type="number"
+                            value={productForm.medalCost.silver}
+                            onChange={(e) => setProductForm({ ...productForm, medalCost: { ...productForm.medalCost, silver: parseInt(e.target.value) || 0 } })}
+                          />
+                          <Input
+                            placeholder="Bronza"
+                            type="number"
+                            value={productForm.medalCost.bronze}
+                            onChange={(e) => setProductForm({ ...productForm, medalCost: { ...productForm.medalCost, bronze: parseInt(e.target.value) || 0 } })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={() => createProductMutation.mutate(productForm)}
+                      disabled={createProductMutation.isPending}
+                    >
+                      {createProductMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Saqlash
+                    </Button>
+                  </DialogContent>
+                </Dialog>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {products.map(p => (
+                    <Card key={p.id}>
+                      <CardHeader>
+                        <CardTitle className="text-lg">{p.name}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-gray-500 mb-4 h-10 overflow-hidden">{p.description}</p>
+                        <div className="flex justify-between items-center">
+                          <div className="flex space-x-2">
+                            <span className="text-yellow-600">🥇 {(p.medalCost as any).gold}</span>
+                            <span className="text-gray-600">🥈 {(p.medalCost as any).silver}</span>
+                            <span className="text-orange-600">🥉 {(p.medalCost as any).bronze}</span>
+                          </div>
+                          <Badge variant={p.quantity > 0 ? "default" : "destructive"}>
+                            {p.quantity} dona
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  {products.length === 0 && <p className="col-span-full text-center text-gray-500 py-8">Mahsulotlar yo'q</p>}
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>Kutilayotgan xaridlar</CardTitle>
