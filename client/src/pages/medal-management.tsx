@@ -108,19 +108,13 @@ export default function MedalManagement() {
     student.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAwardMedals = (type: 'gold' | 'silver' | 'bronze') => {
-    if (!selectedStudent || medalForm[type] <= 0) return;
+  const handleAwardMedals = (type: 'gold' | 'silver' | 'bronze', amount: number) => {
+    if (!selectedStudent || amount === 0) return;
     awardMedalsMutation.mutate({
       studentId: selectedStudent.id,
       medalType: type,
-      amount: medalForm[type]
+      amount: amount
     });
-  };
-
-  const openAwardModal = (student: User) => {
-    setSelectedStudent(student);
-    setMedalForm({ gold: 1, silver: 1, bronze: 1 });
-    setIsAwardModalOpen(true);
   };
 
   const adjustMedal = (type: 'gold' | 'silver' | 'bronze', increment: boolean) => {
@@ -323,10 +317,13 @@ export default function MedalManagement() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button size="sm" variant="outline" onClick={() => adjustMedal('gold', false)} disabled={medalForm.gold <= 1}><Minus className="w-3 h-3" /></Button>
+                    <Button size="sm" variant="outline" onClick={() => adjustMedal('gold', false)}><Minus className="w-3 h-3" /></Button>
                     <span className="w-8 text-center font-semibold">{medalForm.gold}</span>
                     <Button size="sm" variant="outline" onClick={() => adjustMedal('gold', true)}><Plus className="w-3 h-3" /></Button>
-                    <Button size="sm" onClick={() => handleAwardMedals('gold')} disabled={awardMedalsMutation.isPending}><Award className="w-4 h-4" /></Button>
+                    <div className="flex gap-1">
+                      <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleAwardMedals('gold', medalForm.gold)} disabled={awardMedalsMutation.isPending}><Plus className="w-4 h-4" /></Button>
+                      <Button size="sm" className="bg-red-600 hover:bg-red-700" onClick={() => handleAwardMedals('gold', -medalForm.gold)} disabled={awardMedalsMutation.isPending}><Minus className="w-4 h-4" /></Button>
+                    </div>
                   </div>
                 </div>
 
@@ -339,10 +336,13 @@ export default function MedalManagement() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button size="sm" variant="outline" onClick={() => adjustMedal('silver', false)} disabled={medalForm.silver <= 1}><Minus className="w-3 h-3" /></Button>
+                    <Button size="sm" variant="outline" onClick={() => adjustMedal('silver', false)}><Minus className="w-3 h-3" /></Button>
                     <span className="w-8 text-center font-semibold">{medalForm.silver}</span>
                     <Button size="sm" variant="outline" onClick={() => adjustMedal('silver', true)}><Plus className="w-3 h-3" /></Button>
-                    <Button size="sm" onClick={() => handleAwardMedals('silver')} disabled={awardMedalsMutation.isPending}><Award className="w-4 h-4" /></Button>
+                    <div className="flex gap-1">
+                      <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleAwardMedals('silver', medalForm.silver)} disabled={awardMedalsMutation.isPending}><Plus className="w-4 h-4" /></Button>
+                      <Button size="sm" className="bg-red-600 hover:bg-red-700" onClick={() => handleAwardMedals('silver', -medalForm.silver)} disabled={awardMedalsMutation.isPending}><Minus className="w-4 h-4" /></Button>
+                    </div>
                   </div>
                 </div>
 
@@ -355,10 +355,13 @@ export default function MedalManagement() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button size="sm" variant="outline" onClick={() => adjustMedal('bronze', false)} disabled={medalForm.bronze <= 1}><Minus className="w-3 h-3" /></Button>
+                    <Button size="sm" variant="outline" onClick={() => adjustMedal('bronze', false)}><Minus className="w-3 h-3" /></Button>
                     <span className="w-8 text-center font-semibold">{medalForm.bronze}</span>
                     <Button size="sm" variant="outline" onClick={() => adjustMedal('bronze', true)}><Plus className="w-3 h-3" /></Button>
-                    <Button size="sm" onClick={() => handleAwardMedals('bronze')} disabled={awardMedalsMutation.isPending}><Award className="w-4 h-4" /></Button>
+                    <div className="flex gap-1">
+                      <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleAwardMedals('bronze', medalForm.bronze)} disabled={awardMedalsMutation.isPending}><Plus className="w-4 h-4" /></Button>
+                      <Button size="sm" className="bg-red-600 hover:bg-red-700" onClick={() => handleAwardMedals('bronze', -medalForm.bronze)} disabled={awardMedalsMutation.isPending}><Minus className="w-4 h-4" /></Button>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -124,7 +124,18 @@ export function registerRoutes(app: Express): Server {
       const numAmount = parseInt(amount);
       if (isNaN(numAmount)) return res.status(400).json({ message: "Miqdor xato" });
       
-      const result = await storage.awardMedalsSafelyWithTotals(studentId, medalType, numAmount, reason, req.user.id);
+      let result;
+      if (numAmount >= 0) {
+        result = await storage.awardMedalsSafelyWithTotals(studentId, medalType, numAmount, reason, req.user.id);
+      } else {
+        result = await storage.revokeMedalsSafely(studentId, medalType, Math.abs(numAmount), reason, req.user.id);
+        // Map revoke result to include updatedTotals for consistency
+        if (result.success) {
+          const student = await storage.getUser(studentId);
+          result.updatedTotals = student?.medals;
+        }
+      }
+
       if (result.success) {
         notificationService.broadcast({ 
           type: 'medal_awarded', 
