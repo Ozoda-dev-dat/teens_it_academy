@@ -689,8 +689,26 @@ export default function AdminDashboard() {
                         <p className="text-sm text-gray-500">Xarid #{p.id.slice(0,8)}</p>
                       </div>
                       <div className="flex space-x-2">
-                        <Button variant="outline" className="text-green-600" onClick={() => approvePurchaseMutation.mutate(p.id)}>Tasdiqlash</Button>
-                        <Button variant="outline" className="text-red-600" onClick={() => rejectPurchaseMutation.mutate(p.id)}>Rad etish</Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-green-600 border-green-200 hover:bg-green-50" 
+                          onClick={() => approvePurchaseMutation.mutate(p.id)}
+                          disabled={approvePurchaseMutation.isPending}
+                        >
+                          {approvePurchaseMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4 mr-1" />}
+                          Tasdiqlash
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-red-600 border-red-200 hover:bg-red-50" 
+                          onClick={() => rejectPurchaseMutation.mutate(p.id)}
+                          disabled={rejectPurchaseMutation.isPending}
+                        >
+                          {rejectPurchaseMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4 mr-1" />}
+                          Rad etish
+                        </Button>
                       </div>
                     </div>
                   ))}
