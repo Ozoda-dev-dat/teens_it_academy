@@ -116,6 +116,20 @@ export default function MedalManagement() {
 
   const handleAwardMedals = (type: 'gold' | 'silver' | 'bronze', amount: number) => {
     if (!selectedStudent || amount === 0) return;
+    
+    // Check if revoking more than student has
+    if (amount < 0) {
+      const medals = selectedStudent.medals as any;
+      if (medals[type] < Math.abs(amount)) {
+        toast({
+          title: "Xatolik",
+          description: `O'quvchida yetarli ${type === 'gold' ? 'oltin' : type === 'silver' ? 'kumush' : 'bronza'} medal mavjud emas`,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     awardMedalsMutation.mutate({
       studentId: selectedStudent.id,
       medalType: type,

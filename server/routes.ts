@@ -137,18 +137,19 @@ export function registerRoutes(app: Express): Server {
       }
 
       if (result.success) {
+        const student = await storage.getUser(studentId);
         notificationService.broadcast({ 
           type: 'medal_awarded', 
           data: { 
             studentId, 
             delta: { [medalType]: numAmount }, 
-            totals: result.updatedTotals, 
+            totals: student?.medals, 
             awardedBy: req.user.id, 
             reason 
           }, 
           timestamp: new Date().toISOString() 
         });
-        res.json(result);
+        res.json({ ...result, updatedTotals: student?.medals });
       } else {
         res.status(400).json(result);
       }
