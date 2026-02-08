@@ -108,6 +108,12 @@ export default function MedalManagement() {
     student.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const openAwardModal = (student: User) => {
+    setSelectedStudent(student);
+    setMedalForm({ gold: 1, silver: 1, bronze: 1 });
+    setIsAwardModalOpen(true);
+  };
+
   const handleAwardMedals = (type: 'gold' | 'silver' | 'bronze', amount: number) => {
     if (!selectedStudent || amount === 0) return;
     awardMedalsMutation.mutate({
