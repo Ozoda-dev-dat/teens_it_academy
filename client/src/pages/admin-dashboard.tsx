@@ -686,6 +686,7 @@ export default function AdminDashboard() {
                     <div key={p.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
                         <p className="font-bold">{p.studentName}</p>
+                        <p className="text-sm font-medium text-blue-600">{p.productName}</p>
                         <p className="text-sm text-gray-500">Xarid #{p.id.slice(0,8)}</p>
                       </div>
                       <div className="flex space-x-2">

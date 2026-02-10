@@ -217,13 +217,16 @@ export function registerRoutes(app: Express): Server {
     try {
       const purchases = await storage.getPendingPurchases();
       const students = await storage.getAllStudents();
+      const products = await storage.getAllProducts();
       const studentsMap = Object.fromEntries(students.map(s => [s.id, s]));
+      const productsMap = Object.fromEntries(products.map(pr => [pr.id, pr]));
       
       res.json(purchases.map(p => ({
         ...p,
         studentName: studentsMap[p.studentId] 
           ? `${studentsMap[p.studentId].firstName} ${studentsMap[p.studentId].lastName}`
-          : "Noma'lum o'quvchi"
+          : "Noma'lum o'quvchi",
+        productName: productsMap[p.productId]?.name || "Noma'lum mahsulot"
       })));
     } catch (e) {
       console.error('Pending purchases error:', e);
